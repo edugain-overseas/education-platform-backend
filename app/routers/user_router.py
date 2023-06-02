@@ -1,12 +1,15 @@
-from fastapi import APIRouter, UploadFile, status, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, status, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
+from app.models import User
 from app.session import get_db
 from app.schemas.user_schemas import StudentCreate, TeacherCreate, ModerCreate, CuratorCreate
 from app.utils.password import hash_password, check_password
-from app.utils.token import create_access_token
+from app.utils.token import create_access_token, get_current_user
+from app.utils.save_images import save_student_avatar
+
 from app.crud.user_crud import \
     create_new_user_db, \
     create_new_student_db, \
@@ -15,7 +18,9 @@ from app.crud.user_crud import \
     create_new_curator_db, \
     select_user_type_id_db, \
     select_user_by_username_db, \
-    update_user_token_db
+    select_student_by_user_id_db, \
+    update_user_token_db, \
+    update_student_photo_path_db
 
 
 SECRET_KEY = "your-secret-key"
@@ -23,7 +28,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/token')
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/token')
 
 
 @router.post("/student/create")
@@ -79,7 +84,7 @@ async def create_teacher(data: TeacherCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/moder/create")
-async def create_teacher(data: ModerCreate, db: Session = Depends(get_db)):
+async def create_moder(data: ModerCreate, db: Session = Depends(get_db)):
     hashed_password = hash_password(data.password)
     user_type = select_user_type_id_db(db=db, user_type=data.usertype.value)
 
@@ -104,7 +109,7 @@ async def create_teacher(data: ModerCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/curator/create")
-async def create_teacher(data: ModerCreate, db: Session = Depends(get_db)):
+async def create_curator(data: CuratorCreate, db: Session = Depends(get_db)):
     hashed_password = hash_password(data.password)
     user_type = select_user_type_id_db(db=db, user_type=data.usertype.value)
 
@@ -154,3 +159,22 @@ async def login_with_jwt_token(
             "type": user.user_type.type
         }
     }
+
+
+@router.put("/student/update/photo")
+async def update_student_avatar(
+        file: UploadFile = File(...),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)):
+    if not current_user.student:
+        raise HTTPException(status_code=403, detail="Only students can update their avatars")
+
+    student = select_student_by_user_id_db(db=db, user_id=current_user.id)
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    file_path = save_student_avatar(file, student.name, student.surname)
+    update_student_photo_path_db(db=db, student=student, new_path=file_path)
+    return {"message": "Avatar updated successfully"}
+

@@ -16,12 +16,22 @@ def select_user_by_username_db(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
 
 
+def select_student_by_user_id_db(db: Session, user_id: int):
+    return db.query(Student).filter(Student.user_id == user_id).first()
+
+
 def update_user_token_db(db: Session, user: User, token: str):
     user.token = token
     user.exp_token = datetime.utcnow() + timedelta(hours=24)
     user.is_active = True
     db.commit()
     db.refresh(user)
+
+
+def update_student_photo_path_db(db: Session, student: Student, new_path: str):
+    student.image_path = new_path
+    db.commit()
+    db.refresh(student)
 
 
 def create_new_user_db(db: Session, username: str, hashed_password: str, user_type_id: int):
