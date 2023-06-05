@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from app.models import User, UserType, Student, Teacher, Moder, Curator
+from app.schemas.user_schemas import StudentUpdate
 
 
 def select_user_type_id_db(db: Session, user_type: str):
@@ -16,8 +17,32 @@ def select_user_by_username_db(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
 
 
+def select_user_by_id_db(db: Session, user_id: int):
+    return db.query(User).filter(User.id == user_id).first()
+
+
+def select_all_students_db(db: Session):
+    return db.query(Student).all()
+
+
+def select_student_by_id_db(db: Student, student_id: int):
+    return db.query(Student).filter(Student.id == student_id).first()
+
+
 def select_student_by_user_id_db(db: Session, user_id: int):
     return db.query(Student).filter(Student.user_id == user_id).first()
+
+
+def select_students_by_group_id_db(db: Student, group_id: int):
+    return db.query(Student).filter(Student.group_id == group_id).all()
+
+
+def select_students_by_course_id_db(db: Student, course_id: int):
+    return db.query(Student).filter(Student.group_id == course_id).all()
+
+
+def select_students_by_specializations_id_db(db: Session, specialization_id: int):
+    return db.query(Student).filter(Student.specialization_id == specialization_id).all()
 
 
 def update_user_token_db(db: Session, user: User, token: str):
@@ -30,6 +55,15 @@ def update_user_token_db(db: Session, user: User, token: str):
 
 def update_student_photo_path_db(db: Session, student: Student, new_path: str):
     student.image_path = new_path
+    db.commit()
+    db.refresh(student)
+
+
+def update_student_info_db(db: Session, student: Student, student_data: StudentUpdate):
+    for field, value in student_data:
+        if value:
+            setattr(student, field, value)
+
     db.commit()
     db.refresh(student)
 
@@ -103,3 +137,13 @@ def create_new_curator_db(db: Session, name: str, surname: str, lastname: str, u
     db.commit()
     db.refresh(new_curator)
     return new_curator
+
+
+def delete_user_db(db: Session, user: User):
+    db.delete(user)
+    db.commit()
+
+
+def delete_student_db(db: Session, student: Student):
+    db.delete(student)
+    db.commit()

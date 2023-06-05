@@ -437,4 +437,3 @@ class GroupChat(Base):
     sender_type = Column(String)
 
     group = relationship('Group', back_populates='group_chat')
-

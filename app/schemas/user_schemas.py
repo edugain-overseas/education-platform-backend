@@ -20,10 +20,26 @@ class StudentCreate(BaseModel):
     lastname: str
     phone: str
     email: str
-    image: Optional[UploadFile] = None
     qualification: Optional[str] = None
     educational_program: Optional[str] = None
     subject_area: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+class StudentUpdate(BaseModel):
+    name: Optional[str] = None
+    surname: Optional[str] = None
+    lastname: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    qualification: Optional[str] = None
+    educational_program: Optional[str] = None
+    subject_area: Optional[str] = None
+    specialization_id: Optional[int] = None
+    course_id: Optional[int] = None
+    group_id: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -63,4 +79,3 @@ class ModerCreate(BaseModel):
 
     class Config:
         orm_mode = True
-
