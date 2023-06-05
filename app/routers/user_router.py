@@ -2,7 +2,6 @@ from fastapi import APIRouter, UploadFile, File, status, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
-from typing import List
 
 from app.models import User
 from app.session import get_db
@@ -183,8 +182,8 @@ async def update_student_info(
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
-    if not current_user.student:
-        raise HTTPException(status_code=403, detail="Only students can update their avatars")
+    if (not current_user.student) or (not current_user.moder):
+        raise HTTPException(status_code=403, detail="Only students can update their information")
 
     student = select_student_by_user_id_db(db=db, user_id=current_user.id)
     if not student:
@@ -207,6 +206,8 @@ async def get_student(
         current_user: User = Depends(get_current_user)
 ):
     student = select_student_by_id_db(db=db, student_id=student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
     return student
 
 
@@ -217,6 +218,8 @@ async def get_students_in_course(
         current_user: User = Depends(get_current_user)
 ):
     students = select_students_by_course_id_db(db=db, course_id=course_id)
+    if not students:
+        raise HTTPException(status_code=404, detail="Students not found")
     return {"students": students}
 
 
@@ -227,6 +230,8 @@ async def get_students_in_group(
         current_user: User = Depends(get_current_user)
 ):
     students = select_students_by_group_id_db(db=db, group_id=group_id)
+    if not students:
+        raise HTTPException(status_code=404, detail="Students not found")
     return {"students": students}
 
 
@@ -236,6 +241,8 @@ async def get_students_in_specialization(
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)):
     students = select_students_by_specializations_id_db(db=db, specialization_id=specialization_id)
+    if not students:
+        raise HTTPException(status_code=404, detail="Students not found")
     return {"students": students}
 
 
@@ -246,6 +253,8 @@ async def delete_student(
         current_user: User = Depends(get_current_user)
 ):
     student = select_student_by_id_db(db=db, student_id=student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
     user = select_user_by_id_db(db=db, user_id=student.user_id)
 
     delete_student_db(db=db, student=student)
