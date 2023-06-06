@@ -38,7 +38,7 @@ def select_students_by_group_id_db(db: Student, group_id: int):
 
 
 def select_students_by_course_id_db(db: Student, course_id: int):
-    return db.query(Student).filter(Student.group_id == course_id).all()
+    return db.query(Student).filter(Student.course_id == course_id).all()
 
 
 def select_students_by_specializations_id_db(db: Session, specialization_id: int):

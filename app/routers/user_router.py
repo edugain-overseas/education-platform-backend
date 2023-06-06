@@ -9,14 +9,14 @@ from app.schemas.user_schemas import StudentCreate, StudentUpdate, TeacherCreate
 from app.utils.password import hash_password, check_password
 from app.utils.token import create_access_token, get_current_user
 from app.utils.save_images import save_student_avatar
-
-from app.crud.user_crud import \
-    create_new_user_db, create_new_student_db, create_new_teacher_db, create_new_moder_db, create_new_curator_db, \
-    select_user_type_id_db, select_user_by_username_db, select_user_by_id_db,\
-    select_student_by_user_id_db, select_all_students_db, select_student_by_id_db, \
-    select_students_by_course_id_db, select_students_by_group_id_db, select_students_by_specializations_id_db, \
-    update_user_token_db, update_student_photo_path_db, update_student_info_db, \
-    delete_user_db, delete_student_db
+from app.crud.user_crud import *
+# from app.crud.user_crud import \
+#     create_new_user_db, create_new_student_db, create_new_teacher_db, create_new_moder_db, create_new_curator_db, \
+#     select_user_type_id_db, select_user_by_username_db, select_user_by_id_db,\
+#     select_student_by_user_id_db, select_all_students_db, select_student_by_id_db, \
+#     select_students_by_course_id_db, select_students_by_group_id_db, select_students_by_specializations_id_db, \
+#     update_user_token_db, update_student_photo_path_db, update_student_info_db, \
+#     delete_user_db, delete_student_db
 
 
 SECRET_KEY = "your-secret-key"
@@ -182,15 +182,15 @@ async def update_student_info(
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
-    if (not current_user.student) or (not current_user.moder):
+    if current_user.student or current_user.moder or current_user.teacher:
+        student = select_student_by_user_id_db(db=db, user_id=current_user.id)
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        update_student_info_db(db=db, student=student, student_data=student_data)
+        return {"message": "Student information updated successfully"}
+    else:
         raise HTTPException(status_code=403, detail="Only students can update their information")
-
-    student = select_student_by_user_id_db(db=db, user_id=current_user.id)
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    update_student_info_db(db=db, student=student, student_data=student_data)
-    return {"message": "Student information updated successfully"}
 
 
 @router.get("/students")
