@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
 
-from app.models import User, Subject
+from app.models import User
 from app.session import get_db
 from app.utils.token import get_current_user
 from app.utils.save_images import save_subject_avatar, save_subject_logo
@@ -126,24 +126,6 @@ async def get_subject_by_id(
         )
 
 
-# @router.get("/subject/teacher/{teacher_id}")
-# async def get_subject_by_teacher(
-#         teacher_id: int,
-#         db: Session = Depends(get_db),
-#         current_user: User = Depends(get_current_user)
-# ):
-#     if current_user.teacher or current_user.moder:
-#         subjects = select_subjects_by_teacher_db(db=db, teacher_id=teacher_id)
-#         if not subjects:
-#             raise HTTPException(status_code=404, detail="Subjects not found")
-#         return subjects
-#     else:
-#         raise HTTPException(
-#             status_code=403,
-#             detail="Permission denied. Only moders and teachers can view subject"
-#         )
-
-
 @router.get("/subject/course/{course_id}")
 async def get_subject_by_course(
         course_id: int,
@@ -196,4 +178,21 @@ async def delete_subject(
         raise HTTPException(
             status_code=403,
             detail="Permission denied. Only moders and teachers can delete subject"
+        )
+
+
+@router.post("/subject/{subject_id}/add-teacher")
+async def add_teacher_for_subject(
+        subject_id: int,
+        teacher_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    if current_user.teacher or current_user.moder:
+        set_teacher_for_subject_db(db=db, teacher_id=teacher_id, subject_id=subject_id)
+        return {"massage": "Added new teacher for subject"}
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Permission denied."
         )

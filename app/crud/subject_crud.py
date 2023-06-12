@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models import Subject
+from app.models import Subject, SubjectTeacherAssociation
 from app.schemas.subject_schemas import Subject as SubjectBase, SubjectCreate, SubjectUpdate
 
 
@@ -33,10 +33,6 @@ def select_all_subjects_db(db: Session):
 
 def select_subject_by_id_db(db: Session, subject_id: int):
     return db.query(Subject).filter(Subject.id == subject_id).first()
-
-
-# def select_subjects_by_teacher_db(db: Session, teacher_id: int):
-#     return db.query(Subject).filter(Subject.teacher_id == teacher_id).all()
 
 
 def select_subjects_by_specialization_db(db: Session, specialization_id: int):
@@ -74,3 +70,14 @@ def update_subject_info_db(db: Session, subject: Subject, subject_data: SubjectU
 def delete_subject_db(db: Session, subject: Subject):
     db.delete(subject)
     db.commit()
+
+
+def set_teacher_for_subject_db(db: Session, teacher_id: int, subject_id: int):
+    new_association = SubjectTeacherAssociation(
+        teacher_id=teacher_id,
+        subject_id=subject_id
+    )
+
+    db.add(new_association)
+    db.commit()
+    db.refresh(new_association)
