@@ -7,6 +7,8 @@ from app.routers.specialization_router import router as specialization_router
 from app.routers.group_router import router as group_router
 from app.routers.subject_router import router as subject_router
 from app.routers.module_router import router as module_router
+from app.routers.lesson_router import router as lesson_router
+
 
 app = FastAPI()
 app.include_router(user_router, prefix='/api/v1', tags=['User'])
@@ -14,6 +16,7 @@ app.include_router(specialization_router, prefix='/api/v1', tags=['Specializatio
 app.include_router(group_router, prefix='/api/v1', tags=['Group'])
 app.include_router(subject_router, prefix='/api/v1', tags=['Subject'])
 app.include_router(module_router, prefix='/api/v1', tags=['Module'])
+app.include_router(lesson_router, prefix='/api/v1', tags=['Lesson'])
 
 app.add_middleware(
     CORSMiddleware,

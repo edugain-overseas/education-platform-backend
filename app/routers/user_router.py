@@ -174,14 +174,15 @@ async def update_student_avatar(
     return {"message": "Avatar updated successfully"}
 
 
-@router.put("/student/update/info")
+@router.put("/student/{student_id}/update/")
 async def update_student_info(
+        student_id: int,
         student_data: StudentUpdate,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
     if current_user.student or current_user.moder or current_user.teacher:
-        student = select_student_by_user_id_db(db=db, user_id=current_user.id)
+        student = select_student_by_user_id_db(db=db, user_id=student_id)
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
 
