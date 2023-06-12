@@ -45,9 +45,9 @@ def select_students_by_specializations_id_db(db: Session, specialization_id: int
     return db.query(Student).filter(Student.specialization_id == specialization_id).all()
 
 
-def update_user_token_db(db: Session, user: User, token: str):
+def update_user_token_db(db: Session, user: User, token: str, exp_token: datetime):
     user.token = token
-    user.exp_token = datetime.utcnow() + timedelta(hours=24)
+    user.exp_token = exp_token
     user.is_active = True
     db.commit()
     db.refresh(user)
@@ -81,7 +81,15 @@ def create_new_user_db(db: Session, username: str, hashed_password: str, user_ty
     return new_user
 
 
-def create_new_student_db(db: Session, name: str, surname: str, lastname: str, phone: str, email: str, user_id: int):
+def create_new_student_db(
+        db: Session,
+        name: str,
+        surname: str,
+        lastname: str,
+        phone: str,
+        email: str,
+        user_id: int
+):
     new_student = Student(
         name=name,
         surname=surname,
@@ -97,12 +105,20 @@ def create_new_student_db(db: Session, name: str, surname: str, lastname: str, p
     return new_student
 
 
-def create_new_teacher_db(db: Session, name: str, surname: str, lastname: str, user_id: int):
+def create_new_teacher_db(
+        db: Session,
+        name: str,
+        surname: str,
+        lastname: str,
+        user_id: int,
+        email: str
+):
     new_teacher = Teacher(
         name=name,
         surname=surname,
         lastname=lastname,
-        user_id=user_id
+        user_id=user_id,
+        email=email
     )
 
     db.add(new_teacher)
@@ -125,12 +141,20 @@ def create_new_moder_db(db: Session, name: str, surname: str, lastname: str, use
     return new_moder
 
 
-def create_new_curator_db(db: Session, name: str, surname: str, lastname: str, user_id: int):
+def create_new_curator_db(
+        db: Session,
+        name: str,
+        surname: str,
+        lastname: str,
+        user_id: int,
+        email: str
+):
     new_curator = Curator(
         name=name,
         surname=surname,
         lastname=lastname,
-        user_id=user_id
+        user_id=user_id,
+        email=email
     )
 
     db.add(new_curator)

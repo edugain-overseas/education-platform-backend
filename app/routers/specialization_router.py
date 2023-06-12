@@ -7,9 +7,6 @@ from app.session import get_db
 from app.utils.token import get_current_user
 from app.schemas.specialization_schemas import SpecializationCreate, Specialization as SpecializationBase
 from app.crud.specialization_crud import *
-# from app.crud.specialization_crud import create_specialization_db, \
-#     update_specialization_title_db, delete_specialization_db, \
-#     select_specializations_db, select_specializations_by_course_id_db, select_specialization_by_id_db
 
 
 router = APIRouter()

@@ -5,14 +5,20 @@ from typing import Optional
 class SubjectCreate(BaseModel):
     title: str
     description: str
-    teacher_id: int
     specialization_id: int
     course_id: int
+    image_path: Optional[str] = None
+    logo_path: Optional[str] = None
+    is_published: Optional[bool] = None
+    quantity_lecture: Optional[int] = None
+    quantity_seminar: Optional[int] = None
+    quantity_test: Optional[int] = None
+    quantity_webinar: Optional[int] = None
+    score: Optional[int] = None
 
 
 class Subject(SubjectCreate):
     id: int
-    image_path: str
 
     class Config:
         orm_mode = True
@@ -21,6 +27,12 @@ class Subject(SubjectCreate):
 class SubjectUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    teacher_id: Optional[int] = None
     specialization_id: Optional[int] = None
     course_id: Optional[int] = None
+    is_published: Optional[bool] = None
+    quantity_lecture: Optional[int] = None
+    quantity_seminar: Optional[int] = None
+    quantity_test: Optional[int] = None
+    quantity_webinar: Optional[int] = None
+    score: Optional[int] = None
+

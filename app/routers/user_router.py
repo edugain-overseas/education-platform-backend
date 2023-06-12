@@ -10,13 +10,6 @@ from app.utils.password import hash_password, check_password
 from app.utils.token import create_access_token, get_current_user
 from app.utils.save_images import save_student_avatar
 from app.crud.user_crud import *
-# from app.crud.user_crud import \
-#     create_new_user_db, create_new_student_db, create_new_teacher_db, create_new_moder_db, create_new_curator_db, \
-#     select_user_type_id_db, select_user_by_username_db, select_user_by_id_db,\
-#     select_student_by_user_id_db, select_all_students_db, select_student_by_id_db, \
-#     select_students_by_course_id_db, select_students_by_group_id_db, select_students_by_specializations_id_db, \
-#     update_user_token_db, update_student_photo_path_db, update_student_info_db, \
-#     delete_user_db, delete_student_db
 
 
 SECRET_KEY = "your-secret-key"
@@ -24,7 +17,6 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
 router = APIRouter()
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/token')
 
 
 @router.post("/student/create")
@@ -70,7 +62,8 @@ async def create_teacher(data: TeacherCreate, db: Session = Depends(get_db)):
         name=data.name,
         surname=data.surname,
         lastname=data.lastname,
-        user_id=new_user.id
+        email=data.email,
+        user_id=new_user.id,
     )
 
     return {
@@ -88,7 +81,8 @@ async def create_moder(data: ModerCreate, db: Session = Depends(get_db)):
         db=db,
         username=data.username,
         hashed_password=hashed_password,
-        user_type_id=user_type.id)
+        user_type_id=user_type.id,
+    )
 
     new_moder = create_new_moder_db(
         db=db,
@@ -113,13 +107,15 @@ async def create_curator(data: CuratorCreate, db: Session = Depends(get_db)):
         db=db,
         username=data.username,
         hashed_password=hashed_password,
-        user_type_id=user_type.id)
+        user_type_id=user_type.id
+    )
 
     new_curator = create_new_curator_db(
         db=db,
         name=data.name,
         surname=data.surname,
         lastname=data.lastname,
+        email=data.email,
         user_id=new_user.id
     )
 
@@ -130,7 +126,7 @@ async def create_curator(data: CuratorCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/auth/token")
-async def login_with_jwt_token(
+async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)):
     user = select_user_by_username_db(db, form_data.username)
@@ -140,15 +136,16 @@ async def login_with_jwt_token(
         raise HTTPException(status_code=400, detail="Invalid username or password")
 
     access_token_expires = timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
-    access_token = create_access_token(
+    access_token, expire_token = create_access_token(
         data={"sub": user.username},
         expires_delta=access_token_expires)
 
-    update_user_token_db(db=db, user=user, token=access_token)
+    update_user_token_db(db=db, user=user, token=access_token, exp_token=expire_token)
 
     return {
         "access_token": access_token,
         "token_type": "bearer",
+        "expire_token": expire_token,
         "user": {
             "id": user.id,
             "username": user.username,
@@ -194,7 +191,10 @@ async def update_student_info(
 
 
 @router.get("/students")
-async def get_students(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_students(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
     students = select_all_students_db(db=db)
     return {"students": students}
 
@@ -211,7 +211,7 @@ async def get_student(
     return student
 
 
-@router.get("/students/course-{course_id}")
+@router.get("/students/course/{course_id}")
 async def get_students_in_course(
         course_id: int,
         db: Session = Depends(get_db),
@@ -223,7 +223,7 @@ async def get_students_in_course(
     return {"students": students}
 
 
-@router.get("/students/group-{group_id}")
+@router.get("/students/group/{group_id}")
 async def get_students_in_group(
         group_id: int,
         db: Session = Depends(get_db),
@@ -235,7 +235,7 @@ async def get_students_in_group(
     return {"students": students}
 
 
-@router.get("/students/specialization-{specialization_id}")
+@router.get("/students/specialization/{specialization_id}")
 async def get_students_in_specialization(
         specialization_id: int,
         db: Session = Depends(get_db),

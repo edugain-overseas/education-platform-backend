@@ -2,14 +2,14 @@ from enum import Enum as EnumType
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Boolean, Enum, Time
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Date, Text, Boolean, Enum, Time
 
 
 Base = declarative_base()
 
 
 class UserTypeOption(str, EnumType):
-    students = 'students'
+    student = 'student'
     moder = 'moder'
     teacher = 'teacher'
     curator = 'curator'
@@ -64,6 +64,7 @@ class Student(Base):
     qualification = Column(String)
     educational_program = Column(String)
     subject_area = Column(String)
+    group_leader = Column(Boolean, default=False, nullable=False, autoincrement=True)
 
     user_id = Column(Integer, ForeignKey('user.id'))
     specialization_id = Column(Integer, ForeignKey('specialization.id'))
@@ -87,11 +88,11 @@ class Teacher(Base):
     name = Column(String(64), nullable=False)
     surname = Column(String(64), nullable=False)
     lastname = Column(String(64), nullable=False)
-
+    email = Column(String(64), nullable=False)
     user_id = Column(Integer, ForeignKey('user.id'))
 
     user = relationship('User', back_populates='teacher')
-    subject = relationship('Subject', back_populates='teacher')
+    subjects = relationship('Subject', secondary='subject_teacher_association', back_populates='teachers')
     group = relationship('Group', back_populates='teacher')
     student_test_answer_comment = relationship('StudentTestAnswerComment', back_populates='teacher')
     student_homework_answer_comment = relationship('StudentHomeworkAnswerComment', back_populates='teacher')
@@ -104,7 +105,7 @@ class Curator(Base):
     name = Column(String(64), nullable=False)
     surname = Column(String(64), nullable=False)
     lastname = Column(String(64), nullable=False)
-
+    email = Column(String(64), nullable=False)
     user_id = Column(Integer, ForeignKey('user.id'))
 
     user = relationship('User', back_populates='curator')
@@ -136,6 +137,14 @@ class Course(Base):
     student = relationship('Student', back_populates='course')
 
 
+class Session(Base):
+    __tablename__ = "session"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_date = Column(Date)
+    passed = Column(Boolean)
+
+
 class Specialization(Base):
     __tablename__ = "specialization"
 
@@ -157,16 +166,79 @@ class Subject(Base):
     title = Column(String, nullable=False)
     description = Column(Text)
     image_path = Column(String)
-
-    teacher_id = Column(Integer, ForeignKey('teacher.id'))
+    logo_path = Column(String)
+    is_published = Column(Boolean)
+    quantity_lecture = Column(Integer)
+    quantity_seminar = Column(Integer)
+    quantity_test = Column(Integer)
+    quantity_webinar = Column(Integer)
+    score = Column(Integer)
     specialization_id = Column(Integer, ForeignKey('specialization.id'))
     course_id = Column(Integer, ForeignKey('course.id'))
 
-    teacher = relationship('Teacher', back_populates='subject')
+    teachers = relationship('Teacher', secondary='subject_teacher_association', back_populates='subjects')
     specialization = relationship('Specialization', back_populates='subject')
     course = relationship('Course', back_populates='subject')
     module = relationship('Module', back_populates='subject')
     lesson = relationship('Lesson', back_populates='subject')
+    subject_chat = relationship('SubjectChat', back_populates='subject')
+    subject_info = relationship('SubjectInfo', back_populates='subject')
+    subject_instruction = relationship('SubjectInstruction', back_populates='subject')
+
+
+class SubjectTeacherAssociation(Base):
+    __tablename__ = "subject_teacher_association"
+
+    subject_id = Column(Integer, ForeignKey('subject.id'), primary_key=True)
+    teacher_id = Column(Integer, ForeignKey('teacher.id'), primary_key=True)
+
+
+class SubjectInfo(Base):
+    __tablename__ = "subject_info"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+    header = Column(String, nullable=False)
+    text = Column(Text, nullable=False)
+    number = Column(Integer, nullable=False)
+
+    subject = relationship('Subject', back_populates='subject_info')
+    subject_info_item = relationship('SubjectInfoItem', back_populates='subject_info')
+
+
+class SubjectInfoItem(Base):
+    __tablename__ = "subject_info_item"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_info_id = Column(Integer, ForeignKey('subject_info.id'))
+    icon = Column(String)
+    icon_text = Column(String)
+
+    subject_info = relationship('SubjectInfo', back_populates='subject_info_item')
+
+
+class SubjectInstruction(Base):
+    __tablename__ = "subject_instruction"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+    number = Column(Integer, nullable=False)
+    header = Column(String, nullable=False)
+    text = Column(Text)
+    date = Column(Date)
+
+    subject = relationship('Subject', back_populates='subject_instruction')
+    subject_instruction_files = relationship('SubjectInstructionFiles', back_populates='subject_instruction')
+
+
+class SubjectInstructionFiles(Base):
+    __tablename__ = "subject_instruction_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_instruction_id = Column(Integer, ForeignKey('subject_instruction.id'))
+    file = Column(String, nullable=False)
+
+    subject_instruction = relationship('SubjectInstruction', back_populates='subject_instruction_files')
 
 
 class Group(Base):
@@ -428,12 +500,54 @@ class WebinarLesson(Base):
 class GroupChat(Base):
     __tablename__ = "group_chat"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     group_id = Column(Integer, ForeignKey('group.id'))
     message = Column(Text, nullable=False)
     datetime_message = Column(DateTime, autoincrement=True)
     fixed = Column(Boolean, default=False)
     sender_id = Column(Integer)
-    sender_type = Column(String)
+    sender_type = Column(Enum(UserTypeOption), nullable=False)
 
     group = relationship('Group', back_populates='group_chat')
+    group_chat_answer = relationship('GroupChatAnswer', back_populates='group_chat')
+
+
+class GroupChatAnswer(Base):
+    __tablename__ = "group_chat_answer"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(Text, nullable=False)
+    datetime_message = Column(DateTime, autoincrement=True)
+    group_chat_id = Column(Integer, ForeignKey('group_chat.id'))
+    sender_id = Column(Integer)
+    sender_type = Column(Enum(UserTypeOption), nullable=False)
+
+    group_chat = relationship('GroupChat', back_populates='group_chat_answer')
+
+
+class SubjectChat(Base):
+    __tablename__ = "subject_chat"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+    message = Column(Text, nullable=False)
+    datetime_message = Column(DateTime, autoincrement=True)
+    sender_id = Column(Integer)
+    sender_type = Column(Enum(UserTypeOption), nullable=False)
+
+    subject = relationship('Subject', back_populates='subject_chat')
+    subject_chat_answer = relationship('SubjectChatAnswer', back_populates='subject_chat')
+
+
+class SubjectChatAnswer(Base):
+    __tablename__ = "subject_chat_answer"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(Text, nullable=False)
+    datetime_message = Column(DateTime, autoincrement=True)
+    subject_chat_id = Column(Integer, ForeignKey('subject_chat.id'))
+    sender_id = Column(Integer)
+    sender_type = Column(Enum(UserTypeOption), nullable=False)
+
+    subject_chat = relationship('SubjectChat', back_populates='subject_chat_answer')
+

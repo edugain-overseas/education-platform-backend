@@ -5,7 +5,7 @@ from fastapi import UploadFile
 
 
 class UserType(str, Enum):
-    students = 'students'
+    student = 'student'
     moder = 'moder'
     teacher = 'teacher'
     curator = 'curator'
@@ -20,6 +20,7 @@ class StudentCreate(BaseModel):
     lastname: str
     phone: str
     email: str
+    group_leader: Optional[bool] = None
     qualification: Optional[str] = None
     educational_program: Optional[str] = None
     subject_area: Optional[str] = None
@@ -37,6 +38,7 @@ class StudentUpdate(BaseModel):
     qualification: Optional[str] = None
     educational_program: Optional[str] = None
     subject_area: Optional[str] = None
+    group_leader: Optional[bool] = None
     specialization_id: Optional[int] = None
     course_id: Optional[int] = None
     group_id: Optional[int] = None
@@ -52,6 +54,7 @@ class TeacherCreate(BaseModel):
     name: str
     surname: str
     lastname: str
+    email: str
 
     class Config:
         orm_mode = True
@@ -64,6 +67,7 @@ class CuratorCreate(BaseModel):
     name: str
     surname: str
     lastname: str
+    email: str
 
     class Config:
         orm_mode = True
