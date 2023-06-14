@@ -35,7 +35,7 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         username: str = payload.get("sub")
 
         if username is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication token")
+            raise HTTPException(status_code=401, detail="Invalid authentication token1")
         user = select_user_by_username_db(db, username)
 
         if user is None:
@@ -48,7 +48,9 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
             raise HTTPException(status_code=401, detail="Token expired")
 
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
+        user = db.query(User).filter(User.token == token).first()
+        delete_token_user(db=db, user=user)
+        raise HTTPException(status_code=401, detail="Token expired")
 
 
 def delete_token_user(db: Session, user: User):
