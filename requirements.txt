@@ -8,4 +8,8 @@ passlib==1.7.4
 PyJWT==2.7.0
 python-jose==3.3.0
 python-multipart==0.0.6
+python-dotenv==1.0.0
 websockets==11.0.3
+
+awscli==1.27.156
+boto3==1.26.156

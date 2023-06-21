@@ -1,14 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from datetime import datetime
 
 from app.session import get_db
 from app.utils.token import get_current_user
-from app.crud.group_chat_crud import *
 from app.crud.group_crud import select_group_by_name_db
+from app.crud.group_chat_crud import *
+
 
 router = APIRouter()
+
+
+class GroupChatAnswer(BaseModel):
+    message: str
+    datetime_message: datetime
+    sender_id: int
+    sender_type: str
 
 
 class ConnectionManager:
@@ -36,6 +45,40 @@ async def get_last_massage(
 ):
     messages = select_last_message_db(db=db, group_id=group_chat_id)
     return messages
+
+
+@router.get("/group_chat/{group_id}/last10")
+async def get_last_messages(
+        group_id: int,
+        db: Session = Depends(get_db)
+):
+    group_chat_messages = select_last_messages_db(db=db, group_id=group_id)
+    data_for_frontend = {"messages": []}
+
+    for message in group_chat_messages:
+        message_data = {
+            "message_id": message.id,
+            "message_text": message.message,
+            "message_datetime": message.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+            "group_id": message.group_id,
+            "sender_id": message.sender_id,
+            "sender_type": message.sender_type.value,
+            "answers": [],
+        }
+
+        for answer in message.group_chat_answer:
+            answer_data = {
+                "answer_id": answer.id,
+                "answer": answer.message,
+                "answer_datetime": answer.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+                "sender_id": answer.sender_id,
+                "sender_type": answer.sender_type.value,
+            }
+            message_data["answers"].append(answer_data)
+
+        data_for_frontend["messages"].append(message_data)
+
+    return data_for_frontend
 
 
 @router.websocket("/ws/{group_name}")
@@ -103,3 +146,22 @@ async def websocket_endpoint(
                 connections.remove(connection)
                 manager.remove_connection(connection)
                 break
+
+
+@router.post("/create/group-chat-answer/{message_id}")
+async def create_answer(
+        message_id: int,
+        answer: GroupChatAnswer,
+        db: Session = Depends(get_db)
+
+):
+    new_message = create_group_chat_answer(
+        db=db,
+        message=answer.message,
+        datetime_message=answer.datetime_message,
+        sender_id=answer.sender_id,
+        sender_type=answer.sender_type,
+        group_chat_id=message_id
+
+    )
+    return new_message

@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import desc
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models import User, UserType, Student, Curator, Moder, Group, GroupChat, GroupChatAnswer
 
@@ -72,6 +72,27 @@ def create_group_chat_massage(
     return new_message
 
 
+def create_group_chat_answer(
+        db: Session,
+        message: str,
+        datetime_message: datetime,
+        group_chat_id: int,
+        sender_id: int,
+        sender_type: str,
+):
+    new_answer = GroupChatAnswer(
+        message=message,
+        datetime_message=datetime_message,
+        group_chat_id=group_chat_id,
+        sender_id=sender_id,
+        sender_type=sender_type
+    )
+    db.add(new_answer)
+    db.commit()
+    db.refresh(new_answer)
+    return new_answer
+
+
 def select_last_message_db(db: Session, group_id: int, limit: int = None):
     if limit is None:
         messages = db.query(
@@ -83,3 +104,16 @@ def select_last_message_db(db: Session, group_id: int, limit: int = None):
             GroupChat).filter(GroupChat.group_id == group_id).order_by(
             desc(GroupChat.datetime_message)).limit(limit).all()
         return messages
+
+
+def select_last_messages_db(db: Session, group_id: int, limit: int = 10):
+    query = db.query(
+        GroupChat)\
+        .filter(GroupChat.group_id == group_id)\
+        .order_by(
+        desc(GroupChat.datetime_message))\
+        .limit(10)\
+        .options(joinedload(GroupChat.group_chat_answer))
+
+    group_chat_messages = query.all()
+    return group_chat_messages

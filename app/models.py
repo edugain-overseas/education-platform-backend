@@ -550,4 +550,3 @@ class SubjectChatAnswer(Base):
     sender_type = Column(Enum(UserTypeOption), nullable=False)
 
     subject_chat = relationship('SubjectChat', back_populates='subject_chat_answer')
-
