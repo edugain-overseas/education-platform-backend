@@ -1,4 +1,5 @@
 from fastapi import UploadFile
+from datetime import datetime
 import os
 
 
@@ -33,3 +34,16 @@ def save_subject_logo(photo: UploadFile, subject_title) -> str:
         f.write(photo.file.read())
 
     return file_path
+
+
+def save_lesson_file(file: UploadFile) -> tuple:
+    current_date = datetime.now().strftime("%d-%m-%Y")
+    folder = 'static/lesson-files/' + current_date
+    file_extension = os.path.splitext(file.filename)[1].lstrip(".")
+    file_path = os.path.join(folder, file.filename)
+    os.makedirs(folder, exist_ok=True)
+
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
+
+    return file_path, file_extension

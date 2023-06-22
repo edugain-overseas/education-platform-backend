@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.session import get_db
-from app.models import Lesson, User
+from app.models import User
 from app.utils.token import get_current_user
 from app.schemas.lesson_schemas import LessonUpdate, LessonBase
 from app.crud.lesson_crud import *
@@ -27,7 +27,7 @@ async def create_lesson(
         )
 
 
-@router.put("/lesson/lesson_id/update")
+@router.put("/lesson/{lesson_id}/update")
 async def update_lesson(
         lesson_id: int,
         lesson_data: LessonUpdate,
@@ -76,7 +76,7 @@ async def get_lesson_by_module(
     raise HTTPException(status_code=403, detail="Permission denied")
 
 
-@router.get("/lessons/subject/subject_id")
+@router.get("/lessons/subject/{subject_id}")
 async def get_lesson_by_subject(
         subject_id: int,
         db: Session = Depends(get_db),
@@ -87,7 +87,7 @@ async def get_lesson_by_subject(
     raise HTTPException(status_code=403, detail="Permission denied")
 
 
-@router.get("/lessons/type/type_id")
+@router.get("/lessons/type/{type_id}")
 async def get_lesson_by_type(
         type_id: int,
         db: Session = Depends(get_db),

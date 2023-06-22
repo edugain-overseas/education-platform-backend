@@ -17,12 +17,6 @@ class LessonBase(BaseModel):
 class Lesson(LessonBase):
     id: int
 
-    # @validator('lesson_type_id')
-    # def check_lesson_type(self, lesson_type_id):
-    #     if lesson_type_id > 5:
-    #         raise ValueError("Lesson type must be integer greater than 1 and less than 5")
-    #     return lesson_type_id
-
     class Config:
         orm_mode = True
 
