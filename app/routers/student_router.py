@@ -20,6 +20,7 @@ async def get_student_info(
         'student_id',
         'student_name',
         'student_surname',
+        'image_path',
         'student_educational_program',
         'student_qualification',
         'student_subject_area',
@@ -49,3 +50,17 @@ async def get_student_schedule(
             'teacher_surname': item[3]
         })
     return schedule_result_list
+
+
+# @router.get("/student/my/image")
+# async def get_student_photo(
+#         db: Session = Depends(get_db),
+#         current_user: User = Depends(get_current_user)
+# ):
+#     student = select_student_by_user_id_db(db=db, user_id=current_user.id)
+#     if student and student.image_path:
+#         image_path = f"static/images/student-avatar/{student.image_path}"
+#         return {"image_path": image_path}
+#     else:
+#         return {"error": "Image not found"}
+

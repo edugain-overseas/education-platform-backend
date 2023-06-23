@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 
 from app.models import \
     User, \
@@ -17,6 +18,7 @@ def get_student_info_db(db: Session, user_id: int):
         Student.id,
         Student.name,
         Student.surname,
+        Student.image_path,
         Student.educational_program,
         Student.qualification,
         Student.subject_area,
@@ -34,6 +36,9 @@ def get_student_info_db(db: Session, user_id: int):
 
 
 def get_student_schedule_db(db: Session, group_name: str):
+    today = datetime.now().date()
+    end_date = today + timedelta(days=10)
+
     student_schedule = db.query(
         Subject.title,
         Lesson.lesson_date,
@@ -47,6 +52,10 @@ def get_student_schedule_db(db: Session, group_name: str):
         Teacher, Teacher.id == SubjectTeacherAssociation.teacher_id
     ).join(
         Group, Group.specialization_id == Subject.specialization_id
-    ).filter(Group.group_name == group_name).all()
+    ).filter(
+        Group.group_name == group_name,
+        Lesson.lesson_date >= today,
+        Lesson.lesson_date <= end_date
+    ).all()
 
     return student_schedule

@@ -20,38 +20,45 @@ class GroupChatAnswer(BaseModel):
     sender_type: str
 
 
+# class ConnectionManager:
+#     def __init__(self):
+#         self.connections = []
+#
+#     def add_connection(self, connection):
+#         self.connections.append(connection)
+#
+#     def remove_connection(self, connection):
+#         self.connections.remove(connection)
+#
+#     async def send_message(self, message):
+#         for connection in self.connections:
+#             await connection["websocket"].send_json(message)
+
+
 class ConnectionManager:
     def __init__(self):
-        self.connections = []
+        self.connections = {}
 
-    def add_connection(self, connection):
-        self.connections.append(connection)
+    def add_connection(self, group_name: str, connection):
+        if group_name not in self.connections:
+            self.connections[group_name] = []
+        self.connections[group_name].append(connection)
 
-    def remove_connection(self, connection):
-        self.connections.remove(connection)
+    def remove_connection(self, group_name: str, connection):
+        if group_name in self.connections:
+            self.connections[group_name].remove(connection)
 
-    async def send_message(self, message):
-        for connection in self.connections:
-            await connection["websocket"].send_json(message)
+    async def send_message_to_group(self, group_name: str, message):
+        if group_name in self.connections:
+            connections = self.connections[group_name]
+            for connection in connections:
+                await connection["websocket"].send_json(message)
 
 
 manager = ConnectionManager()
 
 
-@router.get("/group_chat/{group_chat_id}/last")
-async def get_last_massage(
-        group_chat_id: int,
-        db: Session = Depends(get_db)
-):
-    messages = select_last_message_db(db=db, group_id=group_chat_id)
-    return messages
-
-
-@router.get("/group_chat/{group_id}/last10")
-async def get_last_messages(
-        group_id: int,
-        db: Session = Depends(get_db)
-):
+def get_last_messages(group_id: int, db: Session = Depends(get_db)):
     group_chat_messages = select_last_messages_db(db=db, group_id=group_id)
     data_for_frontend = {"messages": []}
 
@@ -81,6 +88,23 @@ async def get_last_messages(
     return data_for_frontend
 
 
+# def select_users(group_name: str, db: Session = Depends(get_db)):
+#     users = []
+#     students = select_student_in_group_db(db=db, group_name=group_name)
+#     for student in students:
+#         users.append(student)
+#
+#     moderators = select_moder_db(db=db)
+#     for moderator in moderators:
+#         users.append(moderator)
+#
+#     curators = select_curator_in_group_db(db=db, group_name=group_name)
+#     for curator in curators:
+#         users.append(curator)
+#
+#     return users
+
+
 @router.websocket("/ws/{group_name}")
 async def websocket_endpoint(
         group_name: str,
@@ -89,45 +113,37 @@ async def websocket_endpoint(
 ):
     await websocket.accept()
 
-    # Собираем всех пользователей
-    users = []
-    students = select_student_in_group_db(db=db, group_name=group_name)
-    for student in students:
-        users.append(student)
+    group_id = select_group_by_name_db(db=db, group_name=group_name)
+    connection = {
+        "websocket": websocket
+    }
+    manager.add_connection(group_name, connection)
 
-    moderators = select_moder_db(db=db)
-    for moderator in moderators:
-        users.append(moderator)
+    # connections = []
 
-    curators = select_curator_in_group_db(db=db, group_name=group_name)
-    for curator in curators:
-        users.append(curator)
-
-    # Создаем массив соединений для пользователей группы
-    connections = []
-
-    for user in users:
-        if user[1] is True:
-            connection = {
-                "user_id": user[0],
-                "websocket": websocket
-            }
-            connections.append(connection)
-            manager.add_connection(connection)
+    # for user in users:
+    #     if user[1] is True:
+    #         connection = {
+    #             "user_id": user[0],
+    #             "websocket": websocket
+    #         }
+    #         connections.append(connection)
+    #         manager.add_connection(connection)
 
     try:
+        last_messages = get_last_messages(db=db, group_id=group_id[0])
+        await websocket.send_json(last_messages)
+        print(manager.connections)
+
         while True:
             data = await websocket.receive_json()
             message = data.get("message")
-            message_date = data.get("datetime_message")
             sender_id = data.get("sender_id")
             sender_type = data.get("sender_type")
             fixed = data.get("fixed")
-            group_id = select_group_by_name_db(db=db, group_name=group_name)
+            datetime_message = datetime.utcnow()
 
-            datetime_message = datetime.strptime(message_date, "%Y-%m-%d %H:%M:%S")
-
-            new_message = create_group_chat_massage(
+            create_group_chat_massage(
                 db=db,
                 message=message,
                 datetime_message=datetime_message,
@@ -137,15 +153,11 @@ async def websocket_endpoint(
                 group_id=group_id[0]
             )
 
-            await manager.send_message(message)
+            last_messages = get_last_messages(db=db, group_id=group_id[0])
+            await manager.send_message_to_group(group_name, last_messages)
 
     except WebSocketDisconnect:
-        # Удаляем соединение пользователя при отключении
-        for connection in connections:
-            if connection["websocket"] == websocket:
-                connections.remove(connection)
-                manager.remove_connection(connection)
-                break
+        manager.remove_connection(group_name=group_name, connection=connection)
 
 
 @router.post("/create/group-chat-answer/{message_id}")

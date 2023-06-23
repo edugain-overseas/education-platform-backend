@@ -1,6 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, status, HTTPException, Depends
-from fastapi.responses import FileResponse
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
@@ -171,7 +170,10 @@ async def update_student_avatar(
 
     file_path = save_student_avatar(file, student.name, student.surname)
     update_student_photo_path_db(db=db, student=student, new_path=file_path)
-    return {"message": "Avatar updated successfully"}
+    return {
+        "message": "Avatar updated successfully",
+        "photo_path": file_path
+    }
 
 
 @router.put("/student/{student_id}/update/")
@@ -246,19 +248,6 @@ async def get_students_in_specialization(
     if not students:
         raise HTTPException(status_code=404, detail="Students not found")
     return {"students": students}
-
-
-@router.get("/student/{student_id}/image")
-async def get_student_photo(
-        student_id: int,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
-):
-    student = select_student_by_id_db(db=db, student_id=student_id)
-    if student and student.image_path:
-        return FileResponse(student.image_path)
-    else:
-        return {"error": "Image not found"}
 
 
 @router.delete("/student/{student_id}")

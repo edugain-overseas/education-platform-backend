@@ -2,7 +2,8 @@ from datetime import datetime
 from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import User, UserType, Student, Curator, Moder, Group, GroupChat, GroupChatAnswer
+from app.models import User, UserType, UserTypeOption, \
+    Student, Curator, Moder, Group, GroupChat, GroupChatAnswer
 
 
 def select_student_in_group_db(db: Session, group_name: str):
@@ -54,7 +55,7 @@ def create_group_chat_massage(
         datetime_message: datetime,
         fixed: bool,
         sender_id: int,
-        sender_type: str,
+        sender_type: UserTypeOption,
         group_id: int
 ):
     new_message = GroupChat(
