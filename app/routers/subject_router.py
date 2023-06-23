@@ -1,14 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
-from typing import List
 
+from app.crud.subject_crud import (create_new_subject_db, delete_subject_db,
+                                   select_all_subjects_db,
+                                   select_subject_by_id_db,
+                                   select_subjects_by_course_db,
+                                   select_subjects_by_specialization_db,
+                                   set_teacher_for_subject_db,
+                                   update_subject_image_path_db,
+                                   update_subject_info_db,
+                                   update_subject_logo_path_db)
 from app.models import User
-from app.session import get_db
-from app.utils.token import get_current_user
-from app.utils.save_images import save_subject_avatar, save_subject_logo
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
-from app.crud.subject_crud import *
-
+from app.session import get_db
+from app.utils.save_images import save_subject_avatar, save_subject_logo
+from app.utils.token import get_current_user
 
 router = APIRouter()
 
@@ -71,7 +77,7 @@ async def update_subject_photo(
 
 
 @router.put("/subject/update/{subject_id}/logo")
-async def update_subject_photo(
+async def update_subject_logo(
         subject_id: int,
         file: UploadFile = File(...),
         db: Session = Depends(get_db),

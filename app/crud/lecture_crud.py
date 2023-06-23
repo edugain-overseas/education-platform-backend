@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from fastapi import UploadFile
 
-from app.models import OrdinaryLesson, OrdinaryLessonAttribute, OrdinaryLessonValue
+from app.models import (Lesson, OrdinaryLesson, OrdinaryLessonAttribute,
+                        OrdinaryLessonValue)
 from app.schemas.lecture_schemas import LectureTextCreate
 
 
@@ -51,3 +51,19 @@ def set_file_attr_for_lecture_db(db: Session, file_path: str, name: str, lecture
     db.add(value_model)
     db.commit()
 
+
+def get_lecture_info_db(db: Session, lesson_id: int):
+    result = db.query(
+        Lesson.title,
+        Lesson.description,
+        Lesson.lesson_date,
+        Lesson.number,
+        OrdinaryLessonAttribute.attribute_name,
+        OrdinaryLessonValue.value
+    )\
+        .join(OrdinaryLesson, OrdinaryLesson.lesson_id == Lesson.id)\
+        .join(OrdinaryLessonAttribute, OrdinaryLessonAttribute.ordinary_lesson_id == OrdinaryLesson.id)\
+        .join(OrdinaryLessonValue, OrdinaryLessonValue.ordinary_lesson_attribute_id == OrdinaryLessonAttribute.id)\
+        .filter(Lesson.id == lesson_id).all()
+
+    return result

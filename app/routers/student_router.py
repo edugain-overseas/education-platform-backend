@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.session import get_db
-from app.utils.token import get_current_user
 from app.crud.student_crud import get_student_info_db, get_student_schedule_db
 from app.models import User
+from app.session import get_db
+from app.utils.token import get_current_user
 
 router = APIRouter()
 
@@ -63,4 +63,3 @@ async def get_student_schedule(
 #         return {"image_path": image_path}
 #     else:
 #         return {"error": "Image not found"}
-

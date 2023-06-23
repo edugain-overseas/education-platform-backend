@@ -13,3 +13,6 @@ websockets==11.0.3
 
 awscli==1.27.156
 boto3==1.26.156
+
+flake8==6.0.0
+isort==5.12.0

@@ -1,9 +1,10 @@
-import boto3
-from fastapi import UploadFile
 from io import BytesIO
 
-from app.setting import AWS_ACCESS_KEY_ID, AWS_ACCESS_SECRET_KEY, AWS_BUCKET_NAME
+import boto3
+from fastapi import UploadFile
 
+from app.setting import (AWS_ACCESS_KEY_ID, AWS_ACCESS_SECRET_KEY,
+                         AWS_BUCKET_NAME)
 
 STUDENT_IMAGE_FOLDER = 'images/student_profile_photo/'
 SUBJECT_AVATAR_FOLDER = 'images/subject_main_photo/'
@@ -35,5 +36,3 @@ def save_images(file: UploadFile):
     )
 
     return SUBJECT_LOGO_FOLDER + file.filename
-
-

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
+
 from app.models import Subject, SubjectTeacherAssociation
-from app.schemas.subject_schemas import Subject as SubjectBase, SubjectCreate, SubjectUpdate
+from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
 def create_new_subject_db(db: Session, subject: SubjectCreate):

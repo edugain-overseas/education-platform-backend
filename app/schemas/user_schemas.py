@@ -1,7 +1,7 @@
-from typing import Optional
-from pydantic import BaseModel
 from enum import Enum
-from fastapi import UploadFile
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class UserType(str, Enum):

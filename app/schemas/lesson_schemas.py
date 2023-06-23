@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class LessonBase(BaseModel):
@@ -30,4 +31,3 @@ class LessonUpdate(BaseModel):
     lesson_type_id: Optional[int] = None
     module_id: Optional[int] = None
     subject_id: Optional[int] = None
-

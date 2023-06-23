@@ -1,16 +1,31 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 from datetime import timedelta
 
-from app.models import User
-from app.session import get_db
-from app.schemas.user_schemas import StudentCreate, StudentUpdate, TeacherCreate, ModerCreate, CuratorCreate
-from app.utils.password import hash_password, check_password
-from app.utils.token import create_access_token, get_current_user
-from app.utils.save_images import save_student_avatar
-from app.crud.user_crud import *
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
+from app.crud.user_crud import (create_new_curator_db, create_new_moder_db,
+                                create_new_student_db, create_new_teacher_db,
+                                create_new_user_db, delete_student_db,
+                                delete_user_db, select_all_students_db,
+                                select_student_by_id_db,
+                                select_student_by_user_id_db,
+                                select_students_by_course_id_db,
+                                select_students_by_group_id_db,
+                                select_students_by_specializations_id_db,
+                                select_user_by_id_db,
+                                select_user_by_username_db,
+                                select_user_type_id_db, update_student_info_db,
+                                update_student_photo_path_db,
+                                update_user_token_db)
+from app.models import User
+from app.schemas.user_schemas import (CuratorCreate, ModerCreate,
+                                      StudentCreate, StudentUpdate,
+                                      TeacherCreate)
+from app.session import get_db
+from app.utils.password import check_password, hash_password
+from app.utils.save_images import save_student_avatar
+from app.utils.token import create_access_token, get_current_user
 
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"

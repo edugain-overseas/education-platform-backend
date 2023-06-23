@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import Optional
+
+from pydantic import BaseModel
 
 
 class SubjectCreate(BaseModel):
@@ -35,4 +36,3 @@ class SubjectUpdate(BaseModel):
     quantity_test: Optional[int] = None
     quantity_webinar: Optional[int] = None
     score: Optional[int] = None
-

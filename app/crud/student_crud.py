@@ -1,16 +1,9 @@
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
-from app.models import \
-    User, \
-    Student, \
-    Teacher, \
-    Group, \
-    Course, \
-    Lesson, \
-    Subject, \
-    SubjectTeacherAssociation, \
-    Specialization
+from sqlalchemy.orm import Session
+
+from app.models import (Course, Group, Lesson, Student, Subject,
+                        SubjectTeacherAssociation, Teacher, User)
 
 
 def get_student_info_db(db: Session, user_id: int):

@@ -1,9 +1,10 @@
 from datetime import datetime
+
 from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import User, UserType, UserTypeOption, \
-    Student, Curator, Moder, Group, GroupChat, GroupChatAnswer
+from app.models import (Curator, Group, GroupChat, GroupChatAnswer, Moder,
+                        Student, User, UserType, UserTypeOption)
 
 
 def select_student_in_group_db(db: Session, group_name: str):

@@ -1,14 +1,15 @@
-from jose import JWTError
-from jose.jwt import decode as jwt_decode, encode as jwt_encode
 from datetime import datetime, timedelta
+
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+from jose.jwt import decode as jwt_decode
+from jose.jwt import encode as jwt_encode
 from sqlalchemy.orm import Session
 
 from app.crud.user_crud import select_user_by_username_db
-from app.session import get_db
 from app.models import User
-
+from app.session import get_db
 
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"

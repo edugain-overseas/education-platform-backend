@@ -1,6 +1,7 @@
-from fastapi import UploadFile
-from datetime import datetime
 import os
+from datetime import datetime
+
+from fastapi import UploadFile
 
 
 def save_student_avatar(photo: UploadFile, name, surname) -> str:

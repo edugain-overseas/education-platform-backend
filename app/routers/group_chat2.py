@@ -1,10 +1,7 @@
-import logging
 import json
 from collections import defaultdict
 
-
-from fastapi import APIRouter, WebSocket, Depends, WebSocketDisconnect
-
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 router = APIRouter()
 

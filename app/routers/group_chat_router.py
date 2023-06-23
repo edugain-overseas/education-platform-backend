@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.websockets import WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
 from datetime import datetime
 
-from app.session import get_db
-from app.utils.token import get_current_user
-from app.crud.group_crud import select_group_by_name_db
-from app.crud.group_chat_crud import *
+from fastapi import APIRouter, Depends
+from fastapi.websockets import WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from app.crud.group_chat_crud import (create_group_chat_answer,
+                                      create_group_chat_massage,
+                                      select_last_messages_db)
+from app.crud.group_crud import select_group_by_name_db
+from app.session import get_db
 
 router = APIRouter()
 

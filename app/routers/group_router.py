@@ -1,13 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from typing import List
 
-from app.session import get_db
-from app.models import Group, User
-from app.schemas.group_schemas import Group as GroupBase, GroupCreate, GroupUpdate
-from app.utils.token import get_current_user
-from app.crud.group_crud import *
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
+from app.crud.group_crud import (create_group_db, select_group_by_id_db,
+                                 select_groups_by_curator_id_db,
+                                 select_groups_by_specialization_id_db,
+                                 select_groups_by_teacher_id_db,
+                                 select_groups_db, update_group_db)
+from app.models import User
+from app.schemas.group_schemas import Group as GroupBase
+from app.schemas.group_schemas import GroupCreate, GroupUpdate
+from app.session import get_db
+from app.utils.token import get_current_user
 
 router = APIRouter()
 

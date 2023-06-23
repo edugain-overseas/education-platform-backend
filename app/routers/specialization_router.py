@@ -1,13 +1,18 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
 from typing import List
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.crud.specialization_crud import (
+    create_specialization_db, delete_specialization_db,
+    select_specialization_by_id_db, select_specializations_by_course_id_db,
+    select_specializations_db, update_specialization_title_db)
 from app.models import User
+from app.schemas.specialization_schemas import \
+    Specialization as SpecializationBase
+from app.schemas.specialization_schemas import SpecializationCreate
 from app.session import get_db
 from app.utils.token import get_current_user
-from app.schemas.specialization_schemas import SpecializationCreate, Specialization as SpecializationBase
-from app.crud.specialization_crud import *
-
 
 router = APIRouter()
 

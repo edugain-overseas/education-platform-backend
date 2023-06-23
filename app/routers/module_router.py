@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.crud.module_crud import (create_module_db, delete_module_db,
+                                  select_module_by_id_db,
+                                  select_modules_by_subject_id_db,
+                                  select_modules_db, update_module_db)
+from app.models import User
+from app.schemas.module_schemas import CreateModule, UpdateModule
 from app.session import get_db
-from app.models import User, Module
-from app.schemas.module_schemas import CreateModule, UpdateModule, Module as Module_Base
 from app.utils.token import get_current_user
-from app.crud.module_crud import *
-
 
 router = APIRouter()
 

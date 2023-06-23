@@ -1,6 +1,8 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from app.models import User, UserType, Student, Teacher, Moder, Curator
+
+from app.models import Curator, Moder, Student, Teacher, User, UserType
 from app.schemas.user_schemas import StudentUpdate
 
 
