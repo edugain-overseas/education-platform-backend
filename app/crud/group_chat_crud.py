@@ -119,3 +119,13 @@ def select_last_messages_db(db: Session, group_id: int, limit: int = 10):
 
     group_chat_messages = query.all()
     return group_chat_messages
+
+
+def select_student_name_and_photo_db(db: Session, user_id: int):
+    return db.query(Student.user_id, Student.name, Student.surname, Student.image_path).\
+        filter(Student.user_id == user_id).first()
+
+
+def select_curator_name_db(db: Session, user_id):
+    return db.query(Curator.user_id, Curator.name, Curator.surname)\
+        .filter(Curator.user_id == user_id).first()

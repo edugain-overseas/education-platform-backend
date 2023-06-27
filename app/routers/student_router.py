@@ -1,9 +1,20 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.crud.student_crud import get_student_info_db, get_student_schedule_db
+from app.crud.user_crud import (delete_student_db, delete_user_db,
+                                select_all_students_db,
+                                select_student_by_id_db,
+                                select_student_by_user_id_db,
+                                select_students_by_course_id_db,
+                                select_students_by_group_id_db,
+                                select_students_by_specializations_id_db,
+                                select_user_by_id_db, update_student_info_db,
+                                update_student_photo_path_db)
 from app.models import User
+from app.schemas.user_schemas import StudentUpdate
 from app.session import get_db
+from app.utils.save_images import save_student_avatar
 from app.utils.token import get_current_user
 
 router = APIRouter()
@@ -50,6 +61,118 @@ async def get_student_schedule(
             'teacher_surname': item[3]
         })
     return schedule_result_list
+
+
+@router.put("/student/update/photo")
+async def update_student_avatar(
+        file: UploadFile = File(...),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    if not current_user.student:
+        raise HTTPException(status_code=403, detail="Only students can update their avatars")
+
+    student = select_student_by_user_id_db(db=db, user_id=current_user.id)
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    file_path = save_student_avatar(file, student.name, student.surname)
+    update_student_photo_path_db(db=db, student=student, new_path=file_path)
+    return {
+        "message": "Avatar updated successfully",
+        "photo_path": file_path
+    }
+
+
+@router.put("/student/{student_id}/update/")
+async def update_student_info(
+        student_id: int,
+        student_data: StudentUpdate,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    if current_user.student or current_user.moder or current_user.teacher:
+        student = select_student_by_user_id_db(db=db, user_id=student_id)
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        update_student_info_db(db=db, student=student, student_data=student_data)
+        return {"message": "Student information updated successfully"}
+    else:
+        raise HTTPException(status_code=403, detail="Only students can update their information")
+
+
+@router.get("/students")
+async def get_students(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    students = select_all_students_db(db=db)
+    return {"students": students}
+
+
+@router.get("/student/{student_id}")
+async def get_student(
+        student_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    student = select_student_by_id_db(db=db, student_id=student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+
+@router.get("/students/course/{course_id}")
+async def get_students_in_course(
+        course_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    students = select_students_by_course_id_db(db=db, course_id=course_id)
+    if not students:
+        raise HTTPException(status_code=404, detail="Students not found")
+    return {"students": students}
+
+
+@router.get("/students/group/{group_id}")
+async def get_students_in_group(
+        group_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    students = select_students_by_group_id_db(db=db, group_id=group_id)
+    if not students:
+        raise HTTPException(status_code=404, detail="Students not found")
+    return {"students": students}
+
+
+@router.get("/students/specialization/{specialization_id}")
+async def get_students_in_specialization(
+        specialization_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)):
+    students = select_students_by_specializations_id_db(db=db, specialization_id=specialization_id)
+    if not students:
+        raise HTTPException(status_code=404, detail="Students not found")
+    return {"students": students}
+
+
+@router.delete("/student/{student_id}")
+async def delete_student(
+        student_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    student = select_student_by_id_db(db=db, student_id=student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    user = select_user_by_id_db(db=db, user_id=student.user_id)
+
+    delete_student_db(db=db, student=student)
+    delete_user_db(db=db, user=user)
+    return {"massage": "Student has been successful deleted"}
 
 
 # @router.get("/student/my/image")
