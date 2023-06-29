@@ -12,7 +12,10 @@ def select_student_in_group_db(db: Session, group_name: str):
         User.id,
         User.is_active,
         User.username,
-        UserType.type
+        UserType.type,
+        Student.name,
+        Student.surname,
+        Student.image_path
     ).select_from(Group).join(
         Student, Student.group_id == Group.id).join(
         User, User.id == Student.user_id).join(
@@ -40,7 +43,9 @@ def select_curator_in_group_db(db: Session, group_name: str):
         User.id,
         User.is_active,
         User.username,
-        UserType.type
+        UserType.type,
+        Curator.name,
+        Curator.surname
     ).select_from(Group).join(
         Curator, Curator.id == Group.curator_id).join(
         User, User.id == Curator.user_id).join(
@@ -129,3 +134,34 @@ def select_student_name_and_photo_db(db: Session, user_id: int):
 def select_curator_name_db(db: Session, user_id):
     return db.query(Curator.user_id, Curator.name, Curator.surname)\
         .filter(Curator.user_id == user_id).first()
+
+
+def get_last_messages_db(group_id: int, db: Session):
+    group_chat_messages = select_last_messages_db(db=db, group_id=group_id)
+    messages_data = {"messages": []}
+
+    for message in group_chat_messages:
+        message_data = {
+            "message_id": message.id,
+            "message_text": message.message,
+            "message_fixed": message.fixed,
+            "message_datetime": message.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+            "group_id": message.group_id,
+            "sender_id": message.sender_id,
+            "sender_type": message.sender_type.value,
+            "answers": [],
+        }
+
+        for answer in message.group_chat_answer:
+            answer_data = {
+                "answer_id": answer.id,
+                "answer": answer.message,
+                "answer_datetime": answer.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+                "sender_id": answer.sender_id,
+                "sender_type": answer.sender_type.value,
+            }
+            message_data["answers"].append(answer_data)
+
+        messages_data["messages"].append(message_data)
+
+    return messages_data
