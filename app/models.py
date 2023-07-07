@@ -23,6 +23,12 @@ class LessonTypeOption(str, EnumType):
     module_test = 'module_test'
 
 
+class MessageTypeOption(str, EnumType):
+    alone = 'alone'
+    everyone = 'everyone'
+    several = 'several'
+
+
 class UserType(Base):
     __tablename__ = "user_type"
 
@@ -49,6 +55,9 @@ class User(Base):
     teacher = relationship('Teacher', back_populates='user')
     curator = relationship('Curator', back_populates='user')
     moder = relationship('Moder', back_populates='user')
+    chat_message = relationship('GroupChat', back_populates='user')
+    chat_answer = relationship('GroupChatAnswer', back_populates='user')
+    recipient = relationship('MessageRecipient', back_populates='user')
 
 
 class Student(Base):
@@ -64,6 +73,7 @@ class Student(Base):
     qualification = Column(String)
     educational_program = Column(String)
     subject_area = Column(String)
+    field_of_study = Column(String)
     group_leader = Column(Boolean, default=False, nullable=False, autoincrement=True)
 
     user_id = Column(Integer, ForeignKey('user.id'))
@@ -89,11 +99,13 @@ class Teacher(Base):
     surname = Column(String(64), nullable=False)
     lastname = Column(String(64), nullable=False)
     email = Column(String(64), nullable=False)
+    image_path = Column(String)
     user_id = Column(Integer, ForeignKey('user.id'))
 
     user = relationship('User', back_populates='teacher')
     subjects = relationship('Subject', secondary='subject_teacher_association', back_populates='teachers')
-    group = relationship('Group', back_populates='teacher')
+    groups = relationship('Group', secondary='group_teacher_association', back_populates='teachers')
+    lesson = relationship('Lesson', back_populates='teacher')
     student_test_answer_comment = relationship('StudentTestAnswerComment', back_populates='teacher')
     student_homework_answer_comment = relationship('StudentHomeworkAnswerComment', back_populates='teacher')
 
@@ -106,6 +118,7 @@ class Curator(Base):
     surname = Column(String(64), nullable=False)
     lastname = Column(String(64), nullable=False)
     email = Column(String(64), nullable=False)
+    image_path = Column(String)
     user_id = Column(Integer, ForeignKey('user.id'))
 
     user = relationship('User', back_populates='curator')
@@ -173,6 +186,7 @@ class Subject(Base):
     quantity_test = Column(Integer)
     quantity_webinar = Column(Integer)
     score = Column(Integer)
+
     specialization_id = Column(Integer, ForeignKey('specialization.id'))
     course_id = Column(Integer, ForeignKey('course.id'))
 
@@ -246,16 +260,21 @@ class Group(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     group_name = Column(String, nullable=False)
-
-    teacher_id = Column(Integer, ForeignKey('teacher.id'))
     curator_id = Column(Integer, ForeignKey('curator.id'))
     specialization_id = Column(Integer, ForeignKey('specialization.id'))
 
-    teacher = relationship('Teacher', back_populates='group')
+    teachers = relationship('Teacher', secondary='group_teacher_association', back_populates='groups')
     curator = relationship('Curator', back_populates='group')
     specialization = relationship('Specialization', back_populates='group')
     student = relationship('Student', back_populates='group')
     group_chat = relationship('GroupChat', back_populates='group')
+
+
+class GroupTeacherAssociation(Base):
+    __tablename__ = "group_teacher_association"
+
+    group_id = Column(Integer, ForeignKey('group.id'), primary_key=True)
+    teacher_id = Column(Integer, ForeignKey('teacher.id'), primary_key=True)
 
 
 class Module(Base):
@@ -290,14 +309,17 @@ class Lesson(Base):
     description = Column(Text)
     is_published = Column(Boolean, default=False)
     lesson_date = Column(DateTime)
+    lesson_end = Column(Time)
 
     lesson_type_id = Column(Integer, ForeignKey('lesson_type.id'))
     module_id = Column(Integer, ForeignKey('module.id'))
     subject_id = Column(Integer, ForeignKey('subject.id'))
+    teacher_id = Column(Integer, ForeignKey('teacher.id'))
 
     lesson_type = relationship('LessonType', back_populates='lesson')
     module = relationship('Module', back_populates='lesson')
     subject = relationship('Subject', back_populates='lesson')
+    teacher = relationship('Teacher', back_populates='lesson')
     lesson_missing = relationship('LessonMissing', back_populates='lesson')
     lesson_score = relationship('LessonScore', back_populates='lesson')
 
@@ -350,6 +372,8 @@ class OrdinaryLessonAttribute(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     attribute_name = Column(String)
+    attr_number = Column(Integer)
+    download_allowed = Column(Boolean)
 
     ordinary_lesson_id = Column(Integer, ForeignKey('ordinary_lesson.id'))
 
@@ -497,19 +521,35 @@ class WebinarLesson(Base):
     lesson = relationship('Lesson', uselist=False, back_populates='webinar_lesson')
 
 
+class GroupChatAttachFile(Base):
+    __tablename__ = "group_chat_attach_file"
+
+    id = Column(Integer, primary_key=True, index=True)
+    file_path = Column(String)
+    chat_message = Column(Integer, ForeignKey('group_chat.id'))
+    chat_answer = Column(Integer, ForeignKey('group_chat_answer.id'))
+
+    group_chat_message = relationship('GroupChat', back_populates='attach_file')
+    group_chat_answer = relationship('GroupChatAnswer', back_populates='attach_file')
+
+
 class GroupChat(Base):
     __tablename__ = "group_chat"
 
     id = Column(Integer, primary_key=True, index=True)
-    group_id = Column(Integer, ForeignKey('group.id'))
     message = Column(Text, nullable=False)
     datetime_message = Column(DateTime, autoincrement=True)
     fixed = Column(Boolean, default=False)
-    sender_id = Column(Integer)
     sender_type = Column(Enum(UserTypeOption), nullable=False)
+    sender_id = Column(Integer, ForeignKey('user.id'))
+    group_id = Column(Integer, ForeignKey('group.id'))
+    message_type = Column(Enum(MessageTypeOption), nullable=False)
 
+    user = relationship('User', back_populates='chat_message')
     group = relationship('Group', back_populates='group_chat')
     group_chat_answer = relationship('GroupChatAnswer', back_populates='group_chat')
+    attach_file = relationship('GroupChatAttachFile', back_populates='group_chat_message')
+    recipient = relationship('MessageRecipient', back_populates='group_chat_message')
 
 
 class GroupChatAnswer(Base):
@@ -518,22 +558,36 @@ class GroupChatAnswer(Base):
     id = Column(Integer, primary_key=True, index=True)
     message = Column(Text, nullable=False)
     datetime_message = Column(DateTime, autoincrement=True)
-    group_chat_id = Column(Integer, ForeignKey('group_chat.id'))
-    sender_id = Column(Integer)
     sender_type = Column(Enum(UserTypeOption), nullable=False)
+    sender_id = Column(Integer, ForeignKey('user.id'))
+    group_chat_id = Column(Integer, ForeignKey('group_chat.id'))
 
+    user = relationship('User', back_populates='chat_answer')
     group_chat = relationship('GroupChat', back_populates='group_chat_answer')
+    attach_file = relationship('GroupChatAttachFile', back_populates='group_chat_answer')
+
+
+class MessageRecipient(Base):
+    __tablename__ = "message_recipient"
+
+    id = Column(Integer, primary_key=True, index=True)
+    is_viewed = Column(Boolean, default=False, autoincrement=True)
+    group_chat_id = Column(Integer, ForeignKey('group_chat.id'))
+    recipient_id = Column(Integer, ForeignKey('user.id'))
+
+    user = relationship('User', back_populates='recipient')
+    group_chat_message = relationship('GroupChat', back_populates='recipient')
 
 
 class SubjectChat(Base):
     __tablename__ = "subject_chat"
 
     id = Column(Integer, primary_key=True, index=True)
-    subject_id = Column(Integer, ForeignKey('subject.id'))
     message = Column(Text, nullable=False)
     datetime_message = Column(DateTime, autoincrement=True)
     sender_id = Column(Integer)
     sender_type = Column(Enum(UserTypeOption), nullable=False)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
 
     subject = relationship('Subject', back_populates='subject_chat')
     subject_chat_answer = relationship('SubjectChatAnswer', back_populates='subject_chat')

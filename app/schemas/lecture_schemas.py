@@ -6,6 +6,8 @@ from pydantic import BaseModel
 class AttributeTextBase(BaseModel):
     name: str
     value: str
+    number: int
+    download: bool
 
 
 class LectureTextBase(BaseModel):

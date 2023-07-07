@@ -12,9 +12,11 @@ def create_new_lesson_db(db: Session, lesson_data: LessonSchemas):
         description=lesson_data.description,
         is_published=lesson_data.is_published,
         lesson_date=lesson_data.lesson_date,
+        lesson_end=lesson_data.lesson_end,
         lesson_type_id=lesson_data.lesson_type_id,
         module_id=lesson_data.module_id,
-        subject_id=lesson_data.subject_id
+        subject_id=lesson_data.subject_id,
+        teacher_id=lesson_data.teacher_id
     )
 
     db.add(new_lesson)

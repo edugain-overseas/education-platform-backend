@@ -24,6 +24,7 @@ class StudentCreate(BaseModel):
     qualification: Optional[str] = None
     educational_program: Optional[str] = None
     subject_area: Optional[str] = None
+    field_of_study: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -38,6 +39,7 @@ class StudentUpdate(BaseModel):
     qualification: Optional[str] = None
     educational_program: Optional[str] = None
     subject_area: Optional[str] = None
+    field_of_study: Optional[str] = None
     group_leader: Optional[bool] = None
     specialization_id: Optional[int] = None
     course_id: Optional[int] = None

@@ -84,7 +84,7 @@ async def get_module(
         )
 
 
-@router.get("module/subject/{subject_id}")
+@router.get("/module/subject/{subject_id}")
 async def get_modules_by_subject(
         subject_id: int,
         db: Session = Depends(get_db),

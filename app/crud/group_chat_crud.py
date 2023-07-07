@@ -1,10 +1,13 @@
 from datetime import datetime
+from typing import List, Union
 
 from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.sql.expression import func
 
-from app.models import (Curator, Group, GroupChat, GroupChatAnswer, Moder,
-                        Student, User, UserType, UserTypeOption)
+from app.models import (Curator, Group, GroupChat, GroupChatAnswer,
+                        GroupChatAttachFile, MessageRecipient, Moder, Student,
+                        User, UserType, UserTypeOption, MessageTypeOption)
 
 
 def select_student_in_group_db(db: Session, group_name: str):
@@ -45,7 +48,8 @@ def select_curator_in_group_db(db: Session, group_name: str):
         User.username,
         UserType.type,
         Curator.name,
-        Curator.surname
+        Curator.surname,
+        Curator.image_path
     ).select_from(Group).join(
         Curator, Curator.id == Group.curator_id).join(
         User, User.id == Curator.user_id).join(
@@ -62,7 +66,8 @@ def create_group_chat_massage(
         fixed: bool,
         sender_id: int,
         sender_type: UserTypeOption,
-        group_id: int
+        group_id: int,
+        message_type: MessageTypeOption
 ):
     new_message = GroupChat(
         message=message,
@@ -70,7 +75,8 @@ def create_group_chat_massage(
         fixed=fixed,
         sender_id=sender_id,
         sender_type=sender_type,
-        group_id=group_id
+        group_id=group_id,
+        message_type=message_type
     )
 
     db.add(new_message)
@@ -100,56 +106,135 @@ def create_group_chat_answer(
     return new_answer
 
 
-def select_last_message_db(db: Session, group_id: int, limit: int = None):
-    if limit is None:
-        messages = db.query(
-            GroupChat).filter(GroupChat.group_id == group_id).order_by(
-            desc(GroupChat.datetime_message)).limit(10).all()
-        return messages
+def create_attach_file_db(
+        db: Session,
+        attach_files: Union[List[str], str],
+        chat_answer: int = None,
+        chat_message: int = None
+):
+    if isinstance(attach_files, str):
+        attach_files = [attach_files]
+
+    attach_file_objs = []
+    for attach_file in attach_files:
+        if chat_message is not None:
+            attach_file_obj = GroupChatAttachFile(chat_message=chat_message, file_path=attach_file)
+        elif chat_answer is not None:
+            attach_file_obj = GroupChatAttachFile(chat_answer=chat_answer, file_path=attach_file)
+        else:
+            continue
+
+        db.add(attach_file_obj)
+        attach_file_objs.append(attach_file_obj)
+
+    db.commit()
+    for attach_file_obj in attach_file_objs:
+        db.refresh(attach_file_obj)
+
+    return attach_file_objs
+
+
+def create_recipient_db(
+        db: Session,
+        group_chat_id: int,
+        recipient: List[int] or int
+):
+    if isinstance(recipient, list):
+        for rec in recipient:
+            rec_obj = MessageRecipient(
+                is_viewed=False,
+                group_chat_id=group_chat_id,
+                recipient_id=rec
+            )
+            db.add(rec_obj)
+            db.commit()
+            db.refresh(rec_obj)
+        return
     else:
-        messages = db.query(
-            GroupChat).filter(GroupChat.group_id == group_id).order_by(
-            desc(GroupChat.datetime_message)).limit(limit).all()
-        return messages
+        recipient_obj = MessageRecipient(
+            is_viewed=False,
+            group_chat_id=group_chat_id,
+            recipient_id=recipient
+        )
+        db.add(recipient_obj)
+        db.commit()
+        db.refresh(recipient_obj)
+        return
 
 
-def select_last_messages_db(db: Session, group_id: int, limit: int = 10):
-    query = db.query(
-        GroupChat)\
+def select_last_messages_db(db: Session, group_id: int, recipient_id: int, limit: int = 10):
+
+    query_everyone = db.query(GroupChat)\
         .filter(GroupChat.group_id == group_id)\
-        .order_by(
-        desc(GroupChat.datetime_message))\
-        .limit(10)\
-        .options(joinedload(GroupChat.group_chat_answer))
+        .filter(GroupChat.message_type == "everyone")\
+        .order_by(desc(GroupChat.datetime_message))\
+        .limit(limit)\
+        .options(joinedload(GroupChat.group_chat_answer))\
+        .options(joinedload(GroupChat.attach_file))
+    messages_everyone = query_everyone.all()
 
-    group_chat_messages = query.all()
-    return group_chat_messages
+    query_personal = db.query(GroupChat)\
+        .join(MessageRecipient, GroupChat.id == MessageRecipient.group_chat_id)\
+        .filter(GroupChat.group_id == group_id)\
+        .filter(MessageRecipient.recipient_id == recipient_id)\
+        .filter(GroupChat.message_type.in_(["alone", "several"]))\
+        .order_by(desc(GroupChat.datetime_message))\
+        .limit(limit)\
+        .options(joinedload(GroupChat.group_chat_answer))\
+        .options(joinedload(GroupChat.attach_file))
+    messages_personal = query_personal.all()
+
+    query_sent_personal = db.query(GroupChat) \
+        .filter(GroupChat.group_id == group_id) \
+        .filter(GroupChat.sender_id == recipient_id) \
+        .filter(GroupChat.message_type.in_(["alone", "several"])) \
+        .order_by(desc(GroupChat.datetime_message)) \
+        .limit(limit) \
+        .options(joinedload(GroupChat.group_chat_answer)) \
+        .options(joinedload(GroupChat.attach_file))
+    messages_sent_personal = query_sent_personal.all()
+
+    all_messages = messages_everyone + messages_personal + messages_sent_personal
+    all_messages.sort(key=lambda x: x.datetime_message, reverse=True)
+    selected_messages = all_messages[:limit]
+
+    return selected_messages
 
 
-def select_student_name_and_photo_db(db: Session, user_id: int):
-    return db.query(Student.user_id, Student.name, Student.surname, Student.image_path).\
-        filter(Student.user_id == user_id).first()
+def select_message_by_id_db(db: Session, message_id: int):
+    return db.query(GroupChat).filter(GroupChat.id == message_id).first()
 
 
-def select_curator_name_db(db: Session, user_id):
-    return db.query(Curator.user_id, Curator.name, Curator.surname)\
-        .filter(Curator.user_id == user_id).first()
+def select_recipient_by_message_id(db: Session, message_id: int):
+    return db.query(MessageRecipient).filter(MessageRecipient.group_chat_id == message_id).all()
 
 
-def get_last_messages_db(group_id: int, db: Session):
-    group_chat_messages = select_last_messages_db(db=db, group_id=group_id)
+# def select_student_name_and_photo_db(db: Session, user_id: int):
+#     return db.query(Student.user_id, Student.name, Student.surname, Student.image_path).\
+#         filter(Student.user_id == user_id).first()
+#
+#
+# def select_curator_name_db(db: Session, user_id):
+#     return db.query(Curator.user_id, Curator.name, Curator.surname)\
+#         .filter(Curator.user_id == user_id).first()
+
+
+def get_last_messages_db(group_id: int, recipient_id: int, db: Session):
+    group_chat_messages = select_last_messages_db(db=db, group_id=group_id, recipient_id=recipient_id)
     messages_data = {"messages": []}
 
     for message in group_chat_messages:
         message_data = {
             "message_id": message.id,
             "message_text": message.message,
+            "message_type": message.message_type.value,
             "message_fixed": message.fixed,
             "message_datetime": message.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
             "group_id": message.group_id,
             "sender_id": message.sender_id,
             "sender_type": message.sender_type.value,
             "answers": [],
+            "attach_files": []
         }
 
         for answer in message.group_chat_answer:
@@ -162,6 +247,78 @@ def get_last_messages_db(group_id: int, db: Session):
             }
             message_data["answers"].append(answer_data)
 
-        messages_data["messages"].append(message_data)
+        for file in message.attach_file:
+            file_data = {
+                "fileId": file.id,
+                "file_path": file.file_path
+            }
+            message_data["attach_files"].append(file_data)
 
+        messages_data["messages"].append(message_data)
     return messages_data
+
+
+def get_last_message_db(db: Session, group_id: int, sender_id: int):
+    subquery = db.query(GroupChat.id).filter(GroupChat.sender_id == sender_id,
+                                             GroupChat.group_id == group_id).subquery()
+
+    query = db.query(
+        GroupChat.id,
+        GroupChat.message,
+        GroupChat.datetime_message,
+        GroupChat.fixed,
+        GroupChat.message_type,
+        GroupChat.group_id,
+        GroupChat.sender_id,
+        GroupChat.sender_type,
+        func.group_concat(GroupChatAttachFile.file_path).label("file_paths")
+    ).join(GroupChatAttachFile, GroupChatAttachFile.chat_message == GroupChat.id, isouter=True).filter(
+        GroupChat.id.in_(subquery)) \
+        .group_by(
+        GroupChat.id,
+        GroupChat.message,
+        GroupChat.datetime_message,
+        GroupChat.fixed,
+        GroupChat.message_type,
+        GroupChat.group_id,
+        GroupChat.sender_id,
+        GroupChat.sender_type
+    ).order_by(desc(GroupChat.datetime_message)).limit(1)
+
+    result = query.first()
+
+    message = {
+        "message_id": result.id,
+        "message_text": result.message,
+        "message_type": result.message_type.value,
+        "message_fixed": result.fixed,
+        "message_datetime": result.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+        "group_id": result.group_id,
+        "sender_id": result.sender_id,
+        "sender_type": result.sender_type.value,
+        "attach_files": result.file_paths.split(",") if result.file_paths else []
+    }
+
+    return message
+
+
+def get_last_answer_db(db: Session, sender_id: int):
+    query = db.query(
+        GroupChatAnswer,
+        func.group_concat(GroupChatAttachFile.file_path).label("file_paths")
+    ).join(GroupChatAttachFile, GroupChatAttachFile.chat_answer == GroupChatAnswer.id, isouter=True)\
+        .filter(GroupChatAnswer.sender_id == sender_id)\
+        .order_by(desc(GroupChatAnswer.datetime_message)).limit(1)
+
+    result = query.first()
+    answer = {
+        "answer_id": result[0].id,
+        "answer_text": result[0].message,
+        "answer_datetime": result[0].datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+        "message_id": result[0].group_chat.id,
+        "sender_id": result[0].sender_id,
+        "sender_type": result[0].sender_type,
+        "attach_files": result[1].split(",") if result.file_paths else []
+    }
+
+    return answer

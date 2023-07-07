@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from app.crud.group_crud import (create_group_db, select_group_by_id_db,
                                  select_groups_by_curator_id_db,
                                  select_groups_by_specialization_id_db,
-                                 select_groups_by_teacher_id_db,
                                  select_groups_db, update_group_db)
 from app.models import User
 from app.schemas.group_schemas import Group as GroupBase
@@ -68,14 +67,14 @@ async def get_group_by_id(
     return group
 
 
-@router.get("/group/teacher/{teacher_id}")
-async def get_groups_by_teacher_id(
-        teacher_id: int,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
-):
-    groups = select_groups_by_teacher_id_db(db=db, teacher_id=teacher_id)
-    return groups
+# @router.get("/group/teacher/{teacher_id}")
+# async def get_groups_by_teacher_id(
+#         teacher_id: int,
+#         db: Session = Depends(get_db),
+#         current_user: User = Depends(get_current_user)
+# ):
+#     groups = select_groups_by_teacher_id_db(db=db, teacher_id=teacher_id)
+#     return groups
 
 
 @router.get("/group/curator/{curator_id}")

@@ -35,6 +35,7 @@ async def get_student_info(
         'student_educational_program',
         'student_qualification',
         'student_subject_area',
+        'field_of_study',
         'course_number',
         'semester_number',
         'group_name'
@@ -57,8 +58,9 @@ async def get_student_schedule(
         schedule_result_list.append({
             'subject_name': item[0],
             'lesson_date': item[1],
-            'teacher_name': item[2],
-            'teacher_surname': item[3]
+            'lesson_end': item[2],
+            'teacher_name': item[3],
+            'teacher_surname': item[4]
         })
     return schedule_result_list
 
