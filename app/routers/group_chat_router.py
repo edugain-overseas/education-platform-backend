@@ -18,7 +18,7 @@ from app.utils.count_users import (get_total_in_group_chat, select_users_in_grou
                                    set_keyword_for_users_data)
 
 from app.utils.save_images import save_group_chat_file, delete_group_chat_file
-from app.utils.token import get_current_user, get_jwt_token, get_user_by_token
+from app.utils.token import get_current_user, get_user_by_token
 
 
 router = APIRouter()
