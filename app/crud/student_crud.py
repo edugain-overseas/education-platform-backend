@@ -15,6 +15,7 @@ def get_student_info_db(db: Session, user_id: int):
         Student.educational_program,
         Student.qualification,
         Student.subject_area,
+        Student.field_of_study,
         Course.course_number,
         Course.semester_number,
         Group.group_name
@@ -35,6 +36,7 @@ def get_student_schedule_db(db: Session, group_name: str):
     student_schedule = db.query(
         Subject.title,
         Lesson.lesson_date,
+        Lesson.lesson_end,
         Teacher.name,
         Teacher.surname
     ).join(

@@ -39,8 +39,8 @@ def set_keyword_for_users_data(users: list) -> list[dict]:
 
     for user in users:
         user_dict = dict(zip(fields, user))
-        if len(user) <= 6:
-            user_dict['ImagePath'] = None
+        # if len(user) <= 6:
+            # user_dict['ImagePath'] = None
         users_info.append(user_dict)
 
     return users_info

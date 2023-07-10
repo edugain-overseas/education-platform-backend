@@ -18,6 +18,8 @@ def set_text_attr_for_lecture_db(db: Session, item: LectureTextCreate, lecture_i
 
         attribute_model = OrdinaryLessonAttribute(
             attribute_name=attribute.name,
+            attr_number=attribute.number,
+            download_allowed=attribute.download,
             ordinary_lesson_id=lecture_id
         )
         db.add(attribute_model)
@@ -34,9 +36,18 @@ def set_text_attr_for_lecture_db(db: Session, item: LectureTextCreate, lecture_i
     db.commit()
 
 
-def set_file_attr_for_lecture_db(db: Session, file_path: str, name: str, lecture_id: int):
+def set_file_attr_for_lecture_db(
+        db: Session,
+        file_path: str,
+        name: str,
+        lecture_id: int,
+        attr_number: int,
+        download: bool
+):
     attribute_model = OrdinaryLessonAttribute(
         attribute_name=name,
+        attr_number=attr_number,
+        download_allowed=download,
         ordinary_lesson_id=lecture_id
     )
     db.add(attribute_model)
@@ -57,7 +68,9 @@ def get_lecture_info_db(db: Session, lesson_id: int):
         Lesson.title,
         Lesson.description,
         Lesson.lesson_date,
-        Lesson.number,
+        Lesson.lesson_end,
+        OrdinaryLessonAttribute.attr_number,
+        OrdinaryLessonAttribute.download_allowed,
         OrdinaryLessonAttribute.attribute_name,
         OrdinaryLessonValue.value
     )\

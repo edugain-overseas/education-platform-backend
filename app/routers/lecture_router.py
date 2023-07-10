@@ -48,6 +48,8 @@ async def add_text_attr_for_lecture(
 @router.post("/lecture/file/{lecture_id}")
 async def add_file_attr_for_lecture(
         lecture_id: int,
+        attr_number: int,
+        download: bool,
         files: List[UploadFile] = File(...),
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
@@ -59,7 +61,9 @@ async def add_file_attr_for_lecture(
                 db=db,
                 file_path=file_path,
                 name=name,
-                lecture_id=lecture_id
+                lecture_id=lecture_id,
+                attr_number=attr_number,
+                download=download
             )
 
         return {"message": f"File for lecture {lecture_id} has been saved"}
@@ -80,9 +84,11 @@ async def get_lecture(
             "Lesson Title": lecture[0],
             "Description": lecture[1],
             "Lesson Date": lecture[2],
-            "Lesson Number": lecture[3],
-            "Attribute": lecture[4],
-            "Value": lecture[5]
+            "Lesson End": lecture[3],
+            "Attribute Number": lecture[4],
+            "Download": lecture[5],
+            "Attribute": lecture[6],
+            "Value": lecture[7]
         })
 
     return result

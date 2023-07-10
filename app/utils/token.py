@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, WebSocket
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from jose.jwt import decode as jwt_decode
@@ -66,3 +66,16 @@ def check_expire_token(user: User, exp_token: int):
     if expire_token_str == user_expire_token_str:
         return True
     return False
+
+
+def get_jwt_token(websocket: WebSocket):
+    print(websocket.headers)
+    authorization = websocket.headers.get("Authorization")
+    print(f"Токен – {authorization}")
+    if authorization and authorization.startswith("Bearer "):
+        return authorization.split("Bearer ")[1]
+    raise ValueError("Invalid JWT token")
+
+
+def get_user_by_token(db: Session, token: str):
+    return db.query(User).filter(User.token == token).first()

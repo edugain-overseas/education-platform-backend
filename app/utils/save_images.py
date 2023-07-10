@@ -38,8 +38,7 @@ def save_subject_logo(photo: UploadFile, subject_title) -> str:
 
 
 def save_lesson_file(file: UploadFile) -> tuple:
-    current_date = datetime.now().strftime("%d-%m-%Y")
-    folder = 'static/lesson-files/' + current_date
+    folder = 'static/lesson-files/' + datetime.now().strftime("%d-%m-%Y")
     file_extension = os.path.splitext(file.filename)[1].lstrip(".")
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
@@ -48,3 +47,25 @@ def save_lesson_file(file: UploadFile) -> tuple:
         f.write(file.file.read())
 
     return file_path, file_extension
+
+
+def save_group_chat_file(file: UploadFile):
+    folder = 'static/chat-files/' + datetime.now().strftime("%d-%m-%Y")
+    file_path = os.path.join(folder, file.filename)
+    os.makedirs(folder, exist_ok=True)
+
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
+
+    return file_path
+
+
+def delete_group_chat_file(file_path: str):
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return {"message": f"Файл {file_path} успешно удален"}
+        else:
+            return {"message": f"Файл {file_path} не найден."}
+    except Exception as e:
+        return {"message": f"Ошибка при удалении файла: {str(e)}"}
