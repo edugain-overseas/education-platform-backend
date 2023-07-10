@@ -210,16 +210,6 @@ def select_recipient_by_message_id(db: Session, message_id: int):
     return db.query(MessageRecipient).filter(MessageRecipient.group_chat_id == message_id).all()
 
 
-# def select_student_name_and_photo_db(db: Session, user_id: int):
-#     return db.query(Student.user_id, Student.name, Student.surname, Student.image_path).\
-#         filter(Student.user_id == user_id).first()
-#
-#
-# def select_curator_name_db(db: Session, user_id):
-#     return db.query(Curator.user_id, Curator.name, Curator.surname)\
-#         .filter(Curator.user_id == user_id).first()
-
-
 def get_last_messages_db(group_id: int, recipient_id: int, db: Session):
     group_chat_messages = select_last_messages_db(db=db, group_id=group_id, recipient_id=recipient_id)
     messages_data = {"messages": []}

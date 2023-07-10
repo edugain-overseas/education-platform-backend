@@ -13,8 +13,6 @@ from app.routers.student_router import router as student_router
 from app.routers.subject_router import router as subject_router
 from app.routers.user_router import router as user_router
 
-# from app.routers.group_chat2 import router as gc_router
-
 
 app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
@@ -28,7 +26,6 @@ app.include_router(lesson_router, prefix='/api/v1', tags=['Lesson'])
 app.include_router(student_router, prefix='/api/v1', tags=['Student'])
 app.include_router(group_chat_router, prefix='/api/v1', tags=['GroupChat'])
 app.include_router(lecture_router, prefix='/api/v1', tags=['Lecture'])
-# app.include_router(gc_router, prefix='/api/v1', tags=['GChat'])
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,12 +39,6 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "Server working"}
-
-
-# @app.get("/static/images/student-avatar/{filename}")
-# async def get_student_photo(filename: str):
-#     image_path = f"static/images/student-avatar/{filename}"
-#     return FileResponse(image_path)
 
 
 if __name__ == "__main__":

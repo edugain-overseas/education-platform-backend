@@ -16,9 +16,7 @@ from app.crud.group_chat_crud import (create_attach_file_db,
 from app.crud.group_crud import select_group_by_name_db
 from app.models import User
 from app.session import get_db
-from app.utils.count_users import (get_total_in_group_chat,
-                                   select_users_in_group,
-                                   set_keyword_for_users_data)
+from app.utils.count_users import select_users_in_group, set_keyword_for_users_data
 from app.utils.save_images import delete_group_chat_file, save_group_chat_file
 from app.utils.token import get_current_user, get_user_by_token
 
@@ -118,13 +116,13 @@ async def group_chat_socket(
     print(manager.connections)
 
     users = select_users_in_group(group_name=group_name, db=db)
-    total_in_chat, total_active = get_total_in_group_chat(users)
+    # total_in_chat, total_active = get_total_in_group_chat(users)
     user_info = set_keyword_for_users_data(users)
 
     try:
         last_messages = get_last_messages_db(db=db, group_id=group_id[0], recipient_id=user.id)
-        last_messages['total_in_chat'] = total_in_chat
-        last_messages['total_active'] = total_active
+        # last_messages['total_in_chat'] = total_in_chat
+        # last_messages['total_active'] = total_active
         last_messages['user_info'] = user_info
         await websocket.send_json(last_messages)
 

@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.crud.group_chat_crud import (select_curator_in_group_db,
-                                      select_student_in_group_db)
+from app.crud.group_chat_crud import select_curator_in_group_db, select_student_in_group_db
 
 
 def select_users_in_group(group_name: str, db: Session) -> list[tuple]:
@@ -21,26 +20,24 @@ def select_users_in_group(group_name: str, db: Session) -> list[tuple]:
     return users
 
 
-def get_total_in_group_chat(users: list) -> tuple:
-
-    total_in_chat = len(users)
-    total_active = 0
-
-    for user in users:
-        if user[1] is True:
-            total_active += 1
-
-    return total_in_chat, total_active
+# def get_total_in_group_chat(users: list) -> tuple:
+#
+#     total_in_chat = len(users)
+#     total_active = 0
+#
+#     for user in users:
+#         if user[1] is True:
+#             total_active += 1
+#
+#     return total_in_chat, total_active
 
 
 def set_keyword_for_users_data(users: list) -> list[dict]:
     users_info = []
-    fields = ['UserId', 'IsActive', 'Username', 'UserType', 'Name', 'Surname', 'ImagePath']
+    fields = ['user_id', 'is_active', 'username', 'user_type', 'name', 'surname', 'image_path']
 
     for user in users:
         user_dict = dict(zip(fields, user))
-        # if len(user) <= 6:
-            # user_dict['ImagePath'] = None
         users_info.append(user_dict)
 
     return users_info
