@@ -5,6 +5,7 @@ from sqlalchemy import (Boolean, Column, Date, DateTime, Enum, ForeignKey,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
+
 Base = declarative_base()
 
 
@@ -544,6 +545,7 @@ class GroupChat(Base):
     sender_id = Column(Integer, ForeignKey('user.id'))
     group_id = Column(Integer, ForeignKey('group.id'))
     message_type = Column(Enum(MessageTypeOption), nullable=False)
+    read_by = Column(String)
 
     user = relationship('User', back_populates='chat_message')
     group = relationship('Group', back_populates='group_chat')
@@ -561,6 +563,7 @@ class GroupChatAnswer(Base):
     sender_type = Column(Enum(UserTypeOption), nullable=False)
     sender_id = Column(Integer, ForeignKey('user.id'))
     group_chat_id = Column(Integer, ForeignKey('group_chat.id'))
+    read_by = Column(String)
 
     user = relationship('User', back_populates='chat_answer')
     group_chat = relationship('GroupChat', back_populates='group_chat_answer')
@@ -571,7 +574,6 @@ class MessageRecipient(Base):
     __tablename__ = "message_recipient"
 
     id = Column(Integer, primary_key=True, index=True)
-    is_viewed = Column(Boolean, default=False, autoincrement=True)
     group_chat_id = Column(Integer, ForeignKey('group_chat.id'))
     recipient_id = Column(Integer, ForeignKey('user.id'))
 
