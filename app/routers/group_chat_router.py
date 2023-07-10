@@ -1,25 +1,26 @@
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
-from app.crud.group_chat_crud import (create_group_chat_answer, create_group_chat_massage,
-                                      get_last_messages_db, create_attach_file_db,
-                                      create_recipient_db, get_last_message_db,
-                                      get_last_answer_db, select_message_by_id_db,
+from app.crud.group_chat_crud import (create_attach_file_db,
+                                      create_group_chat_answer,
+                                      create_group_chat_massage,
+                                      create_recipient_db, get_last_answer_db,
+                                      get_last_message_db,
+                                      get_last_messages_db,
+                                      select_message_by_id_db,
                                       select_recipient_by_message_id)
-
 from app.crud.group_crud import select_group_by_name_db
 from app.models import User
 from app.session import get_db
-from app.utils.count_users import (get_total_in_group_chat, select_users_in_group,
+from app.utils.count_users import (get_total_in_group_chat,
+                                   select_users_in_group,
                                    set_keyword_for_users_data)
-
-from app.utils.save_images import save_group_chat_file, delete_group_chat_file
+from app.utils.save_images import delete_group_chat_file, save_group_chat_file
 from app.utils.token import get_current_user, get_user_by_token
-
 
 router = APIRouter()
 
@@ -177,6 +178,7 @@ async def group_chat_socket(
                     )
 
             # Логика отправки нового сообщения по сокету
+
             message = get_last_message_db(db=db, group_id=group_id[0], sender_id=data.get("sender_id"))
 
             if data.get("message_type") == "alone":
