@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Subject, SubjectTeacherAssociation
+from app.models import Subject, SubjectTeacherAssociation, Group
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
@@ -42,6 +42,17 @@ def select_subjects_by_specialization_db(db: Session, specialization_id: int):
 
 def select_subjects_by_course_db(db: Session, course_id: int):
     return db.query(Subject).filter(Subject.course_id == course_id).all()
+
+
+def select_subjects_by_group_db(db: Session, group_name: str):
+    query = db.query(
+        Subject.id,
+        Subject.title,
+        Subject.image_path
+    ).join(Group, Group.specialization_id == Subject.specialization_id)\
+        .filter(Group.group_name == group_name)
+
+    return query.all()
 
 
 def update_subject_image_path_db(db: Session, subject: Subject, new_path: str):

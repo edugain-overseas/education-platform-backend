@@ -1,3 +1,5 @@
+from typing import List, Dict, Any
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -6,6 +8,7 @@ from app.crud.subject_crud import (create_new_subject_db, delete_subject_db,
                                    select_subject_by_id_db,
                                    select_subjects_by_course_db,
                                    select_subjects_by_specialization_db,
+                                   select_subjects_by_group_db,
                                    set_teacher_for_subject_db,
                                    update_subject_image_path_db,
                                    update_subject_info_db,
@@ -166,6 +169,22 @@ async def get_subject_by_specialization(
             status_code=403,
             detail="Permission denied. Only moders and teachers can view subject"
         )
+
+
+@router.get("/subject/group/{group_name}", response_model=List[Dict[str, Any]])
+async def get_subject_by_group(
+        group_name: str,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    fields = ["id", "title", "image_path"]
+    response_subject = []
+
+    subjects = select_subjects_by_group_db(db=db, group_name=group_name)
+    for subject in subjects:
+        response_subject.append(dict(zip(fields, subject)))
+
+    return response_subject
 
 
 @router.delete("/subject/delete/{subject_id}")
