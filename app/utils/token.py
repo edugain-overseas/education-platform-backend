@@ -12,6 +12,7 @@ from app.models import User
 from app.session import get_db
 from app.setting import ACCESS_TOKEN_EXPIRE_HOURS, ALGORITHM, SECRET_KEY
 
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='api/v1/auth/token')
 
 
@@ -33,7 +34,7 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         username: str = payload.get("sub")
 
         if username is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication token1")
+            raise HTTPException(status_code=401, detail="Invalid authentication token")
         user = select_user_by_username_db(db, username)
 
         if user is None:
@@ -69,9 +70,7 @@ def check_expire_token(user: User, exp_token: int):
 
 
 def get_jwt_token(websocket: WebSocket):
-    print(websocket.headers)
     authorization = websocket.headers.get("Authorization")
-    print(f"Токен – {authorization}")
     if authorization and authorization.startswith("Bearer "):
         return authorization.split("Bearer ")[1]
     raise ValueError("Invalid JWT token")

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Union
 
-from sqlalchemy import desc
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import func
 
@@ -143,7 +143,6 @@ def create_recipient_db(
     if isinstance(recipient, list):
         for rec in recipient:
             rec_obj = MessageRecipient(
-                is_viewed=False,
                 group_chat_id=group_chat_id,
                 recipient_id=rec
             )
@@ -153,7 +152,6 @@ def create_recipient_db(
         return
     else:
         recipient_obj = MessageRecipient(
-            is_viewed=False,
             group_chat_id=group_chat_id,
             recipient_id=recipient
         )
@@ -224,6 +222,7 @@ def get_last_messages_db(group_id: int, recipient_id: int, db: Session):
             "group_id": message.group_id,
             "sender_id": message.sender_id,
             "sender_type": message.sender_type.value,
+            "read_by": message.read_by.split(", ") if message.read_by else [],
             "answers": [],
             "attach_files": []
         }
@@ -235,6 +234,7 @@ def get_last_messages_db(group_id: int, recipient_id: int, db: Session):
                 "answer_datetime": answer.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
                 "sender_id": answer.sender_id,
                 "sender_type": answer.sender_type.value,
+                "read_by": answer.read_by.split(", ") if answer.read_by else []
             }
             message_data["answers"].append(answer_data)
 
@@ -250,8 +250,8 @@ def get_last_messages_db(group_id: int, recipient_id: int, db: Session):
 
 
 def get_last_message_db(db: Session, group_id: int, sender_id: int):
-    subquery = db.query(GroupChat.id).filter(GroupChat.sender_id == sender_id,
-                                             GroupChat.group_id == group_id).subquery()
+    subquery = select(GroupChat.id).filter(GroupChat.sender_id == sender_id,
+                                           GroupChat.group_id == group_id).subquery()
 
     query = db.query(
         GroupChat.id,
@@ -262,9 +262,10 @@ def get_last_message_db(db: Session, group_id: int, sender_id: int):
         GroupChat.group_id,
         GroupChat.sender_id,
         GroupChat.sender_type,
+        GroupChat.read_by,
         func.group_concat(GroupChatAttachFile.file_path).label("file_paths")
-    ).join(GroupChatAttachFile, GroupChatAttachFile.chat_message == GroupChat.id, isouter=True).filter(
-        GroupChat.id.in_(subquery)) \
+    ).join(GroupChatAttachFile, GroupChatAttachFile.chat_message == GroupChat.id, isouter=True)\
+        .filter(GroupChat.id.in_(subquery.scalar_subquery()))\
         .group_by(
         GroupChat.id,
         GroupChat.message,
@@ -287,6 +288,7 @@ def get_last_message_db(db: Session, group_id: int, sender_id: int):
         "group_id": result.group_id,
         "sender_id": result.sender_id,
         "sender_type": result.sender_type.value,
+        "read_by": result.read_by.split(", ") if result.read_by else [],
         "attach_files": result.file_paths.split(",") if result.file_paths else []
     }
 
@@ -309,7 +311,40 @@ def get_last_answer_db(db: Session, sender_id: int):
         "message_id": result[0].group_chat.id,
         "sender_id": result[0].sender_id,
         "sender_type": result[0].sender_type,
+        "read_by": result[0].read_by.split(", ") if result[0].read_by else [],
         "attach_files": result[1].split(",") if result.file_paths else []
     }
 
+    return answer
+
+
+def update_message_read_by_db(db: Session, message_id: int, user_id: int):
+    message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
+    if message.read_by is not None:
+        read_by_list = list(map(int, message.read_by.split(", ")))
+        read_by_list.append(user_id)
+        read_by_str = ", ".join(map(str, read_by_list))
+        message.read_by = read_by_str
+        db.commit()
+        db.refresh(message)
+        return message
+    message.read_by = str(user_id)
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+def update_answer_read_by_db(db: Session, answer_id: int, user_id: int):
+    answer = db.query(GroupChatAnswer).filter(GroupChatAnswer.id == answer_id).first()
+    if answer.read_by is not None:
+        read_by_list = list(map(int, answer.read_by.split(", ")))
+        read_by_list.append(user_id)
+        read_by_str = ", ".join(map(str, read_by_list))
+        answer.read_by = read_by_str
+        db.commit()
+        db.refresh(answer)
+        return answer
+    answer.read_by = str(user_id)
+    db.commit()
+    db.refresh(answer)
     return answer
