@@ -3,6 +3,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.crud.lesson_crud import select_three_next_lesson_db
 from app.crud.subject_crud import (create_new_subject_db, delete_subject_db,
                                    select_all_subjects_db,
                                    select_subject_by_id_db,
@@ -239,4 +240,4 @@ async def get_next_three_lesson(
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
-    pass
+    return select_three_next_lesson_db(db=db, subject_id=subject_id)

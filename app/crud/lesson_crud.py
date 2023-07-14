@@ -1,6 +1,8 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
-from app.models import Lesson
+from app.models import Lesson, LessonType, Subject
 from app.schemas.lesson_schemas import Lesson as LessonSchemas
 from app.schemas.lesson_schemas import LessonUpdate
 
@@ -61,3 +63,27 @@ def select_lesson_by_type_db(db: Session, type_id: int):
 def delete_lesson_db(db: Session, lesson: Lesson):
     db.delete(lesson)
     db.commit()
+
+
+def select_three_next_lesson_db(db: Session, subject_id: int):
+    today = datetime.today()
+
+    query = db.query(Lesson.lesson_date, LessonType.type) \
+        .join(Subject, Lesson.subject_id == Subject.id) \
+        .join(LessonType, LessonType.id == Lesson.lesson_type_id) \
+        .filter(Subject.id == subject_id) \
+        .filter(Lesson.is_published == True) \
+        .filter(Lesson.lesson_date >= today) \
+        .order_by(Lesson.lesson_date).limit(3)
+
+    lessons = query.all()
+    lessons_list = []
+
+    for lesson in lessons:
+        lesson_dict = {
+            "lesson_date": lesson.lesson_date,
+            "lesson_type": lesson.type
+        }
+        lessons_list.append(lesson_dict)
+
+    return lessons_list
