@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Subject, SubjectTeacherAssociation, Group
+from app.models import Subject, SubjectTeacherAssociation, Group, Teacher
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
@@ -93,3 +93,25 @@ def set_teacher_for_subject_db(db: Session, teacher_id: int, subject_id: int):
     db.add(new_association)
     db.commit()
     db.refresh(new_association)
+
+
+def select_teachers_for_subject_db(db: Session, subject_id: int):
+    query = db.query(Teacher.id, Teacher.name, Teacher.surname, Teacher.lastname)\
+        .join(SubjectTeacherAssociation, SubjectTeacherAssociation.teacher_id == Teacher.id)\
+        .join(Subject, Subject.id == SubjectTeacherAssociation.subject_id)\
+        .filter(Subject.id == subject_id)
+
+    teachers = query.all()
+
+    teachers_list = []
+
+    for teacher in teachers:
+        teacher_dict = {
+            "id": teacher.id,
+            "name": teacher.name,
+            "surname": teacher.surname,
+            "lastname": teacher.lastname
+        }
+        teachers_list.append(teacher_dict)
+
+    return teachers_list

@@ -12,7 +12,7 @@ from app.crud.subject_crud import (create_new_subject_db, delete_subject_db,
                                    set_teacher_for_subject_db,
                                    update_subject_image_path_db,
                                    update_subject_info_db,
-                                   update_subject_logo_path_db)
+                                   update_subject_logo_path_db, select_teachers_for_subject_db)
 from app.models import User
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 from app.session import get_db
@@ -221,3 +221,22 @@ async def add_teacher_for_subject(
             status_code=403,
             detail="Permission denied."
         )
+
+
+@router.get("/subject/{subject_id}/teachers")
+async def get_teachers_for_subject(
+        subject_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    teachers = select_teachers_for_subject_db(db=db, subject_id=subject_id)
+    return teachers
+
+
+@router.get("subject/{subject_id}/next-lesson")
+async def get_next_three_lesson(
+        subject_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    pass

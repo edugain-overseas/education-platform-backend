@@ -251,7 +251,7 @@ def get_last_messages_db(group_id: int, recipient_id: int, db: Session):
 
 def get_last_message_db(db: Session, group_id: int, sender_id: int):
     subquery = select(GroupChat.id).filter(GroupChat.sender_id == sender_id,
-                                           GroupChat.group_id == group_id).subquery()
+                                           GroupChat.group_id == group_id)
 
     query = db.query(
         GroupChat.id,
@@ -265,8 +265,7 @@ def get_last_message_db(db: Session, group_id: int, sender_id: int):
         GroupChat.read_by,
         func.group_concat(GroupChatAttachFile.file_path).label("file_paths")
     ).join(GroupChatAttachFile, GroupChatAttachFile.chat_message == GroupChat.id, isouter=True)\
-        .filter(GroupChat.id.in_(subquery.scalar_subquery()))\
-        .group_by(
+        .filter(GroupChat.id.in_(subquery.scalar_subquery())).group_by(
         GroupChat.id,
         GroupChat.message,
         GroupChat.datetime_message,
