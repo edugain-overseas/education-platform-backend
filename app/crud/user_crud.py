@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from sqlalchemy.orm import Session
 
@@ -98,7 +98,8 @@ def create_new_student_db(
         lastname=lastname,
         phone=phone,
         email=email,
-        user_id=user_id
+        user_id=user_id,
+        date_added=date.today()
     )
 
     db.add(new_student)

@@ -1,7 +1,7 @@
 from enum import Enum as EnumType
 
 from sqlalchemy import (Boolean, Column, Date, DateTime, Enum, ForeignKey,
-                        Integer, String, Text, Time)
+                        Integer, String, Text, Time, func)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -22,6 +22,14 @@ class LessonTypeOption(str, EnumType):
     test = 'test'
     webinar = 'webinar'
     module_test = 'module_test'
+
+
+class QuestionTypeOption(str, EnumType):
+    test = 'test'
+    test_with_photo = 'test_with_photo'
+    test_with_input = 'test_with_input'
+    matching = 'matching'
+    open_question = 'open_question'
 
 
 class MessageTypeOption(str, EnumType):
@@ -76,6 +84,7 @@ class Student(Base):
     subject_area = Column(String)
     field_of_study = Column(String)
     group_leader = Column(Boolean, default=False, nullable=False, autoincrement=True)
+    date_added = Column(Date, nullable=False, autoincrement=True)
 
     user_id = Column(Integer, ForeignKey('user.id'))
     specialization_id = Column(Integer, ForeignKey('specialization.id'))
@@ -90,6 +99,10 @@ class Student(Base):
     lesson_score = relationship('LessonScore', back_populates='student')
     student_test_answer = relationship('StudentTestAnswer', back_populates='student')
     student_homework_answer = relationship('StudentHomeworkAnswer', back_populates='student')
+    student_module = relationship('StudentModule', back_populates='student')
+    student_module_answer = relationship('StudentAnswer', back_populates='student')
+    student_module_matching = relationship('StudentMatching', back_populates='student')
+    additional_subject = relationship('Subject', secondary='student_additional_subject', back_populates='students')
 
 
 class Teacher(Base):
@@ -151,14 +164,6 @@ class Course(Base):
     student = relationship('Student', back_populates='course')
 
 
-class Session(Base):
-    __tablename__ = "session"
-
-    id = Column(Integer, primary_key=True, index=True)
-    session_date = Column(Date)
-    passed = Column(Boolean)
-
-
 class Specialization(Base):
     __tablename__ = "specialization"
 
@@ -187,11 +192,13 @@ class Subject(Base):
     quantity_test = Column(Integer)
     quantity_webinar = Column(Integer)
     score = Column(Integer)
+    exam_date = Column(Date)
 
     specialization_id = Column(Integer, ForeignKey('specialization.id'))
     course_id = Column(Integer, ForeignKey('course.id'))
 
     teachers = relationship('Teacher', secondary='subject_teacher_association', back_populates='subjects')
+    students = relationship('Student', secondary='student_additional_subject', back_populates='additional_subject')
     specialization = relationship('Specialization', back_populates='subject')
     course = relationship('Course', back_populates='subject')
     module = relationship('Module', back_populates='subject')
@@ -206,6 +213,13 @@ class SubjectTeacherAssociation(Base):
 
     subject_id = Column(Integer, ForeignKey('subject.id'), primary_key=True)
     teacher_id = Column(Integer, ForeignKey('teacher.id'), primary_key=True)
+
+
+class StudentAdditionalSubject(Base):
+    __tablename__ = "student_additional_subject"
+
+    subject_id = Column(Integer, ForeignKey('subject.id'), primary_key=True)
+    student_id = Column(Integer, ForeignKey('student.id'), primary_key=True)
 
 
 class SubjectInfo(Base):
@@ -290,6 +304,7 @@ class Module(Base):
 
     subject = relationship('Subject', back_populates='module')
     lesson = relationship('Lesson', back_populates='module')
+    module_control = relationship('ModuleControl', back_populates='module')
 
 
 class LessonType(Base):
@@ -328,6 +343,7 @@ class Lesson(Base):
     test_lesson = relationship('TestLesson', back_populates='lesson')
     homework_lesson = relationship('HomeworkLesson', back_populates='lesson')
     webinar_lesson = relationship('WebinarLesson', back_populates='lesson')
+    module_control = relationship('ModuleControl', back_populates='lesson')
 
 
 class LessonMissing(Base):
@@ -522,11 +538,135 @@ class WebinarLesson(Base):
     lesson = relationship('Lesson', uselist=False, back_populates='webinar_lesson')
 
 
+class ModuleControl(Base):
+    __tablename__ = "module_control"
+
+    id = Column(Integer, primary_key=True, index=True)
+    is_published = Column(Boolean, default=False, nullable=False)
+    set_timer = Column(Boolean, default=False, nullable=False)
+    timer = Column(Time)
+    attempts = Column(Integer, default=1, nullable=False)
+    max_score = Column(Integer)
+
+    module_id = Column(ForeignKey('module.id'))
+    lesson_id = Column(ForeignKey('lesson.id'))
+
+    module = relationship('Module', uselist=False, back_populates='module_control')
+    lesson = relationship('Lesson', uselist=False, back_populates='module_control')
+    module_question = relationship('ModuleQuestion', back_populates='module_control')
+    student_module = relationship('StudentModule', back_populates='module_control')
+
+
+class QuestionType(Base):
+    __tablename__ = "question_type"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(Enum(QuestionTypeOption), nullable=False)
+
+    module_question = relationship('ModuleQuestion', back_populates='question_type')
+
+
+class ModuleQuestion(Base):
+    __tablename__ = "module_question"
+
+    id = Column(Integer, primary_key=True, index=True)
+    question_number = Column(Integer, nullable=False)
+    question_text = Column(Text, nullable=False)
+    score = Column(Integer)
+
+    module_control_id = Column(ForeignKey('module_control.id'))
+    question_type_id = Column(ForeignKey('question_type.id'))
+
+    module_control = relationship('ModuleControl', back_populates='module_question')
+    question_type = relationship('QuestionType', uselist=False, back_populates='module_question')
+    module_answer = relationship('ModuleAnswer', back_populates='module_question')
+    module_matching = relationship('ModuleMatching', back_populates='module_question')
+    student_module_answer = relationship('StudentAnswer', back_populates='module_question')
+    student_module_matching = relationship('StudentMatching', back_populates='module_question')
+
+
+class ModuleAnswer(Base):
+    __tablename__ = "module_answer"
+
+    id = Column(Integer, primary_key=True, index=True)
+    answer = Column(Text, nullable=False)
+    is_correct = Column(Boolean)
+
+    module_question_id = Column(ForeignKey('module_question.id'), nullable=False)
+
+    module_question = relationship('ModuleQuestion', uselist=False, back_populates='module_answer')
+
+
+class ModuleMatching(Base):
+    __tablename__ = "module_matching"
+
+    id = Column(Integer, primary_key=True, index=True)
+    left_option = Column(String, nullable=False)
+    right_option = Column(String, nullable=False)
+
+    module_question_id = Column(Integer, ForeignKey('module_question.id'))
+    correct_right_id = Column(Integer, ForeignKey('module_matching.id'))
+
+    correct_right = relationship('ModuleMatching', remote_side=[id])
+    reverse_match = relationship('ModuleMatching', remote_side=[correct_right_id], back_populates='correct_right')
+
+    module_question = relationship('ModuleQuestion', uselist=False, back_populates='module_matching')
+
+
+class StudentModule(Base):
+    __tablename__ = "student_module"
+
+    id = Column(Integer, primary_key=True, index=True)
+    score = Column(Integer, nullable=False)
+
+    student_id = Column(ForeignKey('student.id'), nullable=False)
+    module_control_id = Column(ForeignKey('module_control.id'), nullable=False)
+
+    student = relationship('Student', back_populates='student_module')
+    module_control = relationship('ModuleControl', back_populates='student_module')
+    student_module_answer = relationship('StudentAnswer', back_populates='student_module')
+    student_module_matching = relationship('StudentMatching', back_populates='student_module')
+
+
+class StudentAnswer(Base):
+    __tablename__ = "student_answer"
+
+    id = Column(Integer, primary_key=True, index=True)
+    score = Column(Integer, nullable=False)
+    answer = Column(Text, nullable=False)
+
+    student_id = Column(ForeignKey('student.id'), nullable=False)
+    module_question_id = Column(ForeignKey('module_question.id'), nullable=False)
+    student_module_id = Column(ForeignKey('student_module.id'), nullable=False)
+
+    student = relationship('Student', back_populates='student_module_answer')
+    module_question = relationship('ModuleQuestion', back_populates='student_module_answer')
+    student_module = relationship('StudentModule', back_populates='student_module_answer')
+
+
+class StudentMatching(Base):
+    __tablename__ = "student_matching"
+
+    id = Column(Integer, primary_key=True, index=True)
+    score = Column(Integer, nullable=False)
+    left_option = Column(String, nullable=False)
+    right_option = Column(String, nullable=False)
+
+    student_id = Column(ForeignKey('student.id'), nullable=False)
+    module_question_id = Column(ForeignKey('module_question.id'), nullable=False)
+    student_module_id = Column(ForeignKey('student_module.id'), nullable=False)
+
+    student = relationship('Student', back_populates='student_module_matching')
+    module_question = relationship('ModuleQuestion', back_populates='student_module_matching')
+    student_module = relationship('StudentModule', back_populates='student_module_matching')
+
+
 class GroupChatAttachFile(Base):
     __tablename__ = "group_chat_attach_file"
 
     id = Column(Integer, primary_key=True, index=True)
     file_path = Column(String)
+
     chat_message = Column(Integer, ForeignKey('group_chat.id'))
     chat_answer = Column(Integer, ForeignKey('group_chat_answer.id'))
 
@@ -542,6 +682,7 @@ class GroupChat(Base):
     datetime_message = Column(DateTime, autoincrement=True)
     fixed = Column(Boolean, default=False)
     sender_type = Column(Enum(UserTypeOption), nullable=False)
+
     sender_id = Column(Integer, ForeignKey('user.id'))
     group_id = Column(Integer, ForeignKey('group.id'))
     message_type = Column(Enum(MessageTypeOption), nullable=False)
