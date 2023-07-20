@@ -98,13 +98,10 @@ async def group_chat_socket(
     print(manager.connections)
 
     users = select_users_in_group(group_name=group_name, db=db)
-    # total_in_chat, total_active = get_total_in_group_chat(users)
     user_info = set_keyword_for_users_data(users)
 
     try:
         last_messages = get_last_messages_db(db=db, group_id=group_id[0], recipient_id=user.id)
-        # last_messages['total_in_chat'] = total_in_chat
-        # last_messages['total_active'] = total_active
         last_messages['user_info'] = user_info
         await websocket.send_json(last_messages)
 

@@ -40,6 +40,7 @@ async def get_student_info(
         'semester_number',
         'group_name'
     ]
+
     user_info = zip(field_list, user_info_list[0])
 
     return {"info": user_info}
@@ -175,16 +176,3 @@ async def delete_student(
     delete_student_db(db=db, student=student)
     delete_user_db(db=db, user=user)
     return {"massage": "Student has been successful deleted"}
-
-
-# @router.get("/student/my/image")
-# async def get_student_photo(
-#         db: Session = Depends(get_db),
-#         current_user: User = Depends(get_current_user)
-# ):
-#     student = select_student_by_user_id_db(db=db, user_id=current_user.id)
-#     if student and student.image_path:
-#         image_path = f"static/images/student-avatar/{student.image_path}"
-#         return {"image_path": image_path}
-#     else:
-#         return {"error": "Image not found"}

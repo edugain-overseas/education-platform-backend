@@ -39,7 +39,7 @@ async def create_subject(
         )
 
 
-@router.put("/subject/update/{subject_id}/info")
+@router.put("/subject/{subject_id}/update/info")
 async def update_subject_info(
         subject_id: int,
         subject_data: SubjectUpdate,

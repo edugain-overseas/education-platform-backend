@@ -1,5 +1,5 @@
 from typing import Optional
-
+from datetime import date
 from pydantic import BaseModel
 
 
@@ -8,14 +8,15 @@ class SubjectCreate(BaseModel):
     description: str
     specialization_id: int
     course_id: int
-    image_path: Optional[str] = None
-    logo_path: Optional[str] = None
+    # image_path: Optional[str] = None
+    # logo_path: Optional[str] = None
     is_published: Optional[bool] = None
     quantity_lecture: Optional[int] = None
     quantity_seminar: Optional[int] = None
     quantity_test: Optional[int] = None
     quantity_webinar: Optional[int] = None
     score: Optional[int] = None
+    exam_date: Optional[date] = None
 
 
 class Subject(SubjectCreate):
@@ -36,3 +37,4 @@ class SubjectUpdate(BaseModel):
     quantity_test: Optional[int] = None
     quantity_webinar: Optional[int] = None
     score: Optional[int] = None
+    exam_date: Optional[date] = None

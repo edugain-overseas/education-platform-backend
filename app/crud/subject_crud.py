@@ -6,20 +6,22 @@ from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 def create_new_subject_db(db: Session, subject: SubjectCreate):
     is_published = subject.is_published if subject.is_published is not None else False
+    exam_date = subject.exam_date if subject.exam_date is not None else None
 
     new_subject = Subject(
         title=subject.title,
         specialization_id=subject.specialization_id,
         course_id=subject.course_id,
         description=subject.description,
-        image_path=subject.image_path,
-        logo_path=subject.logo_path,
+        image_path=None,
+        logo_path=None,
         is_published=is_published,
         quantity_lecture=subject.quantity_lecture,
         quantity_seminar=subject.quantity_seminar,
         quantity_test=subject.quantity_test,
         quantity_webinar=subject.quantity_webinar,
-        score=subject.score
+        score=subject.score,
+        exam_date=exam_date
     )
 
     db.add(new_subject)

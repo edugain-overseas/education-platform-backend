@@ -66,7 +66,7 @@ async def get_specialization_by_id(
     return specialization
 
 
-@router.get("/specializations/course-{course_id}", response_model=List[SpecializationBase])
+@router.get("/specializations/course/{course_id}", response_model=List[SpecializationBase])
 async def get_specialization_by_course_id(
         course_id: int,
         db: Session = Depends(get_db),
