@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Union
+from typing import List, Dict
 
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session, joinedload
@@ -109,19 +109,25 @@ def create_group_chat_answer(
 
 def create_attach_file_db(
         db: Session,
-        attach_files: Union[List[str], str],
+        attach_files: List[Dict[str, str]],
         chat_answer: int = None,
         chat_message: int = None
 ):
-    if isinstance(attach_files, str):
-        attach_files = [attach_files]
-
     attach_file_objs = []
     for attach_file in attach_files:
         if chat_message is not None:
-            attach_file_obj = GroupChatAttachFile(chat_message=chat_message, file_path=attach_file)
+            attach_file_obj = GroupChatAttachFile(
+                chat_message=chat_message,
+                file_path=attach_file['path'],
+                mime_type=attach_file['mime-type']
+            )
+
         elif chat_answer is not None:
-            attach_file_obj = GroupChatAttachFile(chat_answer=chat_answer, file_path=attach_file)
+            attach_file_obj = GroupChatAttachFile(
+                chat_answer=chat_answer,
+                file_path=attach_file['path'],
+                mime_type=attach_file['mime-type']
+            )
         else:
             continue
 
@@ -132,7 +138,7 @@ def create_attach_file_db(
     for attach_file_obj in attach_file_objs:
         db.refresh(attach_file_obj)
 
-    return attach_file_objs
+    return
 
 
 def create_recipient_db(
@@ -228,20 +234,33 @@ def get_last_messages_db(group_id: int, recipient_id: int, db: Session):
         }
 
         for answer in message.group_chat_answer:
+
             answer_data = {
                 "answer_id": answer.id,
                 "answer": answer.message,
                 "answer_datetime": answer.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
                 "sender_id": answer.sender_id,
                 "sender_type": answer.sender_type.value,
-                "read_by": answer.read_by.split(", ") if answer.read_by else []
+                "read_by": answer.read_by.split(", ") if answer.read_by else [],
+                "attach_file": []
+
             }
+
+            for file in answer.attach_file:
+                file_data = {
+                    "fileId": file.id,
+                    "file_path": file.file_path,
+                    "mime_type": file.mime_type
+                }
+                answer_data["attach_file"].append(file_data)
+
             message_data["answers"].append(answer_data)
 
         for file in message.attach_file:
             file_data = {
                 "fileId": file.id,
-                "file_path": file.file_path
+                "file_path": file.file_path,
+                "mime_type": file.mime_type
             }
             message_data["attach_files"].append(file_data)
 
@@ -250,33 +269,36 @@ def get_last_messages_db(group_id: int, recipient_id: int, db: Session):
 
 
 def get_last_message_db(db: Session, group_id: int, sender_id: int):
-    subquery = select(GroupChat.id).filter(GroupChat.sender_id == sender_id,
-                                           GroupChat.group_id == group_id)
+    subquery = select(GroupChat.id).filter(GroupChat.sender_id == sender_id, GroupChat.group_id == group_id)
 
     query = db.query(
-        GroupChat.id,
-        GroupChat.message,
-        GroupChat.datetime_message,
-        GroupChat.fixed,
-        GroupChat.message_type,
-        GroupChat.group_id,
-        GroupChat.sender_id,
-        GroupChat.sender_type,
-        GroupChat.read_by,
-        func.group_concat(GroupChatAttachFile.file_path).label("file_paths")
-    ).join(GroupChatAttachFile, GroupChatAttachFile.chat_message == GroupChat.id, isouter=True)\
-        .filter(GroupChat.id.in_(subquery.scalar_subquery())).group_by(
-        GroupChat.id,
-        GroupChat.message,
-        GroupChat.datetime_message,
-        GroupChat.fixed,
-        GroupChat.message_type,
-        GroupChat.group_id,
-        GroupChat.sender_id,
-        GroupChat.sender_type
-    ).order_by(desc(GroupChat.datetime_message)).limit(1)
+            GroupChat.id, GroupChat.message, GroupChat.datetime_message, GroupChat.fixed, GroupChat.message_type,
+            GroupChat.group_id, GroupChat.sender_id, GroupChat.sender_type, GroupChat.read_by,
+            func.group_concat(GroupChatAttachFile.id).label("fileIds"),
+            func.group_concat(GroupChatAttachFile.file_path).label("filePaths"),
+            func.group_concat(GroupChatAttachFile.mime_type).label("mimeTypes"))\
+        .join(GroupChatAttachFile, GroupChatAttachFile.chat_message == GroupChat.id, isouter=True)\
+        .filter(GroupChat.id.in_(subquery.scalar_subquery()))\
+        .group_by(
+            GroupChat.id, GroupChat.message, GroupChat.datetime_message, GroupChat.fixed,
+            GroupChat.message_type, GroupChat.group_id, GroupChat.sender_id, GroupChat.sender_type)\
+        .order_by(desc(GroupChat.datetime_message))\
+        .limit(1)
 
     result = query.first()
+
+    attach_files = []
+    if result.fileIds:
+        file_ids = result.fileIds.split(",")
+        file_paths = result.filePaths.split(",")
+        mime_types = result.mimeTypes.split(",")
+
+        for file_id, file_path, mime_type in zip(file_ids, file_paths, mime_types):
+            attach_files.append({
+                "fileId": int(file_id),
+                "file_path": file_path,
+                "mime_type": mime_type
+            })
 
     message = {
         "message_id": result.id,
@@ -288,21 +310,41 @@ def get_last_message_db(db: Session, group_id: int, sender_id: int):
         "sender_id": result.sender_id,
         "sender_type": result.sender_type.value,
         "read_by": result.read_by.split(", ") if result.read_by else [],
-        "attach_files": result.file_paths.split(",") if result.file_paths else []
+        "attach_files": attach_files
     }
 
     return message
 
 
 def get_last_answer_db(db: Session, sender_id: int):
+    subquery = select(GroupChatAnswer.id).filter(GroupChatAnswer.sender_id == sender_id)
+
     query = db.query(
-        GroupChatAnswer,
-        func.group_concat(GroupChatAttachFile.file_path).label("file_paths")
-    ).join(GroupChatAttachFile, GroupChatAttachFile.chat_answer == GroupChatAnswer.id, isouter=True)\
-        .filter(GroupChatAnswer.sender_id == sender_id)\
-        .order_by(desc(GroupChatAnswer.datetime_message)).limit(1)
+            GroupChatAnswer,
+            func.group_concat(GroupChatAttachFile.id).label("fileIds"),
+            func.group_concat(GroupChatAttachFile.file_path).label("filePaths"),
+            func.group_concat(GroupChatAttachFile.mime_type).label("mimeTypes"))\
+        .join(GroupChatAttachFile, GroupChatAttachFile.chat_answer == GroupChatAnswer.id, isouter=True)\
+        .filter(GroupChatAnswer.id.in_(subquery.scalar_subquery()))\
+        .group_by(GroupChatAnswer.id)\
+        .order_by(desc(GroupChatAnswer.datetime_message))\
+        .limit(1)
 
     result = query.first()
+
+    attach_files = []
+    if result:
+        file_ids = result.fileIds.split(",") if result.fileIds else []
+        file_paths = result.filePaths.split(",") if result.filePaths else []
+        mime_types = result.mimeTypes.split(",") if result.mimeTypes else []
+
+        for file_id, file_path, mime_type in zip(file_ids, file_paths, mime_types):
+            attach_files.append({
+                "fileId": int(file_id),
+                "file_path": file_path,
+                "mime_type": mime_type
+            })
+
     answer = {
         "answer_id": result[0].id,
         "answer_text": result[0].message,
@@ -311,7 +353,7 @@ def get_last_answer_db(db: Session, sender_id: int):
         "sender_id": result[0].sender_id,
         "sender_type": result[0].sender_type,
         "read_by": result[0].read_by.split(", ") if result[0].read_by else [],
-        "attach_files": result[1].split(",") if result.file_paths else []
+        "attach_files": attach_files
     }
 
     return answer

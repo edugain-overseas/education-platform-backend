@@ -110,7 +110,6 @@ async def group_chat_socket(
             data_type = data.get("type")
 
             # Логика сохранения нового сообщения в БД
-
             if data_type == "answer":
                 new_answer = create_group_chat_answer(
                     db=db,
@@ -156,9 +155,8 @@ async def group_chat_socket(
 
             # Логика отправки нового сообщения по сокету
 
-            message = get_last_message_db(db=db, group_id=group_id[0], sender_id=data.get("sender_id"))
-
             if data.get("message_type") == "alone":
+                message = get_last_message_db(db=db, group_id=group_id[0], sender_id=data.get("sender_id"))
                 await manager.send_message_to_user(
                     group_name=group_name,
                     user_id=data.get("recipient"),
@@ -167,6 +165,7 @@ async def group_chat_socket(
                 await websocket.send_json(message)
 
             elif data.get("message_type") == "several":
+                message = get_last_message_db(db=db, group_id=group_id[0], sender_id=data.get("sender_id"))
                 await manager.send_message_to_users(
                     group_name=group_name,
                     user_ids=data.get("recipient"),
@@ -175,6 +174,7 @@ async def group_chat_socket(
                 await websocket.send_json(message)
 
             elif data.get("message_type") == "everyone":
+                message = get_last_message_db(db=db, group_id=group_id[0], sender_id=data.get("sender_id"))
                 await manager.send_message_to_group(
                     group_name=group_name,
                     message=message

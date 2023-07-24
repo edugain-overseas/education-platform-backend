@@ -666,6 +666,7 @@ class GroupChatAttachFile(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     file_path = Column(String)
+    mime_type = Column(String)
 
     chat_message = Column(Integer, ForeignKey('group_chat.id'))
     chat_answer = Column(Integer, ForeignKey('group_chat_answer.id'))
