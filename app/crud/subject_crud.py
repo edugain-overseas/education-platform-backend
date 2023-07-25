@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.models import Subject, SubjectTeacherAssociation, Group, Teacher
+from app.models import (Subject, SubjectTeacherAssociation,
+                        Group, Teacher, Student, StudentAdditionalSubject)
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
@@ -50,8 +51,9 @@ def select_subjects_by_group_db(db: Session, group_name: str):
     query = db.query(
         Subject.id,
         Subject.title,
-        Subject.image_path
-    ).join(Group, Group.specialization_id == Subject.specialization_id)\
+        Subject.image_path,
+        Subject.exam_date)\
+        .join(Group, Group.specialization_id == Subject.specialization_id)\
         .filter(Group.group_name == group_name)
 
     return query.all()
@@ -117,3 +119,28 @@ def select_teachers_for_subject_db(db: Session, subject_id: int):
         teachers_list.append(teacher_dict)
 
     return teachers_list
+
+
+def sign_student_for_addition_subject_db(db: Session, subject_id: int, student_id: int):
+    student_addition_subject = StudentAdditionalSubject(
+        subject_id=subject_id,
+        student_id=student_id
+    )
+
+    db.add(student_addition_subject)
+    db.commit()
+    db.refresh(student_addition_subject)
+    return student_addition_subject
+
+
+def select_dop_subjects(db: Session, student_id: int):
+    subjects = db.query(
+        Subject.id,
+        Subject.title,
+        Subject.image_path,
+        Subject.exam_date)\
+        .join(StudentAdditionalSubject, StudentAdditionalSubject.subject_id == Subject.id)\
+        .filter(StudentAdditionalSubject.student_id == student_id)\
+        .all()
+
+    return subjects

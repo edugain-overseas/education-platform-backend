@@ -13,7 +13,8 @@ from app.crud.subject_crud import (create_new_subject_db, delete_subject_db,
                                    set_teacher_for_subject_db,
                                    update_subject_image_path_db,
                                    update_subject_info_db,
-                                   update_subject_logo_path_db, select_teachers_for_subject_db)
+                                   update_subject_logo_path_db, select_teachers_for_subject_db,
+                                   sign_student_for_addition_subject_db, select_dop_subjects)
 from app.models import User
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 from app.session import get_db
@@ -178,7 +179,7 @@ async def get_subject_by_group(
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
-    fields = ["id", "title", "image_path"]
+    fields = ["id", "title", "image_path", "exam_date"]
     response_subject = []
 
     subjects = select_subjects_by_group_db(db=db, group_name=group_name)
@@ -234,10 +235,41 @@ async def get_teachers_for_subject(
     return teachers
 
 
-@router.get("subject/{subject_id}/next-lesson")
+@router.get("/subject/{subject_id}/next-lesson")
 async def get_next_three_lesson(
         subject_id: int,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
     return select_three_next_lesson_db(db=db, subject_id=subject_id)
+
+
+@router.post("/add-dop-subject/{subject_id}/{student_id}")
+async def set_additional_subject(
+        subject_id: int,
+        student_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    new_dop_subject = sign_student_for_addition_subject_db(
+        db=db,
+        subject_id=subject_id,
+        student_id=student_id
+    )
+    return new_dop_subject
+
+
+@router.get("/dop_subjects/{student_id}")
+async def get_dop_subjects(
+        student_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    fields = ["id", "title", "image_path", "exam_date"]
+    response_subject = []
+
+    subjects = select_dop_subjects(db=db, student_id=student_id)
+    for subject in subjects:
+        response_subject.append(dict(zip(fields, subject)))
+
+    return response_subject
