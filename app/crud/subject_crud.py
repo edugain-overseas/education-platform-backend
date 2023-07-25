@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.models import (Subject, SubjectTeacherAssociation,
-                        Group, Teacher, Student, StudentAdditionalSubject)
+from app.models import (Group, StudentAdditionalSubject, Subject,
+                        SubjectTeacherAssociation, Teacher)
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 

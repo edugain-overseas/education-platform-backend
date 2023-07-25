@@ -1,20 +1,21 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.crud.lesson_crud import select_three_next_lesson_db
 from app.crud.subject_crud import (create_new_subject_db, delete_subject_db,
-                                   select_all_subjects_db,
+                                   select_all_subjects_db, select_dop_subjects,
                                    select_subject_by_id_db,
                                    select_subjects_by_course_db,
-                                   select_subjects_by_specialization_db,
                                    select_subjects_by_group_db,
+                                   select_subjects_by_specialization_db,
+                                   select_teachers_for_subject_db,
                                    set_teacher_for_subject_db,
+                                   sign_student_for_addition_subject_db,
                                    update_subject_image_path_db,
                                    update_subject_info_db,
-                                   update_subject_logo_path_db, select_teachers_for_subject_db,
-                                   sign_student_for_addition_subject_db, select_dop_subjects)
+                                   update_subject_logo_path_db)
 from app.models import User
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 from app.session import get_db

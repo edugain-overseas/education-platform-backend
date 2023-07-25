@@ -5,12 +5,6 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
-from app.crud.group_crud import select_group_by_name_db
-from app.models import User
-from app.session import get_db
-from app.utils.count_users import select_users_in_group, set_keyword_for_users_data
-from app.utils.save_images import delete_group_chat_file, save_group_chat_file
-from app.utils.token import get_current_user, get_user_by_token
 from app.crud.group_chat_crud import (create_attach_file_db,
                                       create_group_chat_answer,
                                       create_group_chat_massage,
@@ -19,9 +13,15 @@ from app.crud.group_chat_crud import (create_attach_file_db,
                                       get_last_messages_db,
                                       select_message_by_id_db,
                                       select_recipient_by_message_id,
-                                      update_message_read_by_db,
-                                      update_answer_read_by_db)
-
+                                      update_answer_read_by_db,
+                                      update_message_read_by_db)
+from app.crud.group_crud import select_group_by_name_db
+from app.models import User
+from app.session import get_db
+from app.utils.count_users import (select_users_in_group,
+                                   set_keyword_for_users_data)
+from app.utils.save_images import delete_group_chat_file, save_group_chat_file
+from app.utils.token import get_current_user, get_user_by_token
 
 router = APIRouter()
 

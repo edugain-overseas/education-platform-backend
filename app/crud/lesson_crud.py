@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.models import Lesson, LessonType, Subject, Module
+from app.models import Lesson, LessonType, Module, Subject
 from app.schemas.lesson_schemas import Lesson as LessonSchemas
 from app.schemas.lesson_schemas import LessonUpdate
 

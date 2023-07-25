@@ -12,7 +12,6 @@ from app.models import User
 from app.session import get_db
 from app.setting import ACCESS_TOKEN_EXPIRE_HOURS, ALGORITHM, SECRET_KEY
 
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='api/v1/auth/token')
 
 
