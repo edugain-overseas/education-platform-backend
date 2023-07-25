@@ -6,11 +6,14 @@ from app.crud.lesson_crud import (create_new_lesson_db, delete_lesson_db,
                                   select_lesson_by_id_db,
                                   select_lesson_by_module_db,
                                   select_lesson_by_subject_db,
-                                  select_lesson_by_type_db, update_lesson_db)
+                                  select_lesson_by_type_db, update_lesson_db,
+                                  get_lessons_by_subject_id_db)
 from app.models import User
 from app.schemas.lesson_schemas import LessonBase, LessonUpdate
 from app.session import get_db
 from app.utils.token import get_current_user
+from app.utils.subject_structure import set_subject_structure
+
 
 router = APIRouter()
 
@@ -116,3 +119,14 @@ async def delete_lesson(
         return {"massage": "Lesson have been successful deleted"}
     else:
         raise HTTPException(status_code=403, detail="Permission denied")
+
+
+@router.get("/lessons/{subject_id}")
+async def get_lessons_by_subject(
+        subject_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    subject_data = get_lessons_by_subject_id_db(db=db, subject_id=subject_id)
+    subjects = set_subject_structure(subject_data=subject_data)
+    return subjects

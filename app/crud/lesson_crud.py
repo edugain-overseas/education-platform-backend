@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.models import Lesson, LessonType, Subject
+from app.models import Lesson, LessonType, Subject, Module
 from app.schemas.lesson_schemas import Lesson as LessonSchemas
 from app.schemas.lesson_schemas import LessonUpdate
 
@@ -87,3 +87,25 @@ def select_three_next_lesson_db(db: Session, subject_id: int):
         lessons_list.append(lesson_dict)
 
     return lessons_list
+
+
+def get_lessons_by_subject_id_db(db: Session, subject_id: int):
+    query_result = db.query(
+        Module.id.label("module_id"),
+        Module.name.label("module_name"),
+        Module.number.label("module_number"),
+        Module.description.label("module_desc"),
+        Lesson.id.label("lesson_id"),
+        LessonType.type.label("lesson_type"),
+        Lesson.number.label("lesson_number"),
+        Lesson.title.label("lesson_title"),
+        Lesson.description.label("lesson_desc"),
+        Lesson.lesson_date.label("lesson_date")) \
+        .join(LessonType, LessonType.id == Lesson.lesson_type_id) \
+        .join(Module, Module.id == Lesson.module_id) \
+        .join(Subject, Subject.id == Module.subject_id) \
+        .filter(Lesson.is_published == 1) \
+        .filter(Subject.id == subject_id) \
+        .all()
+
+    return query_result
