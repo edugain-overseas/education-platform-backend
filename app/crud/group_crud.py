@@ -1,6 +1,6 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.models import Group
+from app.models import Group, Curator, Student
 from app.schemas.group_schemas import GroupCreate, GroupUpdate
 
 
@@ -28,10 +28,6 @@ def select_group_by_id_db(db: Session, group_id: int):
     return db.query(Group).filter(Group.id == group_id).first()
 
 
-# def select_groups_by_teacher_id_db(db: Session, teacher_id: int):
-#     return db.query(Group).filter(Group.teacher_id == teacher_id).all()
-
-
 def select_groups_by_curator_id_db(db: Session, curator_id: int):
     return db.query(Group).filter(Group.curator_id == curator_id).all()
 
@@ -52,3 +48,38 @@ def update_group_db(db: Session, group: Group, group_data: GroupUpdate):
 def delete_group_db(db: Session, group: Group):
     db.delete(group)
     db.commit()
+
+
+def select_group_curator_db(db: Session, group_id: int):
+    group = db.query(Group).options(joinedload(Group.curator)).filter(Group.id == group_id).first()
+
+    curator_data = {
+        "id": group.curator.id,
+        "name": group.curator.name,
+        "surname": group.curator.surname,
+        "lastname": group.curator.lastname,
+        "email": group.curator.email
+    }
+
+    return curator_data
+
+
+def select_group_students_db(db: Session, group_id: int):
+    students = db.query(
+        Student.id, Student.name, Student.surname, Student.lastname, Student.email) \
+        .filter(Student.group_id == group_id) \
+        .all()
+
+    students_list = []
+
+    for student in students:
+        student_data = {
+            "id": student.id,
+            "name": student.name,
+            "surname": student.surname,
+            "lastname": student.lastname,
+            "email": student.email
+        }
+        students_list.append(student_data)
+
+    return students_list

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.crud.lesson_crud import select_three_next_lesson_db
+from app.crud.group_crud import select_group_curator_db, select_group_students_db
 from app.crud.subject_crud import (create_new_subject_db, delete_subject_db,
                                    select_all_subjects_db, select_dop_subjects,
                                    select_subject_by_id_db,
@@ -21,6 +22,7 @@ from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 from app.session import get_db
 from app.utils.save_images import save_subject_avatar, save_subject_logo
 from app.utils.token import get_current_user
+
 
 router = APIRouter()
 
@@ -274,3 +276,23 @@ async def get_dop_subjects(
         response_subject.append(dict(zip(fields, subject)))
 
     return response_subject
+
+
+@router.get("/list-members")
+async def get_list_subject_members(
+        group_id: int,
+        subject_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    teachers = select_teachers_for_subject_db(db=db, subject_id=subject_id)
+    curator = select_group_curator_db(db=db, group_id=group_id)
+    students = select_group_students_db(db=db, group_id=group_id)
+
+    result = {
+        "teachers": teachers,
+        "curator": curator,
+        "students": students
+    }
+
+    return result

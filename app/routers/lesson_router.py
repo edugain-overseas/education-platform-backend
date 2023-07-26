@@ -11,8 +11,9 @@ from app.crud.lesson_crud import (create_new_lesson_db, delete_lesson_db,
 from app.models import User
 from app.schemas.lesson_schemas import LessonBase, LessonUpdate
 from app.session import get_db
-from app.utils.subject_structure import set_subject_structure
+from app.utils.subject_utils import set_subject_structure
 from app.utils.token import get_current_user
+
 
 router = APIRouter()
 

@@ -100,12 +100,11 @@ def set_teacher_for_subject_db(db: Session, teacher_id: int, subject_id: int):
 
 
 def select_teachers_for_subject_db(db: Session, subject_id: int):
-    query = db.query(Teacher.id, Teacher.name, Teacher.surname, Teacher.lastname)\
-        .join(SubjectTeacherAssociation, SubjectTeacherAssociation.teacher_id == Teacher.id)\
-        .join(Subject, Subject.id == SubjectTeacherAssociation.subject_id)\
-        .filter(Subject.id == subject_id)
-
-    teachers = query.all()
+    teachers = db.query(
+        Teacher.id, Teacher.name, Teacher.surname, Teacher.lastname, Teacher.email) \
+        .join(SubjectTeacherAssociation, SubjectTeacherAssociation.teacher_id == Teacher.id) \
+        .filter(SubjectTeacherAssociation.subject_id == subject_id) \
+        .all()
 
     teachers_list = []
 
@@ -114,7 +113,8 @@ def select_teachers_for_subject_db(db: Session, subject_id: int):
             "id": teacher.id,
             "name": teacher.name,
             "surname": teacher.surname,
-            "lastname": teacher.lastname
+            "lastname": teacher.lastname,
+            "email": teacher.email
         }
         teachers_list.append(teacher_dict)
 
