@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from app.routers.group_chat_router import router as group_chat_router
 from app.routers.group_router import router as group_router
@@ -39,6 +40,11 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "Server working"}
+
+
+@app.get("/get_image")
+async def get_image(file_path: str):
+    return FileResponse(file_path)
 
 
 if __name__ == "__main__":

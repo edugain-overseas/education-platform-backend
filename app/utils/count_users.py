@@ -21,18 +21,6 @@ def select_users_in_group(group_name: str, db: Session) -> list[tuple]:
     return users
 
 
-# def get_total_in_group_chat(users: list) -> tuple:
-#
-#     total_in_chat = len(users)
-#     total_active = 0
-#
-#     for user in users:
-#         if user[1] is True:
-#             total_active += 1
-#
-#     return total_in_chat, total_active
-
-
 def set_keyword_for_users_data(users: list) -> list[dict]:
     users_info = []
     fields = ['user_id', 'is_active', 'username', 'user_type', 'name', 'surname', 'image_path']
