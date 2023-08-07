@@ -13,6 +13,7 @@ def create_new_subject_db(db: Session, subject: SubjectCreate):
         title=subject.title,
         specialization_id=subject.specialization_id,
         course_id=subject.course_id,
+        group_id=subject.group_id,
         description=subject.description,
         image_path=None,
         logo_path=None,
@@ -51,8 +52,7 @@ def select_subjects_by_group_db(db: Session, group_name: str):
     query = db.query(
         Subject.id,
         Subject.title,
-        Subject.image_path,
-        Subject.exam_date)\
+        Subject.image_path)\
         .join(Group, Group.specialization_id == Subject.specialization_id)\
         .filter(Group.group_name == group_name)
 
@@ -137,10 +137,14 @@ def select_dop_subjects(db: Session, student_id: int):
     subjects = db.query(
         Subject.id,
         Subject.title,
-        Subject.image_path,
-        Subject.exam_date)\
+        Subject.image_path)\
         .join(StudentAdditionalSubject, StudentAdditionalSubject.subject_id == Subject.id)\
         .filter(StudentAdditionalSubject.student_id == student_id)\
         .all()
 
     return subjects
+
+
+def select_subject_exam_date(db: Session, subject_id: int):
+    exam_date = db.query(Subject.exam_date).filter(subject_id == subject_id).first()
+    return exam_date[0].strftime('%Y-%m-%d')

@@ -121,12 +121,12 @@ async def delete_lesson(
         raise HTTPException(status_code=403, detail="Permission denied")
 
 
-@router.get("/lessons/{subject_id}")
-async def get_lessons_by_subject(
-        subject_id: int,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
-):
-    subject_data = get_lessons_by_subject_id_db(db=db, subject_id=subject_id)
-    subjects = set_subject_structure(subject_data=subject_data)
-    return subjects
+# @router.get("/lessons/{subject_id}")
+# async def get_lessons_by_subject(
+#         subject_id: int,
+#         db: Session = Depends(get_db),
+#         current_user: User = Depends(get_current_user)
+# ):
+#     subject_data = get_lessons_by_subject_id_db(db=db, subject_id=subject_id)
+#     subjects = set_subject_structure(subject_data=subject_data)
+#     return subjects
