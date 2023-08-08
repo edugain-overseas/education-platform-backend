@@ -1,4 +1,3 @@
-import time
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -14,12 +13,13 @@ from app.crud.subject_crud import (create_new_subject_db, delete_subject_db,
                                    set_teacher_for_subject_db,
                                    sign_student_for_addition_subject_db,
                                    update_subject_image_path_db, update_subject_info_db,
-                                   update_subject_logo_path_db)
+                                   update_subject_logo_path_db, create_subject_item_db, select_subject_item_db,
+                                   update_subject_item_file_db, update_subject_item_text_db)
 
 from app.models import User
-from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
+from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate, SubjectItemCreate
 from app.session import get_db
-from app.utils.save_images import save_subject_avatar, save_subject_logo
+from app.utils.save_images import save_subject_avatar, save_subject_logo, save_subject_program
 from app.utils.subject_utils import set_subject_structure
 from app.utils.token import get_current_user
 
@@ -293,7 +293,7 @@ async def get_list_subject_members(
         group_id: int,
         subject_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     teachers = select_teachers_for_subject_db(db=db, subject_id=subject_id)
     curator = select_group_curator_db(db=db, group_id=group_id)
@@ -306,3 +306,56 @@ async def get_list_subject_members(
     }
 
     return result
+
+
+@router.post("/subject-item/create")
+async def create_subject_item(
+        subject_item: SubjectItemCreate,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user),
+):
+    return create_subject_item_db(db=db, subject_item=subject_item)
+
+
+@router.put("/subject-item/update/file/{subject_id}")
+async def update_subject_item_file(
+        subject_id: int,
+        file: UploadFile = File(...),
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    file_path = save_subject_program(file=file)
+    subject_item = select_subject_item_db(db=db, subject_id=subject_id)
+    after_update = update_subject_item_file_db(
+        db=db,
+        subject_item=subject_item,
+        file_path=file_path
+    )
+    return after_update
+
+
+@router.put("/subject-item/update/text/{subject_id}")
+async def update_subject_item_text(
+        subject_id: int,
+        item_text: str,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    subject_item = select_subject_item_db(db=db, subject_id=subject_id)
+    after_update = update_subject_item_text_db(
+        db=db,
+        subject_item=subject_item,
+        text=item_text
+    )
+
+    return after_update
+
+
+@router.get("/subject-item/{subject_id}")
+async def get_subject_item(
+        subject_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    return select_subject_item_db(db=db, subject_id=subject_id)
+

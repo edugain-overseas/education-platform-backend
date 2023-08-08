@@ -60,6 +60,17 @@ def save_group_chat_file(file: UploadFile):
     return file_path
 
 
+def save_subject_program(file: UploadFile):
+    folder = 'static/program/'
+    file_path = os.path.join(folder, file.filename)
+    os.makedirs(folder, exist_ok=True)
+
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
+
+    return file_path
+
+
 def delete_group_chat_file(file_path: str):
     try:
         if os.path.exists(file_path):

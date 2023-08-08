@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 from app.routers.group_chat_router import router as group_chat_router
 from app.routers.group_router import router as group_router
-from app.routers.lecture_router import router as lecture_router
+# from app.routers.lecture_router import router as lecture_router
 from app.routers.lesson_router import router as lesson_router
 from app.routers.module_router import router as module_router
 from app.routers.specialization_router import router as specialization_router
@@ -26,7 +26,7 @@ app.include_router(module_router, prefix='/api/v1', tags=['Module'])
 app.include_router(lesson_router, prefix='/api/v1', tags=['Lesson'])
 app.include_router(student_router, prefix='/api/v1', tags=['Student'])
 app.include_router(group_chat_router, prefix='/api/v1', tags=['GroupChat'])
-app.include_router(lecture_router, prefix='/api/v1', tags=['Lecture'])
+# app.include_router(lecture_router, prefix='/api/v1', tags=['Lecture'])
 
 app.add_middleware(
     CORSMiddleware,

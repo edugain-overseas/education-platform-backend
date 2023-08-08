@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 
 from app.models import (Group, StudentAdditionalSubject, Subject,
-                        SubjectTeacherAssociation, Teacher)
-from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
+                        SubjectItem, SubjectTeacherAssociation, Teacher)
+from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate, SubjectItemCreate
 
 
 def create_new_subject_db(db: Session, subject: SubjectCreate):
@@ -30,6 +30,28 @@ def create_new_subject_db(db: Session, subject: SubjectCreate):
     db.commit()
     db.refresh(new_subject)
     return new_subject
+
+
+def create_subject_item_db(db: Session, subject_item: SubjectItemCreate):
+    if subject_item.file_path is not None:
+        new_item = SubjectItem(
+            text=subject_item.text,
+            file_path=subject_item.file_path,
+            subject_id=subject_item.subject_id
+        )
+        db.add(new_item)
+        db.commit()
+        db.refresh(new_item)
+        return new_item
+    else:
+        new_item = SubjectItem(
+            text=subject_item.text,
+            subject_id=subject_item.subject_id
+        )
+        db.add(new_item)
+        db.commit()
+        db.refresh(new_item)
+        return new_item
 
 
 def select_all_subjects_db(db: Session):
@@ -81,6 +103,20 @@ def update_subject_info_db(db: Session, subject: Subject, subject_data: SubjectU
 
     db.commit()
     db.refresh(subject)
+
+
+def update_subject_item_file_db(db: Session, subject_item: SubjectItem, file_path: str):
+    subject_item.file_path = file_path
+    db.commit()
+    db.refresh(subject_item)
+    return subject_item
+
+
+def update_subject_item_text_db(db: Session, subject_item: SubjectItem, text: str):
+    subject_item.text = text
+    db.commit()
+    db.refresh(subject_item)
+    return subject_item
 
 
 def delete_subject_db(db: Session, subject: Subject):
@@ -148,3 +184,7 @@ def select_dop_subjects(db: Session, student_id: int):
 def select_subject_exam_date(db: Session, subject_id: int):
     exam_date = db.query(Subject.exam_date).filter(subject_id == subject_id).first()
     return exam_date[0].strftime('%Y-%m-%d')
+
+
+def select_subject_item_db(db: Session, subject_id: int):
+    return db.query(SubjectItem).filter(SubjectItem.subject_id == subject_id).first()

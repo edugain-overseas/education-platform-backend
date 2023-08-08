@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.crud.lesson_crud import (create_new_lesson_db, delete_lesson_db,
-                                  get_lessons_by_subject_id_db,
                                   select_all_lessons_db,
                                   select_lesson_by_id_db,
                                   select_lesson_by_module_db,
@@ -11,7 +10,6 @@ from app.crud.lesson_crud import (create_new_lesson_db, delete_lesson_db,
 from app.models import User
 from app.schemas.lesson_schemas import LessonBase, LessonUpdate
 from app.session import get_db
-from app.utils.subject_utils import set_subject_structure
 from app.utils.token import get_current_user
 
 
@@ -119,14 +117,3 @@ async def delete_lesson(
         return {"massage": "Lesson have been successful deleted"}
     else:
         raise HTTPException(status_code=403, detail="Permission denied")
-
-
-# @router.get("/lessons/{subject_id}")
-# async def get_lessons_by_subject(
-#         subject_id: int,
-#         db: Session = Depends(get_db),
-#         current_user: User = Depends(get_current_user)
-# ):
-#     subject_data = get_lessons_by_subject_id_db(db=db, subject_id=subject_id)
-#     subjects = set_subject_structure(subject_data=subject_data)
-#     return subjects

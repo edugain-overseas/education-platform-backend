@@ -9,6 +9,7 @@ class SubjectCreate(BaseModel):
     description: str
     specialization_id: int
     course_id: int
+    group_id: int
     # image_path: Optional[str] = None
     # logo_path: Optional[str] = None
     is_published: Optional[bool] = None
@@ -32,6 +33,7 @@ class SubjectUpdate(BaseModel):
     description: Optional[str] = None
     specialization_id: Optional[int] = None
     course_id: Optional[int] = None
+    group_id: Optional[int] = None
     is_published: Optional[bool] = None
     quantity_lecture: Optional[int] = None
     quantity_seminar: Optional[int] = None
@@ -39,3 +41,9 @@ class SubjectUpdate(BaseModel):
     quantity_webinar: Optional[int] = None
     score: Optional[int] = None
     exam_date: Optional[date] = None
+
+
+class SubjectItemCreate(BaseModel):
+    text: str
+    file_path: Optional[str] = None
+    subject_id: int
