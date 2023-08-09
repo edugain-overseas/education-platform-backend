@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -21,12 +22,10 @@ from app.crud.subject_crud import (create_new_subject_db,
                                    sign_student_for_addition_subject_db,
                                    update_subject_image_path_db,
                                    update_subject_info_db,
-                                   update_subject_item_file_db,
                                    update_subject_item_text_db,
                                    update_subject_logo_path_db)
 from app.models import User
-from app.schemas.subject_schemas import (SubjectCreate, SubjectItemCreate,
-                                         SubjectUpdate)
+from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 from app.session import get_db
 from app.utils.save_images import (save_subject_avatar, save_subject_logo,
                                    save_subject_program)
@@ -319,52 +318,54 @@ async def get_list_subject_members(
 
 @router.post("/subject-item/create")
 async def create_subject_item(
-        subject_item: SubjectItemCreate,
+        subject_id: int,
+        item: List[Dict],
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user),
 ):
-    return create_subject_item_db(db=db, subject_item=subject_item)
+    text_json = json.dumps(item)
+    new_item = create_subject_item_db(db=db, subject_id=subject_id, item=text_json)
+    return json.loads(new_item.text)
 
 
-@router.put("/subject-item/update/file/{subject_id}")
-async def update_subject_item_file(
-        subject_id: int,
-        file: UploadFile = File(...),
-        db: Session = Depends(get_db),
-        user: User = Depends(get_current_user)
-):
-    file_path = save_subject_program(file=file)
-    subject_item = select_subject_item_db(db=db, subject_id=subject_id)
-    after_update = update_subject_item_file_db(
-        db=db,
-        subject_item=subject_item,
-        file_path=file_path
-    )
-    return after_update
-
-
-@router.put("/subject-item/update/text/{subject_id}")
+@router.put("/subject-item/update")
 async def update_subject_item_text(
         subject_id: int,
-        item_text: str,
+        item: List[Dict],
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
     subject_item = select_subject_item_db(db=db, subject_id=subject_id)
-    after_update = update_subject_item_text_db(
+    text_json = json.dumps(item)
+    updated_subject_item = update_subject_item_text_db(
         db=db,
         subject_item=subject_item,
-        text=item_text
+        text=text_json
     )
 
-    return after_update
+    return json.loads(updated_subject_item.text)
 
 
-@router.get("/subject-item/{subject_id}")
+@router.get("/subject-item/read")
 async def get_subject_item(
         subject_id: int,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    return select_subject_item_db(db=db, subject_id=subject_id)
+    subject_item = select_subject_item_db(db=db, subject_id=subject_id)
+    if subject_item is None:
+        return []
+    json_data = json.loads(subject_item.text)
+    subject_item.text = json_data
+    return subject_item.text
+
+
+@router.post("/subject-item/upload-program")
+async def update_subject_item_file(
+        file: UploadFile = File(...),
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    file_path = save_subject_program(file=file)
+    return {"file_path": file_path}
 

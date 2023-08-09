@@ -16,7 +16,7 @@ class SubjectCreate(BaseModel):
     quantity_lecture: Optional[int] = None
     quantity_seminar: Optional[int] = None
     quantity_test: Optional[int] = None
-    quantity_webinar: Optional[int] = None
+    quantity_module: Optional[int] = None
     score: Optional[int] = None
     exam_date: Optional[date] = None
 
@@ -38,12 +38,6 @@ class SubjectUpdate(BaseModel):
     quantity_lecture: Optional[int] = None
     quantity_seminar: Optional[int] = None
     quantity_test: Optional[int] = None
-    quantity_webinar: Optional[int] = None
+    quantity_module: Optional[int] = None
     score: Optional[int] = None
     exam_date: Optional[date] = None
-
-
-class SubjectItemCreate(BaseModel):
-    text: str
-    file_path: Optional[str] = None
-    subject_id: int

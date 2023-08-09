@@ -2,8 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models import (Group, StudentAdditionalSubject, Subject, SubjectItem,
                         SubjectTeacherAssociation, Teacher)
-from app.schemas.subject_schemas import (SubjectCreate, SubjectItemCreate,
-                                         SubjectUpdate)
+from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
 def create_new_subject_db(db: Session, subject: SubjectCreate):
@@ -22,7 +21,7 @@ def create_new_subject_db(db: Session, subject: SubjectCreate):
         quantity_lecture=subject.quantity_lecture,
         quantity_seminar=subject.quantity_seminar,
         quantity_test=subject.quantity_test,
-        quantity_webinar=subject.quantity_webinar,
+        quantity_module=subject.quantity_module,
         score=subject.score,
         exam_date=exam_date
     )
@@ -33,26 +32,15 @@ def create_new_subject_db(db: Session, subject: SubjectCreate):
     return new_subject
 
 
-def create_subject_item_db(db: Session, subject_item: SubjectItemCreate):
-    if subject_item.file_path is not None:
-        new_item = SubjectItem(
-            text=subject_item.text,
-            file_path=subject_item.file_path,
-            subject_id=subject_item.subject_id
-        )
-        db.add(new_item)
-        db.commit()
-        db.refresh(new_item)
-        return new_item
-    else:
-        new_item = SubjectItem(
-            text=subject_item.text,
-            subject_id=subject_item.subject_id
-        )
-        db.add(new_item)
-        db.commit()
-        db.refresh(new_item)
-        return new_item
+def create_subject_item_db(db: Session, subject_id: int, item: str):
+    new_item = SubjectItem(
+        text=item,
+        subject_id=subject_id
+    )
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+    return new_item
 
 
 def select_all_subjects_db(db: Session):
@@ -104,13 +92,6 @@ def update_subject_info_db(db: Session, subject: Subject, subject_data: SubjectU
 
     db.commit()
     db.refresh(subject)
-
-
-def update_subject_item_file_db(db: Session, subject_item: SubjectItem, file_path: str):
-    subject_item.file_path = file_path
-    db.commit()
-    db.refresh(subject_item)
-    return subject_item
 
 
 def update_subject_item_text_db(db: Session, subject_item: SubjectItem, text: str):
