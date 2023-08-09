@@ -75,8 +75,8 @@ def delete_group_chat_file(file_path: str):
     try:
         if os.path.exists(file_path):
             os.remove(file_path)
-            return {"message": f"Файл {file_path} успешно удален"}
+            return {"message": f"File {file_path} successfully deleted"}
         else:
-            return {"message": f"Файл {file_path} не найден."}
+            return {"message": f"File {file_path} not found."}
     except Exception as e:
-        return {"message": f"Ошибка при удалении файла: {str(e)}"}
+        return {"message": f"Error while deleting file: {str(e)}"}

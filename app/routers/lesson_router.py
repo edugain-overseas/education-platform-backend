@@ -12,7 +12,6 @@ from app.schemas.lesson_schemas import LessonBase, LessonUpdate
 from app.session import get_db
 from app.utils.token import get_current_user
 
-
 router = APIRouter()
 
 

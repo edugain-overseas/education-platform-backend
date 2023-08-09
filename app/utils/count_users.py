@@ -14,10 +14,6 @@ def select_users_in_group(group_name: str, db: Session) -> list[tuple]:
     for curator in curators:
         users.append(curator)
 
-    # moderators = select_moder_db(db=db)
-    # for moderator in moderators:
-    #     users.append(moderator)
-
     return users
 
 

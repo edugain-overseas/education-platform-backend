@@ -4,10 +4,11 @@ from pydantic import BaseModel
 
 
 class AttributeTextBase(BaseModel):
-    name: str
+    attr_type: str
+    attr_title: str
+    attr_number: int
+    download_allowed: bool
     value: str
-    number: int
-    download: bool
 
 
 class LectureTextBase(BaseModel):
