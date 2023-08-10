@@ -1,7 +1,8 @@
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models import (Group, StudentAdditionalSubject, Subject, SubjectItem,
-                        SubjectTeacherAssociation, Teacher)
+from app.models import (Group, StudentAdditionalSubject, Subject, SubjectIcon,
+                        SubjectItem, SubjectTeacherAssociation, Teacher)
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
@@ -15,8 +16,8 @@ def create_new_subject_db(db: Session, subject: SubjectCreate):
         course_id=subject.course_id,
         group_id=subject.group_id,
         description=subject.description,
-        image_path=None,
-        logo_path=None,
+        # image_path=None,
+        # logo_path=None,
         is_published=is_published,
         quantity_lecture=subject.quantity_lecture,
         quantity_seminar=subject.quantity_seminar,
@@ -41,6 +42,24 @@ def create_subject_item_db(db: Session, subject_id: int, item: str):
     db.commit()
     db.refresh(new_item)
     return new_item
+
+
+def create_subject_icon_db(
+        db: Session,
+        subject_id: int | None,
+        is_default: bool,
+        icon_path: str
+):
+    new_icon = SubjectIcon(
+        icon_path=icon_path,
+        is_default=is_default,
+        subject_id=subject_id
+    )
+
+    db.add(new_icon)
+    db.commit()
+    db.refresh(new_icon)
+    return new_icon
 
 
 def select_all_subjects_db(db: Session):
@@ -170,3 +189,14 @@ def select_subject_exam_date(db: Session, subject_id: int):
 
 def select_subject_item_db(db: Session, subject_id: int):
     return db.query(SubjectItem).filter(SubjectItem.subject_id == subject_id).first()
+
+
+def select_subject_icons_db(db: Session, subject_id: int):
+    icons = db.query(SubjectIcon).filter(
+        or_(
+            SubjectIcon.is_default,
+            SubjectIcon.subject_id == subject_id
+        )
+    ).all()
+
+    return icons

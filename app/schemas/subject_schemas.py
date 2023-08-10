@@ -10,8 +10,6 @@ class SubjectCreate(BaseModel):
     specialization_id: int
     course_id: int
     group_id: int
-    # image_path: Optional[str] = None
-    # logo_path: Optional[str] = None
     is_published: Optional[bool] = None
     quantity_lecture: Optional[int] = None
     quantity_seminar: Optional[int] = None

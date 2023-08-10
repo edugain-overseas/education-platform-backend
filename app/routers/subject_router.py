@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
@@ -9,10 +9,12 @@ from app.crud.group_crud import (select_group_curator_db,
 from app.crud.lesson_crud import (get_lessons_by_subject_id_db,
                                   select_three_next_lesson_db)
 from app.crud.subject_crud import (create_new_subject_db,
+                                   create_subject_icon_db,
                                    create_subject_item_db, delete_subject_db,
                                    select_all_subjects_db, select_dop_subjects,
                                    select_subject_by_id_db,
                                    select_subject_exam_date,
+                                   select_subject_icons_db,
                                    select_subject_item_db,
                                    select_subjects_by_course_db,
                                    select_subjects_by_group_db,
@@ -27,8 +29,8 @@ from app.crud.subject_crud import (create_new_subject_db,
 from app.models import User
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 from app.session import get_db
-from app.utils.save_images import (save_subject_avatar, save_subject_logo,
-                                   save_subject_program)
+from app.utils.save_images import (save_subject_avatar, save_subject_icon,
+                                   save_subject_logo, save_subject_program)
 from app.utils.subject_utils import set_subject_structure
 from app.utils.token import get_current_user
 
@@ -361,7 +363,7 @@ async def get_subject_item(
 
 
 @router.post("/subject-item/upload-program")
-async def update_subject_item_file(
+async def upload_subject_item_file(
         file: UploadFile = File(...),
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
@@ -369,3 +371,29 @@ async def update_subject_item_file(
     file_path = save_subject_program(file=file)
     return {"file_path": file_path}
 
+
+@router.post("/subject-item/upload-icon")
+async def upload_subject_item_icon(
+        is_default: bool,
+        subject_id: Optional[int] = None,
+        file: UploadFile = File(...),
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    icon_path = save_subject_icon(file=file)
+    new_icon = create_subject_icon_db(
+        db=db,
+        icon_path=icon_path,
+        is_default=is_default,
+        subject_id=subject_id
+    )
+    return new_icon
+
+
+@router.get("/subject-item/icons")
+async def get_subject_item_icons(
+        subject_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    return select_subject_icons_db(db=db, subject_id=subject_id)

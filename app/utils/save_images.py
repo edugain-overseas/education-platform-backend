@@ -61,7 +61,18 @@ def save_group_chat_file(file: UploadFile):
 
 
 def save_subject_program(file: UploadFile):
-    folder = 'static/program/'
+    folder = 'static/subject-files/program/'
+    file_path = os.path.join(folder, file.filename)
+    os.makedirs(folder, exist_ok=True)
+
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
+
+    return file_path
+
+
+def save_subject_icon(file: UploadFile):
+    folder = 'static/subject-files/icons'
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
 

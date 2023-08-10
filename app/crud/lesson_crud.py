@@ -72,7 +72,7 @@ def select_three_next_lesson_db(db: Session, subject_id: int):
         .join(Subject, Lesson.subject_id == Subject.id) \
         .join(LessonType, LessonType.id == Lesson.lesson_type_id) \
         .filter(Subject.id == subject_id) \
-        .filter(Lesson.is_published == True) \
+        .filter(Lesson.is_published) \
         .filter(Lesson.lesson_date >= today) \
         .order_by(Lesson.lesson_date).limit(3)
 
