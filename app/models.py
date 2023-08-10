@@ -214,7 +214,7 @@ class Subject(Base):
     quantity_lecture = Column(Integer)
     quantity_seminar = Column(Integer)
     quantity_test = Column(Integer)
-    quantity_webinar = Column(Integer)
+    quantity_module = Column(Integer)
     score = Column(Integer)
     exam_date = Column(Date)
 
@@ -231,11 +231,12 @@ class Subject(Base):
     group = relationship('Group', back_populates='subject')
     subject_chat = relationship('SubjectChat', back_populates='subject')
     subject_item = relationship('SubjectItem', back_populates='subject')
+    subject_icon = relationship('SubjectIcon', back_populates='subject')
     subject_instruction = relationship('SubjectInstruction', back_populates='subject')
 
     @property
     def get_total(self):
-        return self.quantity_seminar + self.quantity_lecture + self.quantity_webinar + self.quantity_test
+        return self.quantity_seminar + self.quantity_lecture + self.quantity_module + self.quantity_test
 
 
 class SubjectTeacherAssociation(Base):
@@ -256,11 +257,21 @@ class SubjectItem(Base):
     __tablename__ = "subject_item"
 
     id = Column(Integer, primary_key=True, index=True)
-    text = Column(Text, nullable=False)
-    file_path = Column(String)
+    text = Column(Text)
     subject_id = Column(Integer, ForeignKey('subject.id'))
 
-    subject = relationship('Subject', back_populates='subject_item')
+    subject = relationship('Subject', uselist=False, back_populates='subject_item')
+
+
+class SubjectIcon(Base):
+    __tablename__ = "subject_icon"
+
+    id = Column(Integer, primary_key=True, index=True)
+    icon_path = Column(String, nullable=False)
+    is_default = Column(Boolean, nullable=False)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    subject = relationship('Subject', back_populates='subject_icon')
 
 
 class SubjectInstruction(Base):
