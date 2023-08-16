@@ -13,6 +13,8 @@ from app.routers.specialization_router import router as specialization_router
 from app.routers.student_router import router as student_router
 from app.routers.subject_router import router as subject_router
 from app.routers.user_router import router as user_router
+from app.routers.test_lesson_router import router as test_router
+
 
 app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
@@ -26,6 +28,8 @@ app.include_router(lesson_router, prefix='/api/v1', tags=['Lesson'])
 app.include_router(student_router, prefix='/api/v1', tags=['Student'])
 app.include_router(group_chat_router, prefix='/api/v1', tags=['GroupChat'])
 app.include_router(lecture_router, prefix='/api/v1', tags=['Lecture'])
+app.include_router(test_router, prefix='/api/v1', tags=['TestLesson'])
+
 
 app.add_middleware(
     CORSMiddleware,
