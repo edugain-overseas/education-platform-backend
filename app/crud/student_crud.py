@@ -18,7 +18,8 @@ def get_student_info_db(db: Session, user_id: int):
         Student.field_of_study,
         Course.course_number,
         Course.semester_number,
-        Group.group_name
+        Group.group_name,
+        Group.id
     ).join(
         User, Student.user_id == User.id
     ).join(

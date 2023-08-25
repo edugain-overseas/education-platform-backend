@@ -60,6 +60,17 @@ def save_group_chat_file(file: UploadFile):
     return file_path
 
 
+def save_subject_chat_file(file: UploadFile):
+    folder = 'static/subject-files/chat/' + datetime.now().strftime("%d-%m-%Y")
+    file_path = os.path.join(folder, file.filename)
+    os.makedirs(folder, exist_ok=True)
+
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
+
+    return file_path
+
+
 def save_subject_program(file: UploadFile):
     folder = 'static/subject-files/program/'
     file_path = os.path.join(folder, file.filename)
@@ -83,6 +94,17 @@ def save_subject_icon(file: UploadFile):
 
 
 def delete_group_chat_file(file_path: str):
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return {"message": f"File {file_path} successfully deleted"}
+        else:
+            return {"message": f"File {file_path} not found."}
+    except Exception as e:
+        return {"message": f"Error while deleting file: {str(e)}"}
+
+
+def delete_subject_chat_file(file_path: str):
     try:
         if os.path.exists(file_path):
             os.remove(file_path)

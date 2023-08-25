@@ -286,34 +286,6 @@ def get_last_message_db(db: Session, group_id: int, sender_id: int):
 
     return message_obj
 
-    # attach_files = []
-    # if result.fileIds:
-    #     file_ids = result.fileIds.split(",")
-    #     file_paths = result.filePaths.split(",")
-    #     mime_types = result.mimeTypes.split(",")
-    #
-    #     for file_id, file_path, mime_type in zip(file_ids, file_paths, mime_types):
-    #         attach_files.append({
-    #             "fileId": int(file_id),
-    #             "file_path": file_path,
-    #             "mime_type": mime_type
-    #         })
-    #
-    # message = {
-    #     "message_id": result.id,
-    #     "message_text": result.message,
-    #     "message_type": result.message_type.value,
-    #     "message_fixed": result.fixed,
-    #     "message_datetime": result.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
-    #     "group_id": result.group_id,
-    #     "sender_id": result.sender_id,
-    #     "sender_type": result.sender_type.value,
-    #     "read_by": result.read_by.split(", ") if result.read_by else [],
-    #     "attach_files": attach_files
-    # }
-    #
-    # return message
-
 
 def get_last_answer_db(db: Session, sender_id: int):
     subquery = select(GroupChatAnswer.id).filter(GroupChatAnswer.sender_id == sender_id)

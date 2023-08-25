@@ -38,7 +38,8 @@ async def get_student_info(
         'field_of_study',
         'course_number',
         'semester_number',
-        'group_name'
+        'group_name',
+        'group_id'
     ]
 
     user_info = zip(field_list, user_info_list[0])

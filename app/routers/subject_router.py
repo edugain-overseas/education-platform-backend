@@ -144,16 +144,16 @@ async def get_subject_by_id(
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
-        subject = select_subject_by_id_db(db=db, subject_id=subject_id)
-        if not subject:
-            raise HTTPException(status_code=404, detail="Subjects not found")
-        return subject
-    else:
-        raise HTTPException(
-            status_code=403,
-            detail="Permission denied. Only moders and teachers can view subject"
-        )
+    # if current_user.teacher or current_user.moder:
+    subject = select_subject_by_id_db(db=db, subject_id=subject_id)
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subjects not found")
+    return subject
+    # else:
+    #     raise HTTPException(
+    #         status_code=403,
+    #         detail="Permission denied. Only moders and teachers can view subject"
+    #     )
 
 
 @router.get("/subject/course/{course_id}")
