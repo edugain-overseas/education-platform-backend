@@ -50,6 +50,7 @@ def select_students_by_specializations_id_db(db: Session, specialization_id: int
 def update_user_token_db(db: Session, user: User, token: str, exp_token: datetime):
     user.token = token
     user.exp_token = exp_token
+    user.last_active = date.today()
     user.is_active = True
     db.commit()
     db.refresh(user)

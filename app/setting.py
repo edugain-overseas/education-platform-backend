@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+API_PREFIX = '/api/v1'
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')

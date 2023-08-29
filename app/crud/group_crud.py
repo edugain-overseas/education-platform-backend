@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Group, Student
+from app.models import Group, Student, User, Curator
 from app.schemas.group_schemas import GroupCreate, GroupUpdate
 
 
@@ -51,23 +51,35 @@ def delete_group_db(db: Session, group: Group):
 
 
 def select_group_curator_db(db: Session, group_id: int):
-    group = db.query(Group).options(joinedload(Group.curator)).filter(Group.id == group_id).first()
+    # group = db.query(Group).options(joinedload(Group.curator)).filter(Group.id == group_id).first()
 
-    curator_data = {
-        "id": group.curator.id,
-        "name": group.curator.name,
-        "surname": group.curator.surname,
-        "lastname": group.curator.lastname,
-        "email": group.curator.email
-    }
+    curator_data = db.query(
+        Curator.id, Curator.name, Curator.surname,
+        Curator.email, Curator.image_path, User.last_active)\
+        .join(Group, Group.curator_id == Curator.id)\
+        .join(User, Curator.user_id == User.id)\
+        .filter(Group.id == group_id).first()
 
-    return curator_data
+    fields = ['id', 'name', 'surname', 'email', 'image_path', 'last_active']
+    curator = dict(zip(fields, curator_data))
+
+    # curator_data = {
+    #     "id": group.curator.id,
+    #     "name": group.curator.name,
+    #     "surname": group.curator.surname,
+    #     "email": group.curator.email,
+    #     "image_path": group.curator
+    # }
+
+    return curator
 
 
 def select_group_students_db(db: Session, group_id: int):
     students = db.query(
-        Student.id, Student.name, Student.surname, Student.lastname, Student.email) \
-        .filter(Student.group_id == group_id) \
+        Student.id, Student.name, Student.surname,
+        Student.email, Student.image_path, User.last_active)\
+        .join(User, Student.user_id == User.id)\
+        .filter(Student.group_id == group_id)\
         .all()
 
     students_list = []
@@ -77,8 +89,9 @@ def select_group_students_db(db: Session, group_id: int):
             "id": student.id,
             "name": student.name,
             "surname": student.surname,
-            "lastname": student.lastname,
-            "email": student.email
+            "email": student.email,
+            "image_path": student.image_path,
+            "last_active": student.last_active
         }
         students_list.append(student_data)
 

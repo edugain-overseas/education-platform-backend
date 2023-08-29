@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from fastapi import Depends, HTTPException, WebSocket
 from fastapi.security import OAuth2PasswordBearer
@@ -55,6 +55,7 @@ def delete_token_user(db: Session, user: User):
     user.is_active = False
     user.exp_token = None
     user.token = None
+    user.last_active = date.today()
     db.commit()
     db.refresh(user)
 

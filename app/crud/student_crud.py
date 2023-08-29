@@ -7,7 +7,7 @@ from app.models import (Course, Group, Lesson, Student, Subject,
 
 
 def get_student_info_db(db: Session, user_id: int):
-    userinfo = db.query(
+    user_info = db.query(
         Student.id,
         Student.name,
         Student.surname,
@@ -27,7 +27,7 @@ def get_student_info_db(db: Session, user_id: int):
     ).join(
         Group, Student.group_id == Group.id
     ).filter(User.id == user_id).all()
-    return userinfo
+    return user_info
 
 
 def get_student_schedule_db(db: Session, group_name: str):

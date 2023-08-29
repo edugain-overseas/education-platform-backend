@@ -2,7 +2,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models import (Group, StudentAdditionalSubject, Subject, SubjectIcon,
-                        SubjectItem, SubjectTeacherAssociation, Teacher)
+                        SubjectItem, SubjectTeacherAssociation, Teacher, User)
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
@@ -138,8 +138,10 @@ def set_teacher_for_subject_db(db: Session, teacher_id: int, subject_id: int):
 
 def select_teachers_for_subject_db(db: Session, subject_id: int):
     teachers = db.query(
-        Teacher.id, Teacher.name, Teacher.surname, Teacher.lastname, Teacher.email) \
+        Teacher.id, Teacher.name, Teacher.surname,
+        Teacher.email, Teacher.image_path, User.last_active) \
         .join(SubjectTeacherAssociation, SubjectTeacherAssociation.teacher_id == Teacher.id) \
+        .join(User, Teacher.user_id == User.id) \
         .filter(SubjectTeacherAssociation.subject_id == subject_id) \
         .all()
 
@@ -150,8 +152,9 @@ def select_teachers_for_subject_db(db: Session, subject_id: int):
             "id": teacher.id,
             "name": teacher.name,
             "surname": teacher.surname,
-            "lastname": teacher.lastname,
-            "email": teacher.email
+            "email": teacher.email,
+            "image_path": teacher.image_path,
+            "last_active": teacher.last_active
         }
         teachers_list.append(teacher_dict)
 
