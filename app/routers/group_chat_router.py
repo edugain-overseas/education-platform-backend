@@ -23,7 +23,7 @@ from app.utils.count_users import (select_users_in_group,
                                    set_keyword_for_users_data)
 from app.utils.group_chat import (set_last_answer_dict, set_last_message_dict,
                                   set_last_messages_dict)
-from app.utils.save_images import delete_group_chat_file, save_group_chat_file
+from app.utils.save_images import delete_chat_file, save_group_chat_file
 from app.utils.token import get_current_user, get_user_by_token
 
 router = APIRouter()
@@ -241,10 +241,10 @@ async def attach_file_to_chat(
 @router.delete("/group-chat/delete-file")
 async def delete_file_from_chat(
         file_path: str,
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.student or current_user.curator or current_user.moder:
-        return delete_group_chat_file(file_path=file_path)
+    if user.student or user.curator or user.moder:
+        return delete_chat_file(file_path=file_path)
     return HTTPException(status_code="403", detail="Teacher can't use group chat")
 
 
@@ -252,18 +252,18 @@ async def delete_file_from_chat(
 async def read_chat_message(
         message_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    return update_message_read_by_db(db=db, message_id=message_id, user_id=current_user.id)
+    return update_message_read_by_db(db=db, message_id=message_id, user_id=user.id)
 
 
 @router.post("/read-answer/{answer_id}")
 async def read_chat_answer(
         answer_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    return update_answer_read_by_db(db=db, answer_id=answer_id, user_id=current_user.id)
+    return update_answer_read_by_db(db=db, answer_id=answer_id, user_id=user.id)
 
 
 @router.get("/next-messages/{group_name}/{last_message_id}")
@@ -271,14 +271,14 @@ async def get_chat_messages(
         group_name: str,
         last_message_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     group_id = select_group_by_name_db(db=db, group_name=group_name)[0]
 
     messages_obj = select_messages_by_pagination_db(
         db=db,
         group_id=group_id,
-        recipient_id=current_user.id,
+        recipient_id=user.id,
         last_message_id=last_message_id
     )
 

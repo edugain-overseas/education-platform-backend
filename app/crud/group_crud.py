@@ -1,6 +1,6 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
-from app.models import Group, Student, User, Curator
+from app.models import Curator, Group, Student, User
 from app.schemas.group_schemas import GroupCreate, GroupUpdate
 
 
@@ -51,8 +51,6 @@ def delete_group_db(db: Session, group: Group):
 
 
 def select_group_curator_db(db: Session, group_id: int):
-    # group = db.query(Group).options(joinedload(Group.curator)).filter(Group.id == group_id).first()
-
     curator_data = db.query(
         Curator.id, Curator.name, Curator.surname,
         Curator.email, Curator.image_path, User.last_active)\
@@ -62,14 +60,6 @@ def select_group_curator_db(db: Session, group_id: int):
 
     fields = ['id', 'name', 'surname', 'email', 'image_path', 'last_active']
     curator = dict(zip(fields, curator_data))
-
-    # curator_data = {
-    #     "id": group.curator.id,
-    #     "name": group.curator.name,
-    #     "surname": group.curator.surname,
-    #     "email": group.curator.email,
-    #     "image_path": group.curator
-    # }
 
     return curator
 

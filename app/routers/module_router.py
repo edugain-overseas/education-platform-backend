@@ -17,9 +17,9 @@ router = APIRouter()
 async def create_module(
         module: CreateModule,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.moder or current_user.teacher:
+    if user.moder or user.teacher:
         new_module = create_module_db(db=db, module=module)
         return new_module
     else:
@@ -34,9 +34,9 @@ async def update_module(
         module_id: int,
         module_data: UpdateModule,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.moder or current_user.teacher:
+    if user.moder or user.teacher:
         module = select_module_by_id_db(db=db, module_id=module_id)
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
@@ -52,9 +52,9 @@ async def update_module(
 @router.get("/modules")
 async def get_modules(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         modules = select_modules_db(db=db)
         if not modules:
             raise HTTPException(status_code=404, detail="Modules not found")
@@ -70,9 +70,9 @@ async def get_modules(
 async def get_module(
         module_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         module = select_module_by_id_db(db=db, module_id=module_id)
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
@@ -106,9 +106,9 @@ async def get_modules_by_subject(
 async def delete_module(
         module_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.moder or current_user.teacher:
+    if user.moder or user.teacher:
         module = select_module_by_id_db(db=db, module_id=module_id)
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")

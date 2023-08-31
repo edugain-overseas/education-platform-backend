@@ -3,11 +3,17 @@ from datetime import datetime
 
 from fastapi import UploadFile
 
+STUDENT_AVATAR_FOLDER = 'static/images/student-avatar'
+SUBJECT_AVATAR_FOLDER = 'static/images/subject-photo'
+SUBJECT_LOGO_FOLDER = 'static/images/subject-logo'
+SUBJECT_PROGRAM_FOLDER = 'static/subject-files/program/'
+SUBJECT_ICON_FOLDER = 'static/subject-files/icons'
+
 
 def save_student_avatar(photo: UploadFile, name, surname) -> str:
-    folder = 'static/images/student-avatar'
     filename = f'{name}-{surname}–{photo.filename}'
-    file_path = os.path.join(folder, filename)
+    file_path = os.path.join(STUDENT_AVATAR_FOLDER, filename)
+    os.makedirs(STUDENT_AVATAR_FOLDER, exist_ok=True)
 
     with open(file_path, "wb") as f:
         f.write(photo.file.read())
@@ -16,9 +22,9 @@ def save_student_avatar(photo: UploadFile, name, surname) -> str:
 
 
 def save_subject_avatar(photo: UploadFile, subject_title) -> str:
-    folder = 'static/images/subject-photo'
     filename = f'{subject_title}-{photo.filename}'
-    file_path = os.path.join(folder, filename)
+    file_path = os.path.join(SUBJECT_AVATAR_FOLDER, filename)
+    os.makedirs(SUBJECT_AVATAR_FOLDER, exist_ok=True)
 
     with open(file_path, "wb") as f:
         f.write(photo.file.read())
@@ -27,9 +33,9 @@ def save_subject_avatar(photo: UploadFile, subject_title) -> str:
 
 
 def save_subject_logo(photo: UploadFile, subject_title) -> str:
-    folder = 'static/images/subject-logo'
     filename = f'{subject_title}-{photo.filename}'
-    file_path = os.path.join(folder, filename)
+    file_path = os.path.join(SUBJECT_LOGO_FOLDER, filename)
+    os.makedirs(SUBJECT_LOGO_FOLDER, exist_ok=True)
 
     with open(file_path, "wb") as f:
         f.write(photo.file.read())
@@ -72,9 +78,8 @@ def save_subject_chat_file(file: UploadFile):
 
 
 def save_subject_program(file: UploadFile):
-    folder = 'static/subject-files/program/'
-    file_path = os.path.join(folder, file.filename)
-    os.makedirs(folder, exist_ok=True)
+    file_path = os.path.join(SUBJECT_PROGRAM_FOLDER, file.filename)
+    os.makedirs(SUBJECT_PROGRAM_FOLDER, exist_ok=True)
 
     with open(file_path, "wb") as f:
         f.write(file.file.read())
@@ -83,9 +88,8 @@ def save_subject_program(file: UploadFile):
 
 
 def save_subject_icon(file: UploadFile):
-    folder = 'static/subject-files/icons'
-    file_path = os.path.join(folder, file.filename)
-    os.makedirs(folder, exist_ok=True)
+    file_path = os.path.join(SUBJECT_ICON_FOLDER, file.filename)
+    os.makedirs(SUBJECT_ICON_FOLDER, exist_ok=True)
 
     with open(file_path, "wb") as f:
         f.write(file.file.read())
@@ -93,18 +97,7 @@ def save_subject_icon(file: UploadFile):
     return file_path
 
 
-def delete_group_chat_file(file_path: str):
-    try:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            return {"message": f"File {file_path} successfully deleted"}
-        else:
-            return {"message": f"File {file_path} not found."}
-    except Exception as e:
-        return {"message": f"Error while deleting file: {str(e)}"}
-
-
-def delete_subject_chat_file(file_path: str):
+def delete_chat_file(file_path: str):
     try:
         if os.path.exists(file_path):
             os.remove(file_path)

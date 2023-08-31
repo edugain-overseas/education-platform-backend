@@ -23,9 +23,9 @@ router = APIRouter()
 @router.get("/student/info/me")
 async def get_student_info(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    user_info_list = get_student_info_db(db=db, user_id=current_user.id)
+    user_info_list = get_student_info_db(db=db, user_id=user.id)
 
     field_list = [
         'student_id',
@@ -51,7 +51,7 @@ async def get_student_info(
 async def get_student_schedule(
         group_name: str,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     result = get_student_schedule_db(db=db, group_name=group_name)
     schedule_result_list = []
@@ -71,18 +71,27 @@ async def get_student_schedule(
 async def update_student_avatar(
         file: UploadFile = File(...),
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if not current_user.student:
+    if not user.student:
         raise HTTPException(status_code=403, detail="Only students can update their avatars")
 
-    student = select_student_by_user_id_db(db=db, user_id=current_user.id)
+    student = select_student_by_user_id_db(db=db, user_id=user.id)
 
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    file_path = save_student_avatar(file, student.name, student.surname)
-    update_student_photo_path_db(db=db, student=student, new_path=file_path)
+    file_path = save_student_avatar(
+        photo=file,
+        name=student.name,
+        surname=student.surname
+    )
+    update_student_photo_path_db(
+        db=db,
+        student=student,
+        new_path=file_path
+    )
+
     return {
         "message": "Avatar updated successfully",
         "photo_path": file_path
@@ -94,23 +103,31 @@ async def update_student_info(
         student_id: int,
         student_data: StudentUpdate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.student or current_user.moder or current_user.teacher:
+    if user.student or user.moder or user.teacher:
         student = select_student_by_user_id_db(db=db, user_id=student_id)
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
 
-        update_student_info_db(db=db, student=student, student_data=student_data)
+        update_student_info_db(
+            db=db,
+            student=student,
+            student_data=student_data
+        )
+
         return {"message": "Student information updated successfully"}
     else:
-        raise HTTPException(status_code=403, detail="Only students can update their information")
+        raise HTTPException(
+            status_code=403,
+            detail="Only students can update their information"
+        )
 
 
 @router.get("/students")
 async def get_students(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     students = select_all_students_db(db=db)
     return {"students": students}
@@ -120,7 +137,7 @@ async def get_students(
 async def get_student(
         student_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     student = select_student_by_id_db(db=db, student_id=student_id)
     if not student:
@@ -132,7 +149,7 @@ async def get_student(
 async def get_students_in_course(
         course_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     students = select_students_by_course_id_db(db=db, course_id=course_id)
     if not students:
@@ -144,7 +161,7 @@ async def get_students_in_course(
 async def get_students_in_group(
         group_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     students = select_students_by_group_id_db(db=db, group_id=group_id)
     if not students:
@@ -156,7 +173,7 @@ async def get_students_in_group(
 async def get_students_in_specialization(
         specialization_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)):
+        user: User = Depends(get_current_user)):
     students = select_students_by_specializations_id_db(db=db, specialization_id=specialization_id)
     if not students:
         raise HTTPException(status_code=404, detail="Students not found")
@@ -167,13 +184,13 @@ async def get_students_in_specialization(
 async def delete_student(
         student_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     student = select_student_by_id_db(db=db, student_id=student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    user = select_user_by_id_db(db=db, user_id=student.user_id)
+    user_data = select_user_by_id_db(db=db, user_id=student.user_id)
 
     delete_student_db(db=db, student=student)
-    delete_user_db(db=db, user=user)
+    delete_user_db(db=db, user=user_data)
     return {"massage": "Student has been successful deleted"}

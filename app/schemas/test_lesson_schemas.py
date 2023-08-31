@@ -3,8 +3,6 @@ from typing import Optional
 
 from pydantic import BaseModel, validator
 
-from app.models import QuestionTypeOption
-
 
 class TestConfigBase(BaseModel):
     is_published: bool

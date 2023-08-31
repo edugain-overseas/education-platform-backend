@@ -19,9 +19,9 @@ router = APIRouter()
 async def create_lecture(
         lesson_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher:
+    if user.teacher or user.moder:
         return create_lecture_db(db=db, lesson_id=lesson_id)
     else:
         raise HTTPException(
@@ -35,9 +35,9 @@ async def add_text_attr_for_lecture(
         lecture_id: int,
         item: LectureTextCreate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher:
+    if user.teacher or user.moder:
         set_text_attr_for_lecture_db(db=db, item=item, lecture_id=lecture_id)
         return {"message": f"Text for lecture {lecture_id } has been saved"}
     else:
@@ -52,9 +52,9 @@ async def add_file_attr_for_lecture(
         download_allowed: bool,
         files: List[UploadFile] = File(...),
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher:
+    if user.teacher or user.moder:
         for file in files:
             file_path, file_extension = save_lesson_file(file)
             set_file_attr_for_lecture_db(
@@ -76,7 +76,7 @@ async def add_file_attr_for_lecture(
 async def get_lecture(
         lesson_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     lectures = get_lecture_info_db(db=db, lesson_id=lesson_id)
     result = []

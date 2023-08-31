@@ -1,12 +1,10 @@
-from datetime import datetime, time
-
 from sqlalchemy.orm import Session
 
-from app.models import (TestLesson, TestAnswer, TestQuestion,
-                        TestMatchingRight, TestMatchingLeft)
-
-from app.schemas.test_lesson_schemas import (TestConfigBase, TestConfigUpdate,
-                                             TestQuestionBase, TestAnswerBase, TesMatchingBase)
+from app.models import (TestAnswer, TestLesson, TestMatchingLeft,
+                        TestMatchingRight, TestQuestion)
+from app.schemas.test_lesson_schemas import (TesMatchingBase, TestAnswerBase,
+                                             TestConfigBase, TestConfigUpdate,
+                                             TestQuestionBase)
 
 
 def create_test_db(db: Session, test_data: TestConfigBase):

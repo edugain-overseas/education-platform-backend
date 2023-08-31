@@ -1,7 +1,6 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
-from app.models import (User, Teacher, SubjectTeacherAssociation,
-                        GroupTeacherAssociation, Group, Subject)
+from app.models import Group, Subject, SubjectTeacherAssociation, Teacher
 
 
 def get_teacher_info_db(db: Session, user_id: int):
@@ -32,6 +31,7 @@ def get_teacher_subjects_db(db: Session, user_id: int):
         Teacher.user_id == user_id
     ).all()
 
+    result_list = []
     field_list = [
         'subject_id',
         'subject_title',
@@ -39,8 +39,6 @@ def get_teacher_subjects_db(db: Session, user_id: int):
         'group_id',
         'group_name'
     ]
-
-    result_list = []
 
     for subject in subjects:
         teacher_subject = dict(zip(field_list, subject))

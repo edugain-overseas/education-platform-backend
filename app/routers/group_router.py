@@ -20,9 +20,9 @@ router = APIRouter()
 async def create_group(
         group_data: GroupCreate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         new_group = create_group_db(db=db, group_data=group_data)
         return new_group
     else:
@@ -36,9 +36,9 @@ async def update_group(
         group_id: int,
         group_data: GroupUpdate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         group = select_group_by_id_db(db=db, group_id=group_id)
         update_group_db(db=db, group_data=group_data, group=group)
         return {"massage": "Group have been successful updated"}
@@ -51,7 +51,7 @@ async def update_group(
 @router.get("/groups", response_model=List[GroupBase])
 async def get_groups(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     groups = select_groups_db(db=db)
     return groups
@@ -67,21 +67,11 @@ async def get_group_by_id(
     return group
 
 
-# @router.get("/group/teacher/{teacher_id}")
-# async def get_groups_by_teacher_id(
-#         teacher_id: int,
-#         db: Session = Depends(get_db),
-#         current_user: User = Depends(get_current_user)
-# ):
-#     groups = select_groups_by_teacher_id_db(db=db, teacher_id=teacher_id)
-#     return groups
-
-
 @router.get("/group/curator/{curator_id}")
 async def get_groups_by_curator_id(
         curator_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     groups = select_groups_by_curator_id_db(db=db, curator_id=curator_id)
     return groups
@@ -91,7 +81,7 @@ async def get_groups_by_curator_id(
 async def get_groups_by_specialization_id(
         specialization_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     groups = select_groups_by_specialization_id_db(db=db, specialization_id=specialization_id)
     return groups

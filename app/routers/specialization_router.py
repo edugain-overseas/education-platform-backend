@@ -21,10 +21,13 @@ router = APIRouter()
 async def create_specialization(
         specialization_data: SpecializationCreate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if not current_user.moder:
-        raise HTTPException(status_code=403, detail="Only moderators can create a new specialization")
+    if not user.moder:
+        raise HTTPException(
+            status_code=403,
+            detail="Only moderators can create a new specialization"
+        )
     return create_specialization_db(db=db, data=specialization_data)
 
 
@@ -33,10 +36,13 @@ async def update_specialization(
         specialization_id: int,
         title: str,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if not current_user.moder:
-        raise HTTPException(status_code=403, detail="Only moderators can update specialization")
+    if not user.moder:
+        raise HTTPException(
+            status_code=403,
+            detail="Only moderators can update specialization"
+        )
     specialization = select_specialization_by_id_db(db=db, spec_id=specialization_id)
     update_specialization_title_db(db=db, title=title, specialization=specialization)
     return {"message": "Title for specialization have been successful updated"}
@@ -45,10 +51,13 @@ async def update_specialization(
 @router.get("/specializations", response_model=List[SpecializationBase])
 async def get_specializations(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if not current_user.moder:
-        raise HTTPException(status_code=403, detail="Only moderators can view the list of specializations")
+    if not user.moder or not user.teacher:
+        raise HTTPException(
+            status_code=403,
+            detail="Only moderators and teachers can view the list of specializations"
+        )
     specializations = select_specializations_db(db=db)
     return specializations
 
@@ -57,11 +66,13 @@ async def get_specializations(
 async def get_specialization_by_id(
         specialization_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if not current_user.moder:
-        raise HTTPException(status_code=403, detail="Only moderators can view specialization")
-
+    if not user.moder or not user.teacher:
+        raise HTTPException(
+            status_code=403,
+            detail="Only moderators and teachers can view specialization"
+        )
     specialization = select_specialization_by_id_db(db=db, spec_id=specialization_id)
     return specialization
 
@@ -70,10 +81,13 @@ async def get_specialization_by_id(
 async def get_specialization_by_course_id(
         course_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if not current_user.moder:
-        raise HTTPException(status_code=403, detail="Only moderators can view the list of specializations")
+    if not user.moder or not user.teacher:
+        raise HTTPException(
+            status_code=403,
+            detail="Only moderators and teachers can view the list of specializations"
+        )
 
     specializations = select_specializations_by_course_id_db(db=db, course_id=course_id)
     return specializations
@@ -83,10 +97,13 @@ async def get_specialization_by_course_id(
 async def delete_specialization(
         specialization_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if not current_user.moder:
-        raise HTTPException(status_code=403, detail="Only moderators can view specialization")
+    if not user.moder or not user.teacher:
+        raise HTTPException(
+            status_code=403,
+            detail="Only moderators and teachers can view specialization"
+        )
 
     specialization = select_specialization_by_id_db(db=db, spec_id=specialization_id)
     delete_specialization_db(db=db, specialization=specialization)

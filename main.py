@@ -4,8 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.setting import API_PREFIX
-
 from app.routers.group_chat_router import router as group_chat_router
 from app.routers.group_router import router as group_router
 from app.routers.lecture_router import router as lecture_router
@@ -13,11 +11,12 @@ from app.routers.lesson_router import router as lesson_router
 from app.routers.module_router import router as module_router
 from app.routers.specialization_router import router as specialization_router
 from app.routers.student_router import router as student_router
-from app.routers.subject_router import router as subject_router
-from app.routers.user_router import router as user_router
-from app.routers.test_lesson_router import router as test_router
 from app.routers.subject_chat_router import router as subject_chat_router
+from app.routers.subject_router import router as subject_router
 from app.routers.teacher_router import router as teacher_router
+from app.routers.test_lesson_router import router as test_router
+from app.routers.user_router import router as user_router
+from app.setting import API_PREFIX
 
 
 app = FastAPI()

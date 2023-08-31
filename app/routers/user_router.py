@@ -21,7 +21,10 @@ router = APIRouter()
 
 
 @router.post("/student/create")
-async def create_student(data: StudentCreate, db: Session = Depends(get_db)):
+async def create_student(
+        data: StudentCreate,
+        db: Session = Depends(get_db)
+):
     hashed_password = hash_password(data.password)
     user_type = select_user_type_id_db(db=db, user_type=data.usertype.value)
 
@@ -48,7 +51,10 @@ async def create_student(data: StudentCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/teacher/create")
-async def create_teacher(data: TeacherCreate, db: Session = Depends(get_db)):
+async def create_teacher(
+        data: TeacherCreate,
+        db: Session = Depends(get_db)
+):
     hashed_password = hash_password(data.password)
     user_type = select_user_type_id_db(db=db, user_type=data.usertype.value)
 
@@ -74,7 +80,10 @@ async def create_teacher(data: TeacherCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/moder/create")
-async def create_moder(data: ModerCreate, db: Session = Depends(get_db)):
+async def create_moder(
+        data: ModerCreate,
+        db: Session = Depends(get_db)
+):
     hashed_password = hash_password(data.password)
     user_type = select_user_type_id_db(db=db, user_type=data.usertype.value)
 
@@ -100,7 +109,10 @@ async def create_moder(data: ModerCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/curator/create")
-async def create_curator(data: CuratorCreate, db: Session = Depends(get_db)):
+async def create_curator(
+        data: CuratorCreate,
+        db: Session = Depends(get_db)
+):
     hashed_password = hash_password(data.password)
     user_type = select_user_type_id_db(db=db, user_type=data.usertype.value)
 
@@ -129,7 +141,8 @@ async def create_curator(data: CuratorCreate, db: Session = Depends(get_db)):
 @router.post("/auth/token")
 async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
-        db: Session = Depends(get_db)):
+        db: Session = Depends(get_db)
+):
     user = select_user_by_username_db(db, form_data.username)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid username or password")

@@ -1,15 +1,16 @@
-from fastapi import Depends, APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.crud.test_lesson_crud import (create_test_answer_db, create_test_db,
+                                       create_test_matching_db,
+                                       create_test_question_db, select_test_db,
+                                       update_test_db)
 from app.models import User
-from app.crud.test_lesson_crud import (create_test_db, select_test_db, update_test_db,
-                                       create_test_question_db, create_test_answer_db,
-                                       create_test_matching_db)
-from app.schemas.test_lesson_schemas import (TestConfigBase, TestConfigUpdate, TestQuestionBase,
-                                             TestAnswerBase, TesMatchingBase)
+from app.schemas.test_lesson_schemas import (TesMatchingBase, TestAnswerBase,
+                                             TestConfigBase, TestConfigUpdate,
+                                             TestQuestionBase)
 from app.session import get_db
 from app.utils.token import get_current_user
-
 
 router = APIRouter()
 

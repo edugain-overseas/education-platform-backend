@@ -203,3 +203,13 @@ def select_subject_icons_db(db: Session, subject_id: int):
     ).all()
 
     return icons
+
+
+def select_subject_icon_db(db: Session, icon_path: str):
+    icon = db.query(SubjectIcon).filter(SubjectIcon.icon_path == icon_path).first()
+    return icon
+
+
+def delete_subject_icon_db(db: Session, subject_icon: SubjectIcon):
+    db.delete(subject_icon)
+    db.commit()

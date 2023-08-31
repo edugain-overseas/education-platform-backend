@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.crud.teacher_crud import get_teacher_info_db, get_teacher_subjects_db
 from app.models import User
 from app.session import get_db
 from app.utils.token import get_current_user
-
 
 router = APIRouter()
 
@@ -30,4 +29,3 @@ async def get_teacher_info(
     teacher_info['subject_info'] = subjects
 
     return teacher_info
-

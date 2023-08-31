@@ -19,9 +19,9 @@ router = APIRouter()
 async def create_lesson(
         lesson_data: LessonBase,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher:
+    if user.teacher or user.moder:
         new_lesson = create_new_lesson_db(db=db, lesson_data=lesson_data)
         return new_lesson
     else:
@@ -36,9 +36,9 @@ async def update_lesson(
         lesson_id: int,
         lesson_data: LessonUpdate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher:
+    if user.teacher or user.moder:
         lesson = select_lesson_by_id_db(db=db, lesson_id=lesson_id)
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
@@ -51,9 +51,9 @@ async def update_lesson(
 @router.get("/lessons")
 async def get_lessons(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         return {"lessons": select_all_lessons_db(db=db)}
     raise HTTPException(status_code=403, detail="Permission denied")
 
@@ -62,9 +62,9 @@ async def get_lessons(
 async def get_lesson(
         lesson_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         return select_lesson_by_id_db(db=db, lesson_id=lesson_id)
     raise HTTPException(status_code=403, detail="Permission denied")
 
@@ -73,9 +73,9 @@ async def get_lesson(
 async def get_lesson_by_module(
         module_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         return {"lessons": select_lesson_by_module_db(db=db, module_id=module_id)}
     raise HTTPException(status_code=403, detail="Permission denied")
 
@@ -84,9 +84,9 @@ async def get_lesson_by_module(
 async def get_lesson_by_subject(
         subject_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         return {"lessons": select_lesson_by_subject_db(db=db, subject_id=subject_id)}
     raise HTTPException(status_code=403, detail="Permission denied")
 
@@ -95,9 +95,9 @@ async def get_lesson_by_subject(
 async def get_lesson_by_type(
         type_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         return {"lessons": select_lesson_by_type_db(db=db, type_id=type_id)}
     raise HTTPException(status_code=403, detail="Permission denied")
 
@@ -106,9 +106,9 @@ async def get_lesson_by_type(
 async def delete_lesson(
         lesson_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         lesson = select_lesson_by_id_db(db=db, lesson_id=lesson_id)
         if not lesson:
             raise HTTPException(status_code=404, detail="Lessons not found")

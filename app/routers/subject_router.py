@@ -11,9 +11,11 @@ from app.crud.lesson_crud import (get_lessons_by_subject_id_db,
 from app.crud.subject_crud import (create_new_subject_db,
                                    create_subject_icon_db,
                                    create_subject_item_db, delete_subject_db,
+                                   delete_subject_icon_db,
                                    select_all_subjects_db, select_dop_subjects,
                                    select_subject_by_id_db,
                                    select_subject_exam_date,
+                                   select_subject_icon_db,
                                    select_subject_icons_db,
                                    select_subject_item_db,
                                    select_subjects_by_course_db,
@@ -29,8 +31,9 @@ from app.crud.subject_crud import (create_new_subject_db,
 from app.models import User
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 from app.session import get_db
-from app.utils.save_images import (save_subject_avatar, save_subject_icon,
-                                   save_subject_logo, save_subject_program)
+from app.utils.save_images import (delete_chat_file, save_subject_avatar,
+                                   save_subject_icon, save_subject_logo,
+                                   save_subject_program)
 from app.utils.subject_utils import set_subject_structure
 from app.utils.token import get_current_user
 
@@ -41,9 +44,9 @@ router = APIRouter()
 async def create_subject(
         new_subject: SubjectCreate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         new_subject = create_new_subject_db(db=db, subject=new_subject)
         return new_subject
     else:
@@ -58,9 +61,9 @@ async def update_subject_info(
         subject_id: int,
         subject_data: SubjectUpdate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         subject = select_subject_by_id_db(db=db, subject_id=subject_id)
         if not subject:
             raise HTTPException(status_code=404, detail="Subject not found")
@@ -78,9 +81,9 @@ async def update_subject_photo(
         subject_id: int,
         file: UploadFile = File(...),
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         subject = select_subject_by_id_db(db=db, subject_id=subject_id)
         if not subject:
             raise HTTPException(status_code=404, detail="Subject not found")
@@ -102,9 +105,9 @@ async def update_subject_logo(
         subject_id: int,
         file: UploadFile = File(...),
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         subject = select_subject_by_id_db(db=db, subject_id=subject_id)
         if not subject:
             raise HTTPException(status_code=404, detail="Subject not found")
@@ -124,9 +127,9 @@ async def update_subject_logo(
 @router.get("/subjects")
 async def get_subjects(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         subjects = select_all_subjects_db(db=db)
         if not subjects:
             raise HTTPException(status_code=404, detail="Subjects not found")
@@ -142,27 +145,22 @@ async def get_subjects(
 async def get_subject_by_id(
         subject_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    # if current_user.teacher or current_user.moder:
+
     subject = select_subject_by_id_db(db=db, subject_id=subject_id)
     if not subject:
         raise HTTPException(status_code=404, detail="Subjects not found")
     return subject
-    # else:
-    #     raise HTTPException(
-    #         status_code=403,
-    #         detail="Permission denied. Only moders and teachers can view subject"
-    #     )
 
 
 @router.get("/subject/course/{course_id}")
 async def get_subject_by_course(
         course_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         subjects = select_subjects_by_course_db(db=db, course_id=course_id)
         if not subjects:
             raise HTTPException(status_code=404, detail="Subjects not found")
@@ -178,9 +176,9 @@ async def get_subject_by_course(
 async def get_subject_by_specialization(
         specialization_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder or user.student:
         subjects = select_subjects_by_specialization_db(db=db, specialization_id=specialization_id)
         if not subjects:
             raise HTTPException(status_code=404, detail="Subjects not found")
@@ -196,7 +194,7 @@ async def get_subject_by_specialization(
 async def get_subject_by_group(
         group_name: str,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     fields = ["id", "title", "image_path"]
     response_subject = []
@@ -212,9 +210,9 @@ async def get_subject_by_group(
 async def delete_subject(
         subject_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         subject = select_subject_by_id_db(db=db, subject_id=subject_id)
         if not subject:
             raise HTTPException(status_code=404, detail="Subject not found")
@@ -232,9 +230,9 @@ async def add_teacher_for_subject(
         subject_id: int,
         teacher_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.teacher or current_user.moder:
+    if user.teacher or user.moder:
         set_teacher_for_subject_db(db=db, teacher_id=teacher_id, subject_id=subject_id)
         return {"massage": "Added new teacher for subject"}
     else:
@@ -272,7 +270,7 @@ async def set_additional_subject(
         subject_id: int,
         student_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     new_dop_subject = sign_student_for_addition_subject_db(
         db=db,
@@ -286,7 +284,7 @@ async def set_additional_subject(
 async def get_dop_subjects(
         student_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     fields = ["id", "title", "image_path"]
     response_subject = []
@@ -388,6 +386,18 @@ async def upload_subject_item_icon(
         subject_id=subject_id
     )
     return new_icon
+
+
+@router.delete("/subject-item/delete-icon")
+async def delete_subject_item_icon(
+        icon_path: str,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    delete_chat_file(file_path=icon_path)
+    icon = select_subject_icon_db(db=db, icon_path=icon_path)
+    delete_subject_icon_db(db=db, subject_icon=icon)
+    return {"Message": "Icon has been deleted"}
 
 
 @router.get("/subject-item/icons")
