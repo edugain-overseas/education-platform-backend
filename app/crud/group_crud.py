@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Curator, Group, Student, User
+from app.models import Curator, Group, Student, User, ParticipantComment
 from app.schemas.group_schemas import GroupCreate, GroupUpdate
 
 
@@ -64,7 +64,7 @@ def select_group_curator_db(db: Session, group_id: int):
     return curator
 
 
-def select_group_students_db(db: Session, group_id: int):
+def select_group_students_db(db: Session, group_id: int, subject_id: int):
     students = db.query(
         Student.id, Student.name, Student.surname,
         Student.email, Student.image_path, User.last_active)\
@@ -75,14 +75,20 @@ def select_group_students_db(db: Session, group_id: int):
     students_list = []
 
     for student in students:
+        participant_comment = db.query(ParticipantComment).\
+            filter(ParticipantComment.student_id == student.id and
+                   ParticipantComment.student_id == subject_id).first()
+
         student_data = {
             "id": student.id,
             "name": student.name,
             "surname": student.surname,
             "email": student.email,
             "image_path": student.image_path,
-            "last_active": student.last_active
+            "last_active": student.last_active,
+            "participant_comment": participant_comment.comment if participant_comment else []
         }
+
         students_list.append(student_data)
 
     return students_list

@@ -2,7 +2,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models import (Group, StudentAdditionalSubject, Subject, SubjectIcon,
-                        SubjectItem, SubjectTeacherAssociation, Teacher, User)
+                        SubjectItem, SubjectTeacherAssociation, Teacher, User, ParticipantComment)
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
@@ -213,3 +213,30 @@ def select_subject_icon_db(db: Session, icon_path: str):
 def delete_subject_icon_db(db: Session, subject_icon: SubjectIcon):
     db.delete(subject_icon)
     db.commit()
+
+
+def create_or_update_participant_comment_db(
+        db: Session,
+        subject_id: int,
+        student_id: int,
+        comment: str
+):
+    part_comment = db.query(ParticipantComment).filter(
+        ParticipantComment.subject_id == subject_id and
+        ParticipantComment.student_id == student_id).first()
+
+    if part_comment:
+        part_comment.comment = comment
+        db.commit()
+        db.refresh(part_comment)
+        return part_comment
+    else:
+        new_comment = ParticipantComment(
+            subject_id=subject_id,
+            student_id=student_id,
+            comment=comment
+        )
+        db.add(new_comment)
+        db.commit()
+        db.refresh(new_comment)
+        return new_comment

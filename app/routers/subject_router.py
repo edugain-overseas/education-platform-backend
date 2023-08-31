@@ -27,8 +27,9 @@ from app.crud.subject_crud import (create_new_subject_db,
                                    update_subject_image_path_db,
                                    update_subject_info_db,
                                    update_subject_item_text_db,
-                                   update_subject_logo_path_db)
-from app.models import User
+                                   update_subject_logo_path_db,
+                                   create_or_update_participant_comment_db)
+from app.models import User, ParticipantComment
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 from app.session import get_db
 from app.utils.save_images import (delete_chat_file, save_subject_avatar,
@@ -305,7 +306,7 @@ async def get_list_subject_members(
 ):
     teachers = select_teachers_for_subject_db(db=db, subject_id=subject_id)
     curator = select_group_curator_db(db=db, group_id=group_id)
-    students = select_group_students_db(db=db, group_id=group_id)
+    students = select_group_students_db(db=db, group_id=group_id, subject_id=subject_id)
 
     result = {
         "teachers": teachers,
@@ -314,6 +315,28 @@ async def get_list_subject_members(
     }
 
     return result
+
+
+@router.put("/update-comment", description="updating participant comment")
+async def update_participant_comment(
+        subject_id: int,
+        student_id: int,
+        comment: str,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder or user.curator:
+        return create_or_update_participant_comment_db(
+            db=db,
+            subject_id=subject_id,
+            student_id=student_id,
+            comment=comment
+        )
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Permission denied."
+        )
 
 
 @router.post("/subject-item/create")

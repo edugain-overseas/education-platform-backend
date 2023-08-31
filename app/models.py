@@ -128,6 +128,7 @@ class Student(Base):
     student_module_matching = relationship('StudentModuleMatching', back_populates='student')
 
     additional_subject = relationship('Subject', secondary='student_additional_subject', back_populates='students')
+    participant_comment = relationship('ParticipantComment', back_populates='student')
 
 
 class Teacher(Base):
@@ -233,6 +234,7 @@ class Subject(Base):
     subject_item = relationship('SubjectItem', back_populates='subject')
     subject_icon = relationship('SubjectIcon', back_populates='subject')
     subject_instruction = relationship('SubjectInstruction', back_populates='subject')
+    participant_comment = relationship('ParticipantComment', back_populates='subject')
 
     @property
     def get_total(self):
@@ -296,6 +298,18 @@ class SubjectInstructionFiles(Base):
     file = Column(String, nullable=False)
 
     subject_instruction = relationship('SubjectInstruction', back_populates='subject_instruction_files')
+
+
+class ParticipantComment(Base):
+    __tablename__ = "participant_comment"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+    student_id = Column(Integer, ForeignKey('student.id'))
+    comment = Column(String, nullable=False)
+
+    subject = relationship('Subject', back_populates='participant_comment')
+    student = relationship('Student', back_populates='participant_comment')
 
 
 class Group(Base):

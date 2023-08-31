@@ -44,7 +44,7 @@ async def get_student_info(
 
     user_info = zip(field_list, user_info_list[0])
 
-    return {"info": user_info}
+    return user_info
 
 
 @router.get("/student/my/schedule")
