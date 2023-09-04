@@ -1,6 +1,8 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
-from app.models import Group, Subject, SubjectTeacherAssociation, Teacher
+from app.models import Group, Subject, SubjectTeacherAssociation, Teacher, Lesson
 
 
 def get_teacher_info_db(db: Session, user_id: int):
@@ -45,3 +47,26 @@ def get_teacher_subjects_db(db: Session, user_id: int):
         result_list.append(teacher_subject)
 
     return result_list
+
+
+def get_teacher_lessons_db(db: Session, teacher_id: int):
+    current_date = datetime.now().date()
+
+    lessons = db.query(Subject.title, Lesson.lesson_date, Lesson.lesson_end)\
+        .join(Lesson, Subject.id == Lesson.subject_id)\
+        .filter(Lesson.teacher_id == teacher_id, Lesson.lesson_date >= current_date)\
+        .all()
+
+    return lessons
+
+
+def get_teacher_by_user_id_db(db: Session, user_id: int):
+    teacher = db.query(Teacher).filter(Teacher.user_id == user_id).first()
+    return teacher
+
+
+def update_teacher_image_db(db: Session, teacher: Teacher, image_path: str):
+    teacher.image_path = image_path
+    db.commit()
+    db.refresh(teacher)
+    return teacher

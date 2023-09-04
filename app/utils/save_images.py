@@ -4,6 +4,7 @@ from datetime import datetime
 from fastapi import UploadFile
 
 STUDENT_AVATAR_FOLDER = 'static/images/student-avatar'
+TEACHER_AVATAR_FOLDER = 'static/images/teacher-avatar'
 SUBJECT_AVATAR_FOLDER = 'static/images/subject-photo'
 SUBJECT_LOGO_FOLDER = 'static/images/subject-logo'
 SUBJECT_PROGRAM_FOLDER = 'static/subject-files/program/'
@@ -14,6 +15,16 @@ def save_student_avatar(photo: UploadFile, name, surname) -> str:
     filename = f'{name}-{surname}–{photo.filename}'
     file_path = os.path.join(STUDENT_AVATAR_FOLDER, filename)
     os.makedirs(STUDENT_AVATAR_FOLDER, exist_ok=True)
+
+    with open(file_path, "wb") as f:
+        f.write(photo.file.read())
+
+    return file_path
+
+
+def save_teacher_avatar(photo: UploadFile) -> str:
+    file_path = os.path.join(TEACHER_AVATAR_FOLDER, photo.filename)
+    os.makedirs(TEACHER_AVATAR_FOLDER, exist_ok=True)
 
     with open(file_path, "wb") as f:
         f.write(photo.file.read())

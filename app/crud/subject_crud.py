@@ -222,7 +222,7 @@ def create_or_update_participant_comment_db(
         comment: str
 ):
     part_comment = db.query(ParticipantComment).filter(
-        ParticipantComment.subject_id == subject_id and
+        ParticipantComment.subject_id == subject_id,
         ParticipantComment.student_id == student_id).first()
 
     if part_comment:
