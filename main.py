@@ -46,76 +46,170 @@ app.add_middleware(
 )
 
 
+# class RoomConnectionManager:
+#     def __init__(self):
+#         self.websocket_connections = {}
+#
+#     def set_new_connection(self, websocket: WebSocket):
+#         connection = {
+#             "user_id": None,
+#             "user_type": None,
+#             "websocket": websocket,
+#             "signal": None
+#         }
+#
+#         return connection
+#
+#     def check_len(self, room_id):
+#         if room_id in self.websocket_connections:
+#             room_connections = self.websocket_connections[room_id]
+#             return len(room_connections)
+#
+#     def add_new_connection(self, room_id: int, connection: dict):
+#         if room_id not in self.websocket_connections:
+#             self.websocket_connections[room_id] = []
+#         self.websocket_connections[room_id].append(connection)
+#
+#     def find_connection(self, room_id: int, websocket: WebSocket):
+#         if room_id in self.websocket_connections:
+#             room_connections = self.websocket_connections[room_id]
+#             for connection in room_connections:
+#                 if connection["websocket"] == websocket:
+#                     return connection
+#             print('Я не нашел нужный сокет')
+#             return None
+#
+#     def find_teacher_connection(self, room_id: int):
+#         if room_id in self.websocket_connections:
+#             room_connections = self.websocket_connections[room_id]
+#             for connection in room_connections:
+#                 if connection["user_type"] == "teacher":
+#                     return connection
+#
+#     def update_connection(self, connection: dict, user_id: int, user_type: str, signal: dict):
+#         connection["user_id"] = user_id
+#         connection["user_type"] = user_type
+#         connection["signal"] = signal
+#         return connection
+#
+#     def remove_connection(self, room_id: int, websocket: WebSocket):
+#         if room_id in self.websocket_connections:
+#             room_connections = self.websocket_connections[room_id]
+#             for connection in room_connections:
+#                 if connection["websocket"] == websocket:
+#                     room_connections.remove(connection)
+#                     return True
+#                 return False
+#
+#     async def send_signal_to_students(self, room_id, signal):
+#         if room_id in self.websocket_connections:
+#             room_connections = self.websocket_connections[room_id]
+#             for connection in room_connections:
+#                 if connection["user_type"] == "student" and connection["signal"] is None:
+#                     await connection["websocket"].send_json(signal)
+#                 elif connection["user_type"] is None:
+#                     await connection["websocket"].send_json(signal)
+#
+#     async def send_signal_to_teacher(self, room_id, signal):
+#         if room_id in self.websocket_connections:
+#             room_connections = self.websocket_connections[room_id]
+#             for connection in room_connections:
+#                 if connection["user_type"] == "teacher":
+#                     await connection["websocket"].send_json(signal)
+
 class RoomConnectionManager:
     def __init__(self):
-        self.websocket_connections = {}
+        self.websocket_connections = []
 
-    def set_new_connection(self, websocket: WebSocket):
-        connection = {
-            "user_id": None,
-            "user_type": None,
-            "websocket": websocket,
-            "signal": None
+    def initialize_room(self, room_id):
+        for connection in self.websocket_connections:
+            if room_id in connection:
+                return
+
+        room_data = {
+            room_id: [],
+            "room_connection": []
         }
+        self.websocket_connections.append(room_data)
 
-        return connection
+    def add_new_user(self, room_id: int, user_id: int, websocket: WebSocket):
+        for connection in self.websocket_connections:
+            if room_id in connection:
+                connection[room_id].append(
+                    {
+                        "userId": user_id,
+                        "websocket": websocket
+                    }
+                )
+                connection["room_connection"].append(user_id)
+                return
 
-    def check_len(self, room_id):
-        if room_id in self.websocket_connections:
-            room_connections = self.websocket_connections[room_id]
-            return len(room_connections)
+    def remove_user(self, room_id: int, websocket: WebSocket):
+        for connection in self.websocket_connections:
+            if room_id in connection:
+                for user in connection[room_id]:
+                    if user["websocket"] == websocket:
+                        user_id = user["userId"]
+                        connection[room_id].remove(user)
+                        connection["room_connection"].remove(user_id)
+                        return
 
-    def add_new_connection(self, room_id: int, connection: dict):
-        if room_id not in self.websocket_connections:
-            self.websocket_connections[room_id] = []
-        self.websocket_connections[room_id].append(connection)
+    async def send_list_user(self, room_id: int, user_id: int):
+        for connection in self.websocket_connections:
+            if room_id in connection:
+                connection_list = [conn_id for conn_id in connection["room_connection"] if conn_id != user_id]
+                for user in connection[room_id]:
+                    if user["userId"] == user_id:
+                        await user["websocket"].send_json(
+                            {
+                                "eventType": "all users",
+                                "data": connection_list
+                            }
+                        )
 
-    def find_connection(self, room_id: int, websocket: WebSocket):
-        if room_id in self.websocket_connections:
-            room_connections = self.websocket_connections[room_id]
-            for connection in room_connections:
-                if connection["websocket"] == websocket:
-                    return connection
-            print('Я не нашел нужный сокет')
-            return None
+    async def send_offer(
+            self,
+            room_id: int,
+            sender: int,
+            recipient: int,
+            signal: dict
+    ):
+        for connection in self.websocket_connections:
+            if room_id in connection:
+                for user in connection[room_id]:
+                    if user["userId"] == recipient:
+                        await user["websocket"].send_json(
+                            {
+                                "eventType": "user joined",
+                                "data": {
+                                    "callerId": sender,
+                                    "signal": signal
+                                }
+                            }
+                        )
+                        break
 
-    def find_teacher_connection(self, room_id: int):
-        if room_id in self.websocket_connections:
-            room_connections = self.websocket_connections[room_id]
-            for connection in room_connections:
-                if connection["user_type"] == "teacher":
-                    return connection
-
-    def update_connection(self, connection: dict, user_id: int, user_type: str, signal: dict):
-        connection["user_id"] = user_id
-        connection["user_type"] = user_type
-        connection["signal"] = signal
-        return connection
-
-    def remove_connection(self, room_id: int, websocket: WebSocket):
-        if room_id in self.websocket_connections:
-            room_connections = self.websocket_connections[room_id]
-            for connection in room_connections:
-                if connection["websocket"] == websocket:
-                    room_connections.remove(connection)
-                    return True
-                return False
-
-    async def send_signal_to_students(self, room_id, signal):
-        if room_id in self.websocket_connections:
-            room_connections = self.websocket_connections[room_id]
-            for connection in room_connections:
-                if connection["user_type"] == "student" and connection["signal"] is None:
-                    await connection["websocket"].send_json(signal)
-                elif connection["user_type"] is None:
-                    await connection["websocket"].send_json(signal)
-
-    async def send_signal_to_teacher(self, room_id, signal):
-        if room_id in self.websocket_connections:
-            room_connections = self.websocket_connections[room_id]
-            for connection in room_connections:
-                if connection["user_type"] == "teacher":
-                    await connection["websocket"].send_json(signal)
+    async def send_answer(
+            self,
+            room_id: int,
+            sender: int,
+            recipient: int,
+            signal: dict
+    ):
+        for connection in self.websocket_connections:
+            if room_id in connection:
+                for user in connection[room_id]:
+                    if user["userId"] == recipient:
+                        await user["websocket"].send_json(
+                            {
+                                "eventType": "receiving returned signal",
+                                "data": {
+                                    "id": sender,
+                                    "signal": signal
+                                }
+                            }
+                        )
+                        break
 
 
 manager = RoomConnectionManager()
@@ -142,48 +236,124 @@ async def connect_to_room(
        websocket: WebSocket,
        room_id: int
 ):
+    manager.initialize_room(room_id=room_id)
+
     try:
         await websocket.accept()
-        new_connection = manager.set_new_connection(websocket=websocket)
-        manager.add_new_connection(room_id=room_id, connection=new_connection)
-
-        print(len(manager.websocket_connections[room_id]))
-        print(manager.websocket_connections[room_id])
-
-        if manager.check_len(room_id=room_id) >= 2:
-            teacher_connection = manager.find_teacher_connection(room_id=room_id)
-            await manager.send_signal_to_students(room_id=room_id, signal=teacher_connection["signal"])
-            print('Отправил siganal студенту')
 
         while True:
             data = await websocket.receive_json()
-            print(data)
-            connection = manager.find_connection(room_id=room_id, websocket=websocket)
-            user_id = data.get('from')
-            user_type = data.get('fromUserType')
-            signal = data.get('signal')
 
-            manager.update_connection(
-                connection=connection,
-                user_id=user_id,
-                user_type=user_type,
-                signal=signal
-            )
+            if data.get("eventType") == "join room":
+                user_id = data.get("data").get("userId")
+                manager.add_new_user(room_id=room_id, user_id=user_id, websocket=websocket)
+                await manager.send_list_user(room_id=room_id, user_id=user_id)
 
-            if user_type == "student" and signal["type"] == "answer":
-                await manager.send_signal_to_teacher(room_id=room_id, signal=signal)
-                print(connection)
+            elif data.get("eventType") == "sending signal":
+                signal = data.get("data").get("signal")
+                recipient = data.get("data").get("userToSignal")
+                sender = data.get("data").get("callerId")
+                await manager.send_offer(room_id=room_id, sender=sender, recipient=recipient, signal=signal)
+
+            elif data.get("eventType") == "returning signal":
+                signal = data.get("data").get("signal")
+                sender = data.get("data").get("userId")
+                recipient = data.get("data").get("callerId")
+                await manager.send_answer(room_id=room_id, sender=sender, recipient=recipient, signal=signal)
+            else:
+                await websocket.send_text("Wrong eventType")
 
             print(manager.websocket_connections)
 
     except WebSocketDisconnect as e:
-        print(f"Код ответа – {e}")
-        manager.remove_connection(room_id=room_id, websocket=websocket)
+        print(f"Ошибка {e}")
+        manager.remove_user(room_id=room_id, websocket=websocket)
         print(manager.websocket_connections)
 
     finally:
         await websocket.close()
 
 
+# @app.websocket("/room/{room_id}")
+# async def connect_to_room(
+#        websocket: WebSocket,
+#        room_id: int
+# ):
+#     try:
+#         await websocket.accept()
+#         new_connection = manager.set_new_connection(websocket=websocket)
+#         manager.add_new_connection(room_id=room_id, connection=new_connection)
+#
+#         print(len(manager.websocket_connections[room_id]))
+#         print(manager.websocket_connections[room_id])
+#
+#         if manager.check_len(room_id=room_id) >= 2:
+#             teacher_connection = manager.find_teacher_connection(room_id=room_id)
+#             await manager.send_signal_to_students(room_id=room_id, signal=teacher_connection["signal"])
+#             print('Отправил siganal студенту')
+#
+#         while True:
+#             data = await websocket.receive_json()
+#             print(data)
+#             connection = manager.find_connection(room_id=room_id, websocket=websocket)
+#             user_id = data.get('from')
+#             user_type = data.get('fromUserType')
+#             signal = data.get('signal')
+#
+#             manager.update_connection(
+#                 connection=connection,
+#                 user_id=user_id,
+#                 user_type=user_type,
+#                 signal=signal
+#             )
+#
+#             if user_type == "student" and signal["type"] == "answer":
+#                 await manager.send_signal_to_teacher(room_id=room_id, signal=signal)
+#                 print(connection)
+#
+#             print(manager.websocket_connections)
+#
+#     except WebSocketDisconnect as e:
+#         print(f"Код ответа – {e}")
+#         manager.remove_connection(room_id=room_id, websocket=websocket)
+#         print(manager.websocket_connections)
+#
+#     finally:
+#         await websocket.close()
+
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
+
+# 1) Get
+# data.eventType: str = "join room"
+# data.data.userId: int
+
+# 2) Send
+# eventType: str = "all user"
+# data: list
+
+# 3) Get
+# data.eventType: str = "sending signal"
+# data.data.userToSignal: int - кому отправляем оффер
+# data.data.callerId: int - кто отправляет оффер
+# data.data.signal: dict{"sdp": "...", "type": "..."}
+
+# 4) Send
+# eventType: str = "user joined"
+# data.signal: dict{"sdp": "...", "type": "..."}
+# data.callerId: int
+
+# 5) Get
+# data.eventType: str = "returning signal"
+# data.data.signal: dict{"sdp": "...", "type": "..."}
+# data.data.callerId: int - кому
+# data.data.userId: int - от кого
+
+# 6) Send
+# eventType: str = "receiving returned signal"
+# signal: dict{"sdp": "...", "type": "..."}
+# callerId: int
+
+

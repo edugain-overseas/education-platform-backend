@@ -9,6 +9,7 @@ SUBJECT_AVATAR_FOLDER = 'static/images/subject-photo'
 SUBJECT_LOGO_FOLDER = 'static/images/subject-logo'
 SUBJECT_PROGRAM_FOLDER = 'static/subject-files/program/'
 SUBJECT_ICON_FOLDER = 'static/subject-files/icons'
+SUBJECT_INSTRUCTION_FOLDER = 'static/subject-files/instruction'
 
 
 def save_student_avatar(photo: UploadFile, name, surname) -> str:
@@ -106,6 +107,21 @@ def save_subject_icon(file: UploadFile):
         f.write(file.file.read())
 
     return file_path
+
+
+def save_subject_instructions(files: list[UploadFile]):
+    result = []
+
+    for file in files:
+        file_path = os.path.join(SUBJECT_INSTRUCTION_FOLDER, file.filename)
+        os.makedirs(SUBJECT_INSTRUCTION_FOLDER, exist_ok=True)
+
+        with open(file_path, "wb") as f:
+            f.write(file.file.read())
+
+        result.append(file_path)
+
+    return result
 
 
 def delete_chat_file(file_path: str):

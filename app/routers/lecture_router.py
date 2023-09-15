@@ -79,18 +79,29 @@ async def get_lecture(
         user: User = Depends(get_current_user)
 ):
     lectures = get_lecture_info_db(db=db, lesson_id=lesson_id)
-    result = []
+
+    result = {
+        "lessonTitle": None,
+        "lessonDescription": None,
+        "lessonDate": None,
+        "lessonEnd": None,
+        "lectureInfo": []
+    }
+
+    if lectures:
+        result["lessonTitle"] = lectures[0][0]
+        result["lessonDescription"] = lectures[0][1]
+        result["lessonDate"] = lectures[0][2]
+        result["lessonEnd"] = lectures[0][3]
+
     for lecture in lectures:
-        result.append({
-            "lesson title": lecture[0],
-            "lesson description": lecture[1],
-            "lesson date": lecture[2],
-            "lesson end": lecture[3],
-            "attribute number": lecture[4],
-            "download allowed": lecture[5],
-            "attribute type": lecture[6],
-            "attribute title": lecture[7],
+        lecture_info = {
+            "attributeNumber": lecture[4],
+            "downloadAllowed": lecture[5],
+            "attributeType": lecture[6],
+            "attributeTitle": lecture[7],
             "value": lecture[8]
-        })
+        }
+        result["lectureInfo"].append(lecture_info)
 
     return result

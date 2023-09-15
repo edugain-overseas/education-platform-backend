@@ -1,8 +1,13 @@
-from sqlalchemy import or_
+import datetime
+
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
 
 from app.models import (Group, StudentAdditionalSubject, Subject, SubjectIcon,
-                        SubjectItem, SubjectTeacherAssociation, Teacher, User, ParticipantComment)
+                        SubjectItem, SubjectTeacherAssociation,
+                        SubjectInstruction, SubjectInstructionFiles,
+                        Teacher, User, ParticipantComment)
+
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
@@ -240,3 +245,120 @@ def create_or_update_participant_comment_db(
         db.commit()
         db.refresh(new_comment)
         return new_comment
+
+
+def create_subject_instruction_db(
+        db: Session,
+        subject_id: int,
+        number: int,
+        header: str,
+        text: str,
+        date: datetime.date
+):
+    new_instruction = SubjectInstruction(
+        subject_id=subject_id,
+        number=number,
+        header=header,
+        text=text,
+        date=date
+    )
+
+    db.add(new_instruction)
+    db.commit()
+    db.refresh(new_instruction)
+    return new_instruction
+
+
+def create_subject_instruction_files_db(
+        db: Session,
+        subject_instruction_id: int,
+        file: str
+):
+    new_instruction_file = SubjectInstructionFiles(
+        subject_instruction_id=subject_instruction_id,
+        file=file
+    )
+
+    db.add(new_instruction_file)
+    db.commit()
+    db.refresh(new_instruction_file)
+    return new_instruction_file
+
+
+# def select_subject_instruction_db(db: Session, subject_id: int):
+#     instructions = db.query(
+#         SubjectInstruction.id, SubjectInstruction.subject_id,
+#         SubjectInstruction.number, SubjectInstruction.header,
+#         SubjectInstruction.text, SubjectInstruction.date,
+#         SubjectInstructionFiles.file) \
+#         .filter(SubjectInstruction.subject_id == subject_id) \
+#         .join(SubjectInstructionFiles, SubjectInstruction.id == SubjectInstructionFiles.subject_instruction_id)\
+#         .all()
+#
+#     result = []
+#     instruction_dict = None
+#     for row in instructions:
+#         if instruction_dict is None or instruction_dict['id'] != row.id:
+#             if instruction_dict:
+#                 result.append(instruction_dict)
+#             instruction_dict = {
+#                 "instructionId": row.id,
+#                 "subjectId": row.subject_id,
+#                 "number": row.number,
+#                 "header": row.header,
+#                 "text": row.text,
+#                 "date": str(row.date),
+#                 "files": []
+#             }
+#
+#         if row.file:
+#             instruction_dict["files"].append(row.file)
+#
+#     if instruction_dict:
+#         result.append(instruction_dict)
+#
+#     return result
+
+
+def select_subject_instruction_db(subject_id: int, db: Session):
+    instructions = (
+        db.query(
+            SubjectInstruction.id,
+            SubjectInstruction.subject_id,
+            SubjectInstruction.number,
+            SubjectInstruction.header,
+            SubjectInstruction.text,
+            SubjectInstruction.date,
+            func.group_concat(SubjectInstructionFiles.file).label("files")
+        )
+        .outerjoin(
+            SubjectInstructionFiles,
+            SubjectInstruction.id == SubjectInstructionFiles.subject_instruction_id
+        )
+        .filter(SubjectInstruction.subject_id == subject_id)
+        .group_by(
+            SubjectInstruction.id,
+            SubjectInstruction.subject_id,
+            SubjectInstruction.number,
+            SubjectInstruction.header,
+            SubjectInstruction.text,
+            SubjectInstruction.date
+        )
+        .all()
+    )
+
+    result = []
+    for row in instructions:
+        instruction_dict = {
+            "instructionId": row.id,
+            "subjectId": row.subject_id,
+            "number": row.number,
+            "header": row.header,
+            "text": row.text,
+            "date": str(row.date),
+            "files": row.files.split(',') if row.files else []
+        }
+        result.append(instruction_dict)
+
+    return result
+
