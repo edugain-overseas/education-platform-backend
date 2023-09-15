@@ -285,41 +285,6 @@ def create_subject_instruction_files_db(
     return new_instruction_file
 
 
-# def select_subject_instruction_db(db: Session, subject_id: int):
-#     instructions = db.query(
-#         SubjectInstruction.id, SubjectInstruction.subject_id,
-#         SubjectInstruction.number, SubjectInstruction.header,
-#         SubjectInstruction.text, SubjectInstruction.date,
-#         SubjectInstructionFiles.file) \
-#         .filter(SubjectInstruction.subject_id == subject_id) \
-#         .join(SubjectInstructionFiles, SubjectInstruction.id == SubjectInstructionFiles.subject_instruction_id)\
-#         .all()
-#
-#     result = []
-#     instruction_dict = None
-#     for row in instructions:
-#         if instruction_dict is None or instruction_dict['id'] != row.id:
-#             if instruction_dict:
-#                 result.append(instruction_dict)
-#             instruction_dict = {
-#                 "instructionId": row.id,
-#                 "subjectId": row.subject_id,
-#                 "number": row.number,
-#                 "header": row.header,
-#                 "text": row.text,
-#                 "date": str(row.date),
-#                 "files": []
-#             }
-#
-#         if row.file:
-#             instruction_dict["files"].append(row.file)
-#
-#     if instruction_dict:
-#         result.append(instruction_dict)
-#
-#     return result
-
-
 def select_subject_instruction_db(subject_id: int, db: Session):
     instructions = (
         db.query(
