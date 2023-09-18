@@ -3,7 +3,6 @@ from datetime import datetime
 
 from fastapi import UploadFile
 
-
 STUDENT_AVATAR_FOLDER = 'static/images/student-avatar'
 TEACHER_AVATAR_FOLDER = 'static/images/teacher-avatar'
 SUBJECT_AVATAR_FOLDER = 'static/images/subject-photo'

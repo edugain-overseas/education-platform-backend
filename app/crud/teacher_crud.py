@@ -2,7 +2,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.models import Group, Subject, SubjectTeacherAssociation, Teacher, Lesson
+from app.models import (Group, Lesson, Subject, SubjectTeacherAssociation,
+                        Teacher)
 
 
 def get_teacher_info_db(db: Session, user_id: int):

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Curator, Group, Student, User, ParticipantComment
+from app.models import Curator, Group, ParticipantComment, Student, User
 from app.schemas.group_schemas import GroupCreate, GroupUpdate
 
 

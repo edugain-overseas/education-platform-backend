@@ -1,13 +1,12 @@
 import datetime
 
-from sqlalchemy import or_, func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.models import (Group, StudentAdditionalSubject, Subject, SubjectIcon,
-                        SubjectItem, SubjectTeacherAssociation,
-                        SubjectInstruction, SubjectInstructionFiles,
-                        Teacher, User, ParticipantComment)
-
+from app.models import (Group, ParticipantComment, StudentAdditionalSubject,
+                        Subject, SubjectIcon, SubjectInstruction,
+                        SubjectInstructionFiles, SubjectItem,
+                        SubjectTeacherAssociation, Teacher, User)
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
@@ -326,4 +325,3 @@ def select_subject_instruction_db(subject_id: int, db: Session):
         result.append(instruction_dict)
 
     return result
-

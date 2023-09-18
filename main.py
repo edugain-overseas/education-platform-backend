@@ -1,4 +1,5 @@
 import random
+
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +19,6 @@ from app.routers.teacher_router import router as teacher_router
 from app.routers.test_lesson_router import router as test_router
 from app.routers.user_router import router as user_router
 from app.setting import API_PREFIX
-
 
 app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
