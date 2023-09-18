@@ -3,6 +3,7 @@ from datetime import datetime
 
 from fastapi import UploadFile
 
+
 STUDENT_AVATAR_FOLDER = 'static/images/student-avatar'
 TEACHER_AVATAR_FOLDER = 'static/images/teacher-avatar'
 SUBJECT_AVATAR_FOLDER = 'static/images/subject-photo'
@@ -10,6 +11,9 @@ SUBJECT_LOGO_FOLDER = 'static/images/subject-logo'
 SUBJECT_PROGRAM_FOLDER = 'static/subject-files/program/'
 SUBJECT_ICON_FOLDER = 'static/subject-files/icons'
 SUBJECT_INSTRUCTION_FOLDER = 'static/subject-files/instruction'
+SUBJECT_CHAT_FOLDER = 'static/subject-files/chat/'
+LESSON_FILE_FOLDER = 'static/lesson-files/'
+GROUP_CHAT_FOLDER = 'static/chat-files/'
 
 
 def save_student_avatar(photo: UploadFile, name, surname) -> str:
@@ -56,7 +60,7 @@ def save_subject_logo(photo: UploadFile, subject_title) -> str:
 
 
 def save_lesson_file(file: UploadFile) -> tuple:
-    folder = 'static/lesson-files/' + datetime.now().strftime("%d-%m-%Y")
+    folder = LESSON_FILE_FOLDER + datetime.now().strftime("%d-%m-%Y")
     file_extension = os.path.splitext(file.filename)[1].lstrip(".")
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
@@ -68,7 +72,7 @@ def save_lesson_file(file: UploadFile) -> tuple:
 
 
 def save_group_chat_file(file: UploadFile):
-    folder = 'static/chat-files/' + datetime.now().strftime("%d-%m-%Y")
+    folder = GROUP_CHAT_FOLDER + datetime.now().strftime("%d-%m-%Y")
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
 
@@ -79,7 +83,7 @@ def save_group_chat_file(file: UploadFile):
 
 
 def save_subject_chat_file(file: UploadFile):
-    folder = 'static/subject-files/chat/' + datetime.now().strftime("%d-%m-%Y")
+    folder = SUBJECT_CHAT_FOLDER + datetime.now().strftime("%d-%m-%Y")
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
 

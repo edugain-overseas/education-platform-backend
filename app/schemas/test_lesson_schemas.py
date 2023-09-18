@@ -46,13 +46,37 @@ class TestQuestionBase(BaseModel):
         return value
 
 
+class TestQuestionUpdate(BaseModel):
+    question_text: Optional[str] = None
+    question_number: Optional[int] = None
+    question_score: Optional[int] = None
+    question_type_id: Optional[int] = None
+
+
 class TestAnswerBase(BaseModel):
     answer_text: str
     is_correct: bool
     question_id: int
 
 
+class TestAnswerUpdate(BaseModel):
+    answer_text: Optional[str] = None
+    is_correct: Optional[bool] = None
+    question_id: Optional[int] = None
+
+
 class TesMatchingBase(BaseModel):
     left_text: str
     right_text: str
     question_id: int
+
+
+class TestMatchingLeftUpdate(BaseModel):
+    text: Optional[str] = None
+    right_id: Optional[int] = None
+    question_id: Optional[int] = None
+
+
+class TestMatchingRightUpdate(BaseModel):
+    text: Optional[str] = None
+    question_id: Optional[int] = None
