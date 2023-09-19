@@ -80,3 +80,15 @@ class TestMatchingLeftUpdate(BaseModel):
 class TestMatchingRightUpdate(BaseModel):
     text: Optional[str] = None
     question_id: Optional[int] = None
+
+
+class TestQuestionFeedback(BaseModel):
+    text: str
+    student_id: int
+    question_id: int
+
+
+class FeedbackAnswer(BaseModel):
+    answer: str
+    teacher_id: int
+    test_feedback_id: int

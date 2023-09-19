@@ -4,18 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app.crud.user_crud import (create_new_curator_db, create_new_moder_db,
-                                create_new_student_db, create_new_teacher_db,
-                                create_new_user_db, select_user_by_username_db,
+from app.crud.user_crud import (create_new_curator_db, create_new_moder_db, create_new_student_db,
+                                create_new_teacher_db, create_new_user_db, select_user_by_username_db,
                                 select_user_type_id_db, update_user_token_db)
 from app.models import User
-from app.schemas.user_schemas import (CuratorCreate, ModerCreate,
-                                      StudentCreate, TeacherCreate)
+from app.schemas.user_schemas import CuratorCreate, ModerCreate, StudentCreate, TeacherCreate
 from app.session import get_db
 from app.setting import ACCESS_TOKEN_EXPIRE_HOURS
 from app.utils.password import check_password, hash_password
-from app.utils.token import (create_access_token, delete_token_user,
-                             get_current_user)
+from app.utils.token import create_access_token, delete_token_user, get_current_user
 
 router = APIRouter()
 

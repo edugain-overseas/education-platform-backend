@@ -2,8 +2,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.models import (Course, Group, Lesson, Student, Subject,
-                        SubjectTeacherAssociation, Teacher, User)
+from app.models import Course, Group, Lesson, Student, Subject, SubjectTeacherAssociation, Teacher, User
 
 
 def get_student_info_db(db: Session, user_id: int):

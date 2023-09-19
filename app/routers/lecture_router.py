@@ -3,8 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.crud.lecture_crud import (create_lecture_db, get_lecture_info_db,
-                                   set_file_attr_for_lecture_db,
+from app.crud.lecture_crud import (create_lecture_db, get_lecture_info_db, set_file_attr_for_lecture_db,
                                    set_text_attr_for_lecture_db)
 from app.models import User
 from app.schemas.lecture_schemas import LectureTextCreate

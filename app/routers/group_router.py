@@ -3,10 +3,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.crud.group_crud import (create_group_db, select_group_by_id_db,
-                                 select_groups_by_curator_id_db,
-                                 select_groups_by_specialization_id_db,
-                                 select_groups_db, update_group_db)
+from app.crud.group_crud import (create_group_db, select_group_by_id_db, select_groups_by_curator_id_db,
+                                 select_groups_by_specialization_id_db, select_groups_db, update_group_db)
 from app.models import User
 from app.schemas.group_schemas import Group as GroupBase
 from app.schemas.group_schemas import GroupCreate, GroupUpdate

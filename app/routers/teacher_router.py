@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 
-from app.crud.teacher_crud import (get_teacher_by_user_id_db,
-                                   get_teacher_info_db, get_teacher_lessons_db,
-                                   get_teacher_subjects_db,
-                                   update_teacher_image_db)
+from app.crud.teacher_crud import (get_teacher_by_user_id_db, get_teacher_info_db, get_teacher_lessons_db,
+                                   get_teacher_subjects_db, update_teacher_image_db)
 from app.models import User
 from app.session import get_db
 from app.utils.save_images import save_teacher_avatar

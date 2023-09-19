@@ -3,10 +3,8 @@ import datetime
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.models import (Group, ParticipantComment, StudentAdditionalSubject,
-                        Subject, SubjectIcon, SubjectInstruction,
-                        SubjectInstructionFiles, SubjectItem,
-                        SubjectTeacherAssociation, Teacher, User)
+from app.models import (Group, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon, SubjectInstruction,
+                        SubjectInstructionFiles, SubjectItem, SubjectTeacherAssociation, Teacher, User)
 from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 

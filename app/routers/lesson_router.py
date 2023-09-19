@@ -1,12 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.crud.lesson_crud import (create_new_lesson_db, delete_lesson_db,
-                                  select_all_lessons_db,
-                                  select_lesson_by_id_db,
-                                  select_lesson_by_module_db,
-                                  select_lesson_by_subject_db,
-                                  select_lesson_by_type_db, update_lesson_db)
+from app.crud.lesson_crud import (create_new_lesson_db, delete_lesson_db, select_all_lessons_db, select_lesson_by_id_db,
+                                  select_lesson_by_module_db, select_lesson_by_subject_db, select_lesson_by_type_db,
+                                  update_lesson_db)
 from app.models import User
 from app.schemas.lesson_schemas import LessonBase, LessonUpdate
 from app.session import get_db

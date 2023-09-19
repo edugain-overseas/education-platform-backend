@@ -1,15 +1,10 @@
 from sqlalchemy.orm import Session
 
-from app.models import (Lesson, StudentTest, StudentTestAnswer,
-                        StudentTestMatching, TestAnswer, TestFeedback,
-                        TestFeedbackAnswer, TestLesson, TestMatchingLeft,
-                        TestMatchingRight, TestQuestion)
-from app.schemas.test_lesson_schemas import (TesMatchingBase, TestAnswerBase,
-                                             TestAnswerUpdate, TestConfigBase,
-                                             TestConfigUpdate,
-                                             TestMatchingLeftUpdate,
-                                             TestMatchingRightUpdate,
-                                             TestQuestionBase,
+from app.models import (Lesson, StudentTest, StudentTestAnswer, StudentTestMatching, TestAnswer, TestFeedback,
+                        TestFeedbackAnswer, TestLesson, TestMatchingLeft, TestMatchingRight, TestQuestion)
+from app.schemas.test_lesson_schemas import (TesMatchingBase, TestAnswerBase, TestAnswerUpdate, TestConfigBase,
+                                             TestConfigUpdate, FeedbackAnswer, TestMatchingLeftUpdate,
+                                             TestMatchingRightUpdate, TestQuestionBase, TestQuestionFeedback,
                                              TestQuestionUpdate)
 
 
@@ -216,3 +211,33 @@ def update_test_matching_right_db(
     db.commit()
     db.refresh(test_matching_right)
     return test_matching_right
+
+
+def create_test_feedback_db(db: Session, feedback_data: TestQuestionFeedback):
+    new_feedback = TestFeedback(**feedback_data.dict())
+    db.add(new_feedback)
+    db.commit()
+    db.refresh(new_feedback)
+    return new_feedback
+
+
+def select_test_feedback_db(db: Session, question_id: int = None, student_id: int = None):
+    if student_id is None:
+        return db.query(TestFeedback).filter(TestFeedback.question_id == question_id).all()
+    else:
+        return db.query(TestFeedback).filter(TestFeedback.student_id == student_id).all()
+
+
+def create_feedback_answer_db(db: Session, answer_data: FeedbackAnswer):
+    new_answer = TestFeedbackAnswer(**answer_data.dict())
+    db.add(new_answer)
+    db.commit()
+    db.refresh(new_answer)
+    return new_answer
+
+
+def select_feedback_answer_db(db: Session, teacher_id: int = None, test_feedback_id: int = None):
+    if test_feedback_id is None:
+        return db.query(TestFeedbackAnswer).filter(TestFeedbackAnswer.teacher_id == teacher_id).all()
+    else:
+        return db.query(TestFeedbackAnswer).filter(TestFeedbackAnswer.test_feedback_id == test_feedback_id).all()

@@ -1,9 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.crud.group_chat_crud import (select_curator_in_group_db,
-                                      select_student_in_group_db)
-from app.crud.subject_chat_crud import (select_students_for_subject_db,
-                                        select_teachers_for_subject_db)
+from app.crud.group_chat_crud import select_curator_in_group_db, select_student_in_group_db
+from app.crud.subject_chat_crud import select_students_for_subject_db, select_teachers_for_subject_db
 
 
 def select_users_in_group(group_name: str, db: Session) -> list[tuple]:

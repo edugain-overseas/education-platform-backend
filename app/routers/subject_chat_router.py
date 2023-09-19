@@ -5,21 +5,17 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
-from app.crud.subject_chat_crud import (
-    create_subject_attach_file_db, create_subject_chat_answer,
-    create_subject_chat_message, create_subject_recipient_db,
-    get_last_messages_for_subject_chat_db,
-    get_messages_for_subject_chat_by_pagination_db, select_last_answer_db,
-    select_last_message_db, select_message_by_id_db,
-    select_recipient_by_message_id, update_read_by_for_answer_db,
-    update_read_by_for_message_db)
+from app.crud.subject_chat_crud import (create_subject_attach_file_db, create_subject_chat_answer,
+                                        create_subject_chat_message, create_subject_recipient_db,
+                                        get_last_messages_for_subject_chat_db,
+                                        get_messages_for_subject_chat_by_pagination_db, select_last_answer_db,
+                                        select_last_message_db, select_message_by_id_db, select_recipient_by_message_id,
+                                        update_read_by_for_answer_db, update_read_by_for_message_db)
 from app.models import User
 from app.session import get_db
-from app.utils.count_users import (select_users_in_subject,
-                                   set_keyword_for_users_data)
+from app.utils.count_users import select_users_in_subject, set_keyword_for_users_data
 from app.utils.save_images import delete_chat_file, save_subject_chat_file
-from app.utils.subject_chat import (set_subject_chat_last_answer_dict,
-                                    set_subject_chat_last_message_dict,
+from app.utils.subject_chat import (set_subject_chat_last_answer_dict, set_subject_chat_last_message_dict,
                                     set_subject_chat_last_messages_dict)
 from app.utils.token import get_current_user, get_user_by_token
 

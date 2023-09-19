@@ -1,25 +1,17 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.crud.test_lesson_crud import (create_test_answer_db, create_test_db,
-                                       create_test_matching_db,
-                                       create_test_question_db,
-                                       select_test_answer_db, select_test_db,
-                                       select_test_info_db,
-                                       select_test_matching_left_db,
-                                       select_test_matching_right_db,
-                                       select_test_question_db,
-                                       update_test_answer_db, update_test_db,
-                                       update_test_matching_left_db,
-                                       update_test_matching_right_db,
+from app.crud.test_lesson_crud import (create_feedback_answer_db, create_test_answer_db, create_test_db,
+                                       create_test_feedback_db, create_test_matching_db, create_test_question_db,
+                                       select_feedback_answer_db, select_test_answer_db, select_test_db,
+                                       select_test_feedback_db, select_test_info_db, select_test_matching_left_db,
+                                       select_test_matching_right_db, select_test_question_db, update_test_answer_db,
+                                       update_test_db, update_test_matching_left_db, update_test_matching_right_db,
                                        update_test_question_db)
 from app.models import User
-from app.schemas.test_lesson_schemas import (TesMatchingBase, TestAnswerBase,
-                                             TestAnswerUpdate, TestConfigBase,
-                                             TestConfigUpdate,
-                                             TestMatchingLeftUpdate,
-                                             TestMatchingRightUpdate,
-                                             TestQuestionBase,
+from app.schemas.test_lesson_schemas import (TesMatchingBase, TestAnswerBase, TestAnswerUpdate, TestConfigBase,
+                                             TestConfigUpdate, FeedbackAnswer, TestMatchingLeftUpdate,
+                                             TestMatchingRightUpdate, TestQuestionBase, TestQuestionFeedback,
                                              TestQuestionUpdate)
 from app.session import get_db
 from app.utils.save_images import save_lesson_file
@@ -149,3 +141,69 @@ async def upload_test_image(
             status_code=401,
             detail="Permission denied"
         )
+
+
+@router.post("/test/feedback")
+async def create_test_feedback(
+        test_feedback_data: TestQuestionFeedback,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.student:
+        return create_test_feedback_db(db=db, feedback_data=test_feedback_data)
+    else:
+        raise HTTPException(
+            status_code=401,
+            detail='Permission denied'
+        )
+
+
+@router.get("/test/feedback/question/{question_id}")
+async def get_test_feedback_by_question(
+        question_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    return select_test_feedback_db(db=db, question_id=question_id)
+
+
+@router.get("/test/feedback/student/{student_id}")
+async def get_test_feedback_by_student(
+        student_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    return select_test_feedback_db(db=db, student_id=student_id)
+
+
+@router.post("/feedback/answer")
+async def create_test_feedback_answer(
+        answer_data: FeedbackAnswer,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher:
+        return create_feedback_answer_db(db=db, answer_data=answer_data)
+    else:
+        raise HTTPException(
+            status_code=401,
+            detail="Permission denied"
+        )
+
+
+@router.get("/feedback/answer/teacher/{teacher_id}")
+async def get_feedback_answer_by_teacher(
+        teacher_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    return select_feedback_answer_db(db=db, teacher_id=teacher_id)
+
+
+@router.get("/feedback/answer/{feedback_id}")
+async def get_feedback_answer(
+        feedback_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    return select_feedback_answer_db(db=db, test_feedback_id=feedback_id)
