@@ -233,6 +233,7 @@ class Subject(Base):
     subject_item = relationship('SubjectItem', back_populates='subject')
     subject_icon = relationship('SubjectIcon', back_populates='subject')
     subject_instruction = relationship('SubjectInstruction', back_populates='subject')
+    subject_instruction_category = relationship('SubjectInstructionCategory', back_populates='subject')
     participant_comment = relationship('ParticipantComment', back_populates='subject')
 
     @property
@@ -275,6 +276,19 @@ class SubjectIcon(Base):
     subject = relationship('Subject', back_populates='subject_icon')
 
 
+class SubjectInstructionCategory(Base):
+    __tablename__ = "subject_instruction_category"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category_name = Column(String, nullable=False, unique=True)
+    number = Column(Integer, nullable=False)
+    is_view = Column(Boolean)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    subject = relationship('Subject', back_populates='subject_instruction_category')
+    subject_instruction = relationship('SubjectInstruction', back_populates='subject_category')
+
+
 class SubjectInstruction(Base):
     __tablename__ = "subject_instruction"
 
@@ -282,11 +296,15 @@ class SubjectInstruction(Base):
     subject_id = Column(Integer, ForeignKey('subject.id'))
     number = Column(Integer, nullable=False)
     header = Column(String, nullable=False)
+    subtitle = Column(String)
     text = Column(Text)
     date = Column(Date)
+    is_view = Column(Boolean)
+    subject_category_id = Column(Integer, ForeignKey('subject_instruction_category.id'))
 
     subject = relationship('Subject', back_populates='subject_instruction')
     subject_instruction_files = relationship('SubjectInstructionFiles', back_populates='subject_instruction')
+    subject_category = relationship('SubjectInstructionCategory', back_populates='subject_instruction')
 
 
 class SubjectInstructionFiles(Base):
@@ -295,6 +313,7 @@ class SubjectInstructionFiles(Base):
     id = Column(Integer, primary_key=True, index=True)
     subject_instruction_id = Column(Integer, ForeignKey('subject_instruction.id'))
     file = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)
 
     subject_instruction = relationship('SubjectInstruction', back_populates='subject_instruction_files')
 

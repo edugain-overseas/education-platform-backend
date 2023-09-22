@@ -4,8 +4,11 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.models import (Group, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon, SubjectInstruction,
-                        SubjectInstructionFiles, SubjectItem, SubjectTeacherAssociation, Teacher, User)
-from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
+                        SubjectInstructionCategory, SubjectInstructionFiles, SubjectItem, SubjectTeacherAssociation,
+                        Teacher, User)
+from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
+                                         SubjectInstructionCategoryUpdate, SubjectInstructionCreate,
+                                         SubjectInstructionUpdate, SubjectUpdate)
 
 
 def create_new_subject_db(db: Session, subject: SubjectCreate):
@@ -244,20 +247,56 @@ def create_or_update_participant_comment_db(
         return new_comment
 
 
+def create_subject_instruction_category_db(
+        db: Session,
+        subject_category: SubjectInstructionCategoryCreate
+):
+    new_category = SubjectInstructionCategory(**subject_category.dict())
+    db.add(new_category)
+    db.commit()
+    db.refresh(new_category)
+    return new_category
+
+
+def select_subject_instruction_category_db(db: Session, instruction_category_id: int):
+    return db.query(
+        SubjectInstructionCategory
+    ).filter(SubjectInstructionCategory.id == instruction_category_id).first()
+
+
+def update_subject_instruction_category_db(
+        db: Session,
+        instruction_category: SubjectInstructionCategory,
+        instruction_category_data: SubjectInstructionCategoryUpdate
+):
+    for field, value in instruction_category_data:
+        if value is not None:
+            setattr(instruction_category, field, value)
+
+    db.commit()
+    db.refresh(instruction_category)
+    return instruction_category
+
+
 def create_subject_instruction_db(
         db: Session,
         subject_id: int,
         number: int,
         header: str,
         text: str,
-        date: datetime.date
+        subtitle: str,
+        subject_category_id: int,
+        is_view: bool
 ):
     new_instruction = SubjectInstruction(
         subject_id=subject_id,
         number=number,
         header=header,
         text=text,
-        date=date
+        date=datetime.date.today(),
+        subtitle=subtitle,
+        subject_category_id=subject_category_id,
+        is_view=is_view
     )
 
     db.add(new_instruction)
@@ -266,14 +305,16 @@ def create_subject_instruction_db(
     return new_instruction
 
 
-def create_subject_instruction_files_db(
+def create_subject_instruction_file_db(
         db: Session,
         subject_instruction_id: int,
-        file: str
+        file: str,
+        file_type: str
 ):
     new_instruction_file = SubjectInstructionFiles(
         subject_instruction_id=subject_instruction_id,
-        file=file
+        file=file,
+        file_type=file_type
     )
 
     db.add(new_instruction_file)
@@ -282,44 +323,104 @@ def create_subject_instruction_files_db(
     return new_instruction_file
 
 
-def select_subject_instruction_db(subject_id: int, db: Session):
-    instructions = (
+def select_subject_instruction_db(instruction_id: int, db: Session):
+    instruction = db.query(SubjectInstruction).filter(SubjectInstruction.id == instruction_id).first()
+    return instruction
+
+
+def delete_subject_instruction_file_db(db: Session, file_path: str):
+    instruction = db.query(SubjectInstructionFiles).filter(SubjectInstructionFiles.file == file_path).first()
+    db.delete(instruction)
+    db.commit()
+
+
+def select_subject_instructions_db(subject_id: int, db: Session):
+
+    instruction_categories = (
         db.query(
-            SubjectInstruction.id,
-            SubjectInstruction.subject_id,
-            SubjectInstruction.number,
-            SubjectInstruction.header,
-            SubjectInstruction.text,
-            SubjectInstruction.date,
-            func.group_concat(SubjectInstructionFiles.file).label("files")
+            SubjectInstructionCategory.id,
+            SubjectInstructionCategory.category_name,
+            SubjectInstructionCategory.is_view,
+            SubjectInstructionCategory.number
         )
-        .outerjoin(
-            SubjectInstructionFiles,
-            SubjectInstruction.id == SubjectInstructionFiles.subject_instruction_id
-        )
-        .filter(SubjectInstruction.subject_id == subject_id)
-        .group_by(
-            SubjectInstruction.id,
-            SubjectInstruction.subject_id,
-            SubjectInstruction.number,
-            SubjectInstruction.header,
-            SubjectInstruction.text,
-            SubjectInstruction.date
-        )
+        .filter(SubjectInstructionCategory.subject_id == subject_id)
         .all()
     )
 
     result = []
-    for row in instructions:
-        instruction_dict = {
-            "instructionId": row.id,
-            "subjectId": row.subject_id,
-            "number": row.number,
-            "header": row.header,
-            "text": row.text,
-            "date": str(row.date),
-            "files": row.files.split(',') if row.files else []
+
+    for category in instruction_categories:
+        subject_instructions = {
+            "courseNumber": 1,
+            "category": category.category_name,
+            "categoryId": category.id,
+            "categoryNumber": category.number,
+            "categoryIsView": category.is_view,
+            "instructions": []
         }
-        result.append(instruction_dict)
+
+        instructions = (
+            db.query(
+                SubjectInstruction.id,
+                SubjectInstruction.number,
+                SubjectInstruction.header,
+                SubjectInstruction.subtitle,
+                SubjectInstruction.text,
+                SubjectInstruction.is_view,
+                func.group_concat(SubjectInstructionFiles.file).label("filesPath"),
+                func.group_concat(SubjectInstructionFiles.file_type).label("filesType")
+            )
+            .outerjoin(
+                SubjectInstructionFiles,
+                SubjectInstruction.id == SubjectInstructionFiles.subject_instruction_id
+            )
+            .filter(SubjectInstruction.subject_category_id == category.id)
+            .group_by(
+                SubjectInstruction.id,
+                SubjectInstruction.number,
+                SubjectInstruction.header,
+                SubjectInstruction.subtitle,
+                SubjectInstruction.text,
+                SubjectInstruction.is_view
+            )
+            .all()
+        )
+
+        for row in instructions:
+            instruction_dict = {
+                "instructionId": row.id,
+                "number": row.number,
+                "title": row.header,
+                "subTitle": row.subtitle,
+                "text": row.text,
+                "isView": row.is_view,
+                "files": [
+                    {
+                        "filePath": filepath,
+                        "fileType": filetype
+                    } for filepath, filetype in zip(
+                        row.filesPath.split(','),
+                        row.filesType.split(',')
+                    )
+                ] if row.filesPath else []
+            }
+
+            subject_instructions["instructions"].append(instruction_dict)
+
+        result.append(subject_instructions)
 
     return result
+
+
+def update_subject_instruction_db(
+        db: Session,
+        instruction: SubjectInstruction,
+        instruction_data: SubjectInstructionUpdate
+):
+    for field, value in instruction_data:
+        if value is not None:
+            setattr(instruction, field, value)
+
+    db.commit()
+    db.refresh(instruction)
+    return instruction

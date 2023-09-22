@@ -60,14 +60,13 @@ def save_subject_logo(photo: UploadFile, subject_title) -> str:
 
 def save_lesson_file(file: UploadFile) -> tuple:
     folder = LESSON_FILE_FOLDER + datetime.now().strftime("%d-%m-%Y")
-    file_extension = os.path.splitext(file.filename)[1].lstrip(".")
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
 
     with open(file_path, "wb") as f:
         f.write(file.file.read())
 
-    return file_path, file_extension
+    return file_path
 
 
 def save_group_chat_file(file: UploadFile):

@@ -8,18 +8,23 @@ from sqlalchemy.orm import Session
 from app.crud.group_crud import select_group_curator_db, select_group_students_db
 from app.crud.lesson_crud import get_lessons_by_subject_id_db, select_three_next_lesson_db
 from app.crud.subject_crud import (create_new_subject_db, create_or_update_participant_comment_db,
-                                   create_subject_icon_db, create_subject_instruction_db,
-                                   create_subject_instruction_files_db, create_subject_item_db, delete_subject_db,
-                                   delete_subject_icon_db, select_all_subjects_db, select_dop_subjects,
+                                   create_subject_icon_db, create_subject_instruction_category_db,
+                                   create_subject_instruction_db, create_subject_instruction_file_db,
+                                   create_subject_item_db, delete_subject_db, delete_subject_icon_db,
+                                   delete_subject_instruction_file_db, select_all_subjects_db, select_dop_subjects,
                                    select_subject_by_id_db, select_subject_exam_date, select_subject_icon_db,
-                                   select_subject_icons_db, select_subject_instruction_db, select_subject_item_db,
-                                   select_subjects_by_course_db, select_subjects_by_group_db,
+                                   select_subject_icons_db, select_subject_instruction_category_db,
+                                   select_subject_instruction_db, select_subject_instructions_db,
+                                   select_subject_item_db, select_subjects_by_course_db, select_subjects_by_group_db,
                                    select_subjects_by_specialization_db, select_teachers_for_subject_db,
                                    set_teacher_for_subject_db, sign_student_for_addition_subject_db,
-                                   update_subject_image_path_db, update_subject_info_db, update_subject_item_text_db,
-                                   update_subject_logo_path_db)
+                                   update_subject_image_path_db, update_subject_info_db,
+                                   update_subject_instruction_category_db, update_subject_instruction_db,
+                                   update_subject_item_text_db, update_subject_logo_path_db)
 from app.models import User
-from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
+from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
+                                         SubjectInstructionCategoryUpdate, SubjectInstructionCreate,
+                                         SubjectInstructionUpdate, SubjectUpdate)
 from app.session import get_db
 from app.utils.save_images import (delete_chat_file, save_subject_avatar, save_subject_icon, save_subject_instructions,
                                    save_subject_logo, save_subject_program)
@@ -420,56 +425,169 @@ async def get_subject_item_icons(
     return select_subject_icons_db(db=db, subject_id=subject_id)
 
 
+@router.post("/subject/instruction/category")
+async def create_subject_instruction_category(
+        subject_category: SubjectInstructionCategoryCreate,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder:
+        return create_subject_instruction_category_db(db=db, subject_category=subject_category)
+    else:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+
+@router.put("/subject/instruction/category")
+async def update_subject_instruction_category(
+        instruction_category_id: int,
+        instruction_category_data: SubjectInstructionCategoryUpdate,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder:
+        instruction_category = select_subject_instruction_category_db(
+            db=db,
+            instruction_category_id=instruction_category_id
+        )
+        return update_subject_instruction_category_db(
+            db=db,
+            instruction_category=instruction_category,
+            instruction_category_data=instruction_category_data
+        )
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.delete("/subject/instruction/category")
+async def delete_subject_instruction_category(
+        subject_instruction_category_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    pass
+
+
+@router.post("/subject/instruction/file")
+async def upload_subject_instruction_file(
+        files: Optional[list[UploadFile]] = File(None),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder:
+        files_paths = save_subject_instructions(files=files)
+        return files_paths
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.delete("/subject/instruction/file/")
+async def delete_subject_instruction_file(
+        file_path: str,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder:
+        delete_subject_instruction_file_db(db=db, file_path=file_path)
+        delete_chat_file(file_path=file_path)
+        return {"message": "File have been deleted"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.post("/subjects/instruction/attach-file")
+async def attach_file_for_instruction(
+        subject_instruction_id: int,
+        file_path: str,
+        file_type: str,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.moder or user.teacher:
+        return create_subject_instruction_file_db(
+            db=db,
+            subject_instruction_id=subject_instruction_id,
+            file=file_path,
+            file_type=file_type
+        )
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
 @router.post("/subject/instruction")
 async def create_subject_instruction(
-        subject_id: int = Form(...),
-        number: int = Form(...),
-        header: str = Form(...),
-        text: str = Form(...),
-        date: datetime.date = Form(...),
-        files: Optional[list[UploadFile]] = File(None),
+        instruction_data: SubjectInstructionCreate,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
     if user.teacher or user.moder:
         instruction = create_subject_instruction_db(
             db=db,
-            subject_id=subject_id,
-            number=number,
-            header=header,
-            text=text,
-            date=date
+            subject_id=instruction_data.subject_id,
+            number=instruction_data.number,
+            header=instruction_data.header,
+            text=instruction_data.text,
+            subtitle=instruction_data.subtitle,
+            subject_category_id=instruction_data.subject_category_id,
+            is_view=instruction_data.is_view
         )
 
-        if files is not None:
-            files_paths = save_subject_instructions(files=files)
-
-            for file_path in files_paths:
-                create_subject_instruction_files_db(
+        if instruction_data.files is not None:
+            for file in instruction_data.files:
+                create_subject_instruction_file_db(
                     db=db,
                     subject_instruction_id=instruction.id,
-                    file=file_path
+                    file=file["filePath"],
+                    file_type=file["fileType"]
                 )
 
             instruction_dict = {
-                "subject_id": instruction.subject_id,
+                "instructionId": instruction.id,
                 "number": instruction.number,
-                "header": instruction.header,
+                "title": instruction.header,
+                "subTitle": instruction.subtitle,
                 "text": instruction.text,
-                "date": instruction.date,
-                "files": files_paths
+                "subjectCategoryId": instruction.subject_category_id,
+                "isView": instruction.is_view,
+                "files": instruction_data.files
             }
-
             return instruction_dict
 
         else:
-            return instruction
+            return {
+                "instructionId": instruction.id,
+                "number": instruction.number,
+                "title": instruction.header,
+                "subTitle": instruction.subtitle,
+                "text": instruction.text,
+                "subjectCategoryId": instruction.subject_category_id,
+                "isView": instruction.is_view,
+                "files": []
+            }
 
     else:
-        raise HTTPException(
-            status_code=403,
-            detail="Permission denied."
-        )
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.put("/subject/instruction")
+async def update_subject_instruction(
+        instruction_id: int,
+        instruction_data: SubjectInstructionUpdate,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.moder or user.teacher:
+        instruction = select_subject_instruction_db(db=db, instruction_id=instruction_id)
+        return update_subject_instruction_db(db=db, instruction=instruction, instruction_data=instruction_data)
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.delete("/subject/instruction")
+async def delete_subject_instruction(
+    subject_instruction_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    pass
 
 
 @router.get("/subject/{subject_id}/instruction/")
@@ -478,5 +596,5 @@ async def get_subject_instruction(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    instructions = select_subject_instruction_db(db=db, subject_id=subject_id)
+    instructions = select_subject_instructions_db(db=db, subject_id=subject_id)
     return instructions

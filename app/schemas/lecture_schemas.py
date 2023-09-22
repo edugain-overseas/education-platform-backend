@@ -1,10 +1,22 @@
+from enum import Enum
 from typing import List
 
 from pydantic import BaseModel
 
 
+class AttributeType(str, Enum):
+    title = "title"
+    text = "text"
+    present = "present"
+    audio = "audio"
+    picture = "picture"
+    file = "file"
+    link = "link"
+    homework = "homework"
+
+
 class AttributeTextBase(BaseModel):
-    attr_type: str
+    attr_type: AttributeType
     attr_title: str
     attr_number: int
     download_allowed: bool

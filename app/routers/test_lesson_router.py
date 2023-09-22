@@ -9,8 +9,8 @@ from app.crud.test_lesson_crud import (create_feedback_answer_db, create_test_an
                                        update_test_db, update_test_matching_left_db, update_test_matching_right_db,
                                        update_test_question_db)
 from app.models import User
-from app.schemas.test_lesson_schemas import (TesMatchingBase, TestAnswerBase, TestAnswerUpdate, TestConfigBase,
-                                             TestConfigUpdate, FeedbackAnswer, TestMatchingLeftUpdate,
+from app.schemas.test_lesson_schemas import (FeedbackAnswer, TesMatchingBase, TestAnswerBase, TestAnswerUpdate,
+                                             TestConfigBase, TestConfigUpdate, TestMatchingLeftUpdate,
                                              TestMatchingRightUpdate, TestQuestionBase, TestQuestionFeedback,
                                              TestQuestionUpdate)
 from app.session import get_db
@@ -135,7 +135,7 @@ async def upload_test_image(
 ):
     if user.moder or user.teacher:
         file_path = save_lesson_file(file=file)
-        return {"filePath": file_path[0]}
+        return {"filePath": file_path}
     else:
         raise HTTPException(
             status_code=401,

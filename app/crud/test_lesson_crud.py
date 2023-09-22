@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 
 from app.models import (Lesson, StudentTest, StudentTestAnswer, StudentTestMatching, TestAnswer, TestFeedback,
                         TestFeedbackAnswer, TestLesson, TestMatchingLeft, TestMatchingRight, TestQuestion)
-from app.schemas.test_lesson_schemas import (TesMatchingBase, TestAnswerBase, TestAnswerUpdate, TestConfigBase,
-                                             TestConfigUpdate, FeedbackAnswer, TestMatchingLeftUpdate,
+from app.schemas.test_lesson_schemas import (FeedbackAnswer, TesMatchingBase, TestAnswerBase, TestAnswerUpdate,
+                                             TestConfigBase, TestConfigUpdate, TestMatchingLeftUpdate,
                                              TestMatchingRightUpdate, TestQuestionBase, TestQuestionFeedback,
                                              TestQuestionUpdate)
 
@@ -70,7 +70,7 @@ def select_test_info_db(db: Session, lesson_id: int):
             for answer in answers:
                 question_info["questionAnswers"].append({
                     "answerId": answer.id,
-                    "answerTest": answer.answer_text,
+                    "answerText": answer.answer_text,
                     "isCorrect": answer.is_correct
                 })
 

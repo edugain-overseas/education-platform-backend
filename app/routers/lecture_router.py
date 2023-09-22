@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.crud.lecture_crud import (create_lecture_db, get_lecture_info_db, set_file_attr_for_lecture_db,
                                    set_text_attr_for_lecture_db)
 from app.models import User
-from app.schemas.lecture_schemas import LectureTextCreate
+from app.schemas.lecture_schemas import AttributeType, LectureTextCreate
 from app.session import get_db
 from app.utils.save_images import save_lesson_file
 from app.utils.token import get_current_user
@@ -46,6 +46,7 @@ async def add_text_attr_for_lecture(
 @router.post("/lecture/file/{lecture_id}")
 async def add_file_attr_for_lecture(
         lecture_id: int,
+        attr_type: AttributeType,
         attr_title: str,
         attr_number: int,
         download_allowed: bool,
@@ -55,10 +56,10 @@ async def add_file_attr_for_lecture(
 ):
     if user.teacher or user.moder:
         for file in files:
-            file_path, file_extension = save_lesson_file(file)
+            file_path = save_lesson_file(file)
             set_file_attr_for_lecture_db(
                 db=db,
-                attr_type=file_extension,
+                attr_type=attr_type,
                 attr_title=attr_title,
                 attr_number=attr_number,
                 download_allowed=download_allowed,
