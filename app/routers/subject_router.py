@@ -1,8 +1,7 @@
-import datetime
 import json
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.crud.group_crud import select_group_curator_db, select_group_students_db
@@ -11,6 +10,7 @@ from app.crud.subject_crud import (create_new_subject_db, create_or_update_parti
                                    create_subject_icon_db, create_subject_instruction_category_db,
                                    create_subject_instruction_db, create_subject_instruction_file_db,
                                    create_subject_item_db, delete_subject_db, delete_subject_icon_db,
+                                   delete_subject_instruction_category_db, delete_subject_instruction_db,
                                    delete_subject_instruction_file_db, select_all_subjects_db, select_dop_subjects,
                                    select_subject_by_id_db, select_subject_exam_date, select_subject_icon_db,
                                    select_subject_icons_db, select_subject_instruction_category_db,
@@ -26,7 +26,7 @@ from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCatego
                                          SubjectInstructionCategoryUpdate, SubjectInstructionCreate,
                                          SubjectInstructionUpdate, SubjectUpdate)
 from app.session import get_db
-from app.utils.save_images import (delete_chat_file, save_subject_avatar, save_subject_icon, save_subject_instructions,
+from app.utils.save_images import (delete_file, save_subject_avatar, save_subject_icon, save_subject_instructions,
                                    save_subject_logo, save_subject_program)
 from app.utils.subject_utils import set_subject_structure
 from app.utils.token import get_current_user
@@ -410,7 +410,7 @@ async def delete_subject_item_icon(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    delete_chat_file(file_path=icon_path)
+    delete_file(file_path=icon_path)
     icon = select_subject_icon_db(db=db, icon_path=icon_path)
     delete_subject_icon_db(db=db, subject_icon=icon)
     return {"Message": "Icon has been deleted"}
@@ -460,11 +460,19 @@ async def update_subject_instruction_category(
 
 @router.delete("/subject/instruction/category")
 async def delete_subject_instruction_category(
-        subject_instruction_category_id: int,
+        instruction_category_id: int,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    pass
+    if user.teacher or user.moder:
+        instruction_category = select_subject_instruction_category_db(
+            db=db,
+            instruction_category_id=instruction_category_id
+        )
+        delete_subject_instruction_category_db(db=db, instruction_category=instruction_category)
+        return {"message": "Instruction category has been deleted"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
 
 
 @router.post("/subject/instruction/file")
@@ -487,7 +495,7 @@ async def delete_subject_instruction_file(
 ):
     if user.teacher or user.moder:
         delete_subject_instruction_file_db(db=db, file_path=file_path)
-        delete_chat_file(file_path=file_path)
+        delete_file(file_path=file_path)
         return {"message": "File have been deleted"}
     else:
         raise HTTPException(status_code=401, detail="Permission denied")
@@ -583,11 +591,16 @@ async def update_subject_instruction(
 
 @router.delete("/subject/instruction")
 async def delete_subject_instruction(
-    subject_instruction_id: int,
+    instruction_id: int,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    pass
+    if user.teacher or user.moder:
+        instruction = select_subject_instruction_db(db=db, instruction_id=instruction_id)
+        delete_subject_instruction_db(db=db, instruction=instruction)
+        return {"message": "Instruction has been deleted"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
 
 
 @router.get("/subject/{subject_id}/instruction/")

@@ -7,8 +7,8 @@ from app.models import (Group, ParticipantComment, StudentAdditionalSubject, Sub
                         SubjectInstructionCategory, SubjectInstructionFiles, SubjectItem, SubjectTeacherAssociation,
                         Teacher, User)
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
-                                         SubjectInstructionCategoryUpdate, SubjectInstructionCreate,
-                                         SubjectInstructionUpdate, SubjectUpdate)
+                                         SubjectInstructionCategoryUpdate, SubjectInstructionUpdate, SubjectUpdate)
+from app.utils.save_images import delete_file
 
 
 def create_new_subject_db(db: Session, subject: SubjectCreate):
@@ -424,3 +424,36 @@ def update_subject_instruction_db(
     db.commit()
     db.refresh(instruction)
     return instruction
+
+
+def delete_subject_instruction_db(db: Session, instruction: SubjectInstruction):
+
+    instruction_files = db.query(
+        SubjectInstructionFiles
+    ).filter(
+        SubjectInstructionFiles.subject_instruction_id == instruction.id
+    ).all()
+
+    if instruction_files is not None:
+        for file in instruction_files:
+            delete_file(file_path=file.file)
+            db.delete(file)
+            db.commit()
+
+    db.delete(instruction)
+    db.commit()
+
+
+def delete_subject_instruction_category_db(db: Session, instruction_category: SubjectInstructionCategory):
+
+    instructions = db.query(
+        SubjectInstruction
+    ).filter(
+        SubjectInstruction.subject_category_id == instruction_category.id
+    ).all()
+
+    for instruction in instructions:
+        delete_subject_instruction_db(db=db, instruction=instruction)
+
+    db.delete(instruction_category)
+    db.commit()
