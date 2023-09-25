@@ -15,7 +15,7 @@ from app.models import User
 from app.session import get_db
 from app.utils.count_users import select_users_in_group, set_keyword_for_users_data
 from app.utils.group_chat import set_last_answer_dict, set_last_message_dict, set_last_messages_dict
-from app.utils.save_images import delete_chat_file, save_group_chat_file
+from app.utils.save_images import delete_file, save_group_chat_file
 from app.utils.token import get_current_user, get_user_by_token
 
 router = APIRouter()
@@ -236,7 +236,7 @@ async def delete_file_from_chat(
         user: User = Depends(get_current_user)
 ):
     if user.student or user.curator or user.moder:
-        return delete_chat_file(file_path=file_path)
+        return delete_file(file_path=file_path)
     return HTTPException(status_code="403", detail="Teacher can't use group chat")
 
 

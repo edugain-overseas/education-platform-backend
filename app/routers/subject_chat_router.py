@@ -14,7 +14,7 @@ from app.crud.subject_chat_crud import (create_subject_attach_file_db, create_su
 from app.models import User
 from app.session import get_db
 from app.utils.count_users import select_users_in_subject, set_keyword_for_users_data
-from app.utils.save_images import delete_chat_file, save_subject_chat_file
+from app.utils.save_images import delete_file, save_subject_chat_file
 from app.utils.subject_chat import (set_subject_chat_last_answer_dict, set_subject_chat_last_message_dict,
                                     set_subject_chat_last_messages_dict)
 from app.utils.token import get_current_user, get_user_by_token
@@ -236,7 +236,7 @@ async def delete_file_from_chat(
         user: User = Depends(get_current_user)
 ):
     if user.student or user.teacher or user.moder:
-        return delete_chat_file(file_path=file_path)
+        return delete_file(file_path=file_path)
     return HTTPException(status_code="403", detail="Teacher can't use group chat")
 
 
