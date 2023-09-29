@@ -29,6 +29,32 @@ def get_student_info_db(db: Session, user_id: int):
     return user_info
 
 
+# def get_student_schedule_db(db: Session, group_name: str):
+#     today = datetime.now().date()
+#     end_date = today + timedelta(days=10)
+#
+#     student_schedule = db.query(
+#         Subject.title,
+#         Lesson.lesson_date,
+#         Lesson.lesson_end,
+#         Teacher.name,
+#         Teacher.surname
+#     ).join(
+#         Subject, Subject.id == Lesson.subject_id
+#     ).join(
+#         SubjectTeacherAssociation, SubjectTeacherAssociation.subject_id == Subject.id
+#     ).join(
+#         Teacher, Teacher.id == SubjectTeacherAssociation.teacher_id
+#     ).join(
+#         Group, Group.specialization_id == Subject.specialization_id
+#     ).filter(
+#         Group.group_name == group_name,
+#         Lesson.lesson_date >= today,
+#         Lesson.lesson_date <= end_date
+#     ).all()
+#
+#     return student_schedule
+
 def get_student_schedule_db(db: Session, group_name: str):
     today = datetime.now().date()
     end_date = today + timedelta(days=10)
@@ -42,9 +68,7 @@ def get_student_schedule_db(db: Session, group_name: str):
     ).join(
         Subject, Subject.id == Lesson.subject_id
     ).join(
-        SubjectTeacherAssociation, SubjectTeacherAssociation.subject_id == Subject.id
-    ).join(
-        Teacher, Teacher.id == SubjectTeacherAssociation.teacher_id
+        Teacher, Teacher.id == Lesson.teacher_id
     ).join(
         Group, Group.specialization_id == Subject.specialization_id
     ).filter(

@@ -86,7 +86,7 @@ def select_group_students_db(db: Session, group_id: int, subject_id: int):
             "email": student.email,
             "image_path": student.image_path,
             "last_active": student.last_active,
-            "participant_comment": participant_comment.comment if participant_comment else []
+            "participant_comment": participant_comment.comment if participant_comment else None
         }
 
         students_list.append(student_data)

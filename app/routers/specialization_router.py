@@ -51,13 +51,14 @@ async def get_specializations(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    if not user.moder or not user.teacher:
+    if user.moder or user.teacher:
+        specializations = select_specializations_db(db=db)
+        return specializations
+    else:
         raise HTTPException(
             status_code=403,
             detail="Only moderators and teachers can view the list of specializations"
         )
-    specializations = select_specializations_db(db=db)
-    return specializations
 
 
 @router.get("/specialization/{specialization_id}", response_model=SpecializationBase)
@@ -66,13 +67,14 @@ async def get_specialization_by_id(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    if not user.moder or not user.teacher:
+    if user.moder or user.teacher:
+        specialization = select_specialization_by_id_db(db=db, spec_id=specialization_id)
+        return specialization
+    else:
         raise HTTPException(
             status_code=403,
             detail="Only moderators and teachers can view specialization"
         )
-    specialization = select_specialization_by_id_db(db=db, spec_id=specialization_id)
-    return specialization
 
 
 @router.get("/specializations/course/{course_id}", response_model=List[SpecializationBase])
@@ -81,14 +83,14 @@ async def get_specialization_by_course_id(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    if not user.moder or not user.teacher:
+    if user.moder or user.teacher:
+        specializations = select_specializations_by_course_id_db(db=db, course_id=course_id)
+        return specializations
+    else:
         raise HTTPException(
             status_code=403,
             detail="Only moderators and teachers can view the list of specializations"
         )
-
-    specializations = select_specializations_by_course_id_db(db=db, course_id=course_id)
-    return specializations
 
 
 @router.delete("/specialization/delete")
@@ -97,12 +99,13 @@ async def delete_specialization(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    if not user.moder or not user.teacher:
+    if user.moder or user.teacher:
+        specialization = select_specialization_by_id_db(db=db, spec_id=specialization_id)
+        delete_specialization_db(db=db, specialization=specialization)
+        return {"massage": "Specialization have been successful deleted"}
+    else:
         raise HTTPException(
             status_code=403,
             detail="Only moderators and teachers can view specialization"
         )
 
-    specialization = select_specialization_by_id_db(db=db, spec_id=specialization_id)
-    delete_specialization_db(db=db, specialization=specialization)
-    return {"massage": "Specialization have been successful deleted"}

@@ -67,12 +67,31 @@ def select_test_info_db(db: Session, lesson_id: int):
                 .filter(TestAnswer.question_id == question.id)
                 .all()
             )
+
             for answer in answers:
                 question_info["questionAnswers"].append({
                     "answerId": answer.id,
                     "answerText": answer.answer_text,
-                    "isCorrect": answer.is_correct
                 })
+
+        if question.question_type.type == "multiple_choice":
+            answers = (
+                db.query(TestAnswer)
+                .filter(TestAnswer.question_id == question.id)
+                .all()
+            )
+
+            counter = 0
+            for answer in answers:
+                if answer.is_correct:
+                    counter += 1
+
+                question_info["questionAnswers"].append({
+                    "answerId": answer.id,
+                    "answerText": answer.answer_text,
+                })
+
+            question_info["quantityCorrectAnswers"] = counter
 
         elif question.question_type.type == "matching":
             left_options = (
@@ -86,15 +105,19 @@ def select_test_info_db(db: Session, lesson_id: int):
                 .all()
             )
 
-            matching_pairs = list(zip(left_options, right_options))
+            question_info["questionAnswers"] = {
+                "left": [{"value": left_option.text, "id": left_option.id} for left_option in left_options],
+                "right": [{"value": right_option.text, "id": right_option.id} for right_option in right_options]
+            }
 
-            for left, right in matching_pairs:
-                question_info["questionAnswers"].append({
-                    "leftId": left.id,
-                    "leftOption": left.text,
-                    "rightId": right.id,
-                    "rightOption": right.text
-                })
+            # matching_pairs = list(zip(left_options, right_options))
+            # for left, right in matching_pairs:
+            #     question_info["questionAnswers"].append({
+            #         "leftId": left.id,
+            #         "leftOption": left.text,
+            #         "rightId": right.id,
+            #         "rightOption": right.text
+            #     })
 
         test_info["testQuestions"].append(question_info)
 

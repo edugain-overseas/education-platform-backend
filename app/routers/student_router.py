@@ -76,11 +76,7 @@ async def update_student_avatar(
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    file_path = save_student_avatar(
-        photo=file,
-        name=student.name,
-        surname=student.surname
-    )
+    file_path = save_student_avatar(photo=file)
     update_student_photo_path_db(
         db=db,
         student=student,

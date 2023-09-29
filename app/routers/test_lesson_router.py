@@ -207,3 +207,25 @@ async def get_feedback_answer(
         user: User = Depends(get_current_user)
 ):
     return select_feedback_answer_db(db=db, test_feedback_id=feedback_id)
+
+
+@router.post("/student-test/create")
+async def create_student_test(
+        student_id: int,
+        test_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    pass
+
+
+@router.get("/student-test/{student_id}")
+async def check_student_test(
+        student_id: int,
+        test_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    pass
+
+

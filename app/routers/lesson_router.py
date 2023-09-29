@@ -88,14 +88,14 @@ async def get_lesson_by_subject(
     raise HTTPException(status_code=403, detail="Permission denied")
 
 
-@router.get("/lessons/type/{type_id}")
+@router.get("/lessons/type/{lesson_type}")
 async def get_lesson_by_type(
-        type_id: int,
+        lesson_type: str,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
     if user.teacher or user.moder or user.student:
-        return {"lessons": select_lesson_by_type_db(db=db, type_id=type_id)}
+        return {"lessons": select_lesson_by_type_db(db=db, lesson_type=lesson_type)}
     raise HTTPException(status_code=403, detail="Permission denied")
 
 

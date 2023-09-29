@@ -24,6 +24,17 @@ class LessonTypeOption(str, EnumType):
     exam = 'exam'
 
 
+class LectureAttributeType(str, EnumType):
+    title = "title"
+    text = "text"
+    present = "present"
+    audio = "audio"
+    picture = "picture"
+    file = "file"
+    link = "link"
+    homework = "homework"
+
+
 class QuestionTypeOption(str, EnumType):
     test = 'test'
     boolean = 'boolean'
@@ -31,6 +42,7 @@ class QuestionTypeOption(str, EnumType):
     test_with_input = 'test_with_input'
     matching = 'matching'
     open_question = 'open_question'
+    multiple_choice = 'multiple_choice'
 
 
 class MessageTypeOption(str, EnumType):
@@ -224,6 +236,7 @@ class Subject(Base):
 
     teachers = relationship('Teacher', secondary='subject_teacher_association', back_populates='subjects')
     students = relationship('Student', secondary='student_additional_subject', back_populates='additional_subject')
+
     specialization = relationship('Specialization', back_populates='subject')
     course = relationship('Course', back_populates='subject')
     module = relationship('Module', back_populates='subject')
@@ -295,10 +308,9 @@ class SubjectInstruction(Base):
     id = Column(Integer, primary_key=True, index=True)
     subject_id = Column(Integer, ForeignKey('subject.id'))
     number = Column(Integer, nullable=False)
-    header = Column(String, nullable=False)
+    title = Column(String, nullable=False)
     subtitle = Column(String)
     text = Column(Text)
-    date = Column(Date)
     is_view = Column(Boolean)
     subject_category_id = Column(Integer, ForeignKey('subject_instruction_category.id'))
 
@@ -312,8 +324,10 @@ class SubjectInstructionFiles(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     subject_instruction_id = Column(Integer, ForeignKey('subject_instruction.id'))
-    file = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
+    filename = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
 
     subject_instruction = relationship('SubjectInstruction', back_populates='subject_instruction_files')
 
@@ -367,13 +381,13 @@ class Module(Base):
     module_control = relationship('ModuleControl', back_populates='module')
 
 
-class LessonType(Base):
-    __tablename__ = "lesson_type"
-
-    id = Column(Integer, primary_key=True, index=True)
-    type = Column(Enum(LessonTypeOption), nullable=False)
-
-    lesson = relationship('Lesson', back_populates='lesson_type')
+# class LessonType(Base):
+#     __tablename__ = "lesson_type"
+#
+#     id = Column(Integer, primary_key=True, index=True)
+#     type = Column(Enum(LessonTypeOption), nullable=False)
+#
+#     lesson = relationship('Lesson', back_populates='lesson_type')
 
 
 class Lesson(Base):
@@ -386,13 +400,12 @@ class Lesson(Base):
     is_published = Column(Boolean, default=False)
     lesson_date = Column(DateTime)
     lesson_end = Column(Time)
+    lesson_type = Column(Enum(LessonTypeOption), nullable=False)
 
-    lesson_type_id = Column(Integer, ForeignKey('lesson_type.id'))
     module_id = Column(Integer, ForeignKey('module.id'))
     subject_id = Column(Integer, ForeignKey('subject.id'))
     teacher_id = Column(Integer, ForeignKey('teacher.id'))
 
-    lesson_type = relationship('LessonType', back_populates='lesson')
     module = relationship('Module', back_populates='lesson')
     subject = relationship('Subject', back_populates='lesson')
     teacher = relationship('Teacher', back_populates='lesson')
@@ -442,7 +455,6 @@ class Lecture(Base):
 
     lesson = relationship('Lesson', uselist=False, back_populates='lecture')
     attributes = relationship('LectureAttribute', back_populates='lecture')
-    values = relationship('LectureValue', back_populates='lecture')
     lecture_score = relationship('LectureScore', back_populates='lecture')
 
 
@@ -450,14 +462,16 @@ class LectureAttribute(Base):
     __tablename__ = "lecture_attribute"
 
     id = Column(Integer, primary_key=True, index=True)
-    attr_type = Column(String)
-    attr_title = Column(String)
+    attr_type = Column(Enum(LectureAttributeType), nullable=False)
+    attr_title = Column(String, nullable=False)
+    attr_subtitle = Column(String)
     attr_number = Column(Integer)
-    download_allowed = Column(Boolean)
+
     lecture_id = Column(Integer, ForeignKey('lecture.id'))
 
     lecture = relationship('Lecture', back_populates='attributes')
     lecture_value = relationship('LectureValue', back_populates='lecture_attribute')
+    lecture_file = relationship('LectureFile', back_populates='lecture_attribute')
 
 
 class LectureValue(Base):
@@ -465,11 +479,22 @@ class LectureValue(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     value = Column(Text)
-    lecture_id = Column(Integer, ForeignKey('lecture.id'))
-    lecture_attribute_id = Column(Integer, ForeignKey('lecture_attribute.id'))
 
-    lecture = relationship('Lecture', back_populates='values')
+    lecture_attribute_id = Column(Integer, ForeignKey('lecture_attribute.id'))
     lecture_attribute = relationship('LectureAttribute', back_populates='lecture_value')
+
+
+class LectureFile(Base):
+    __tablename__ = "lecture_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    file_size = Column(Integer)
+    download_allowed = Column(Boolean)
+
+    lecture_attribute_id = Column(Integer, ForeignKey('lecture_attribute.id'))
+    lecture_attribute = relationship('LectureAttribute', back_populates='lecture_file')
 
 
 class LectureScore(Base):
@@ -1005,8 +1030,10 @@ class GroupChatAttachFile(Base):
     __tablename__ = "group_chat_attach_file"
 
     id = Column(Integer, primary_key=True, index=True)
-    file_path = Column(String)
-    mime_type = Column(String)
+    filename = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    mime_type = Column(String, nullable=False)
+    size = Column(Integer, nullable=False)
 
     chat_message = Column(Integer, ForeignKey('group_chat.id'))
     chat_answer = Column(Integer, ForeignKey('group_chat_answer.id'))
@@ -1066,8 +1093,10 @@ class SubjectChatAttachFile(Base):
     __tablename__ = "subject_chat_attach_file"
 
     id = Column(Integer, primary_key=True, index=True)
-    file_path = Column(String)
-    mime_type = Column(String)
+    filename = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    mime_type = Column(String, nullable=False)
+    size = Column(Integer, nullable=False)
 
     chat_message = Column(Integer, ForeignKey('subject_chat.id'))
     chat_answer = Column(Integer, ForeignKey('subject_chat_answer.id'))

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.models import Lesson, LessonType, Module, Subject
+from app.models import Lesson, Module, Subject
 from app.schemas.lesson_schemas import Lesson as LessonSchemas
 from app.schemas.lesson_schemas import LessonUpdate
 
@@ -15,7 +15,7 @@ def create_new_lesson_db(db: Session, lesson_data: LessonSchemas):
         is_published=lesson_data.is_published,
         lesson_date=lesson_data.lesson_date,
         lesson_end=lesson_data.lesson_end,
-        lesson_type_id=lesson_data.lesson_type_id,
+        lesson_type=lesson_data.lesson_type,
         module_id=lesson_data.module_id,
         subject_id=lesson_data.subject_id,
         teacher_id=lesson_data.teacher_id
@@ -56,8 +56,8 @@ def select_published_lesson_db(db: Session):
     return db.query(Lesson).filter(Lesson.is_published == 1).all()
 
 
-def select_lesson_by_type_db(db: Session, type_id: int):
-    return db.query(Lesson).filter(Lesson.lesson_type_id == type_id).all()
+def select_lesson_by_type_db(db: Session, lesson_type: str):
+    return db.query(Lesson).filter(Lesson.lesson_type == lesson_type).all()
 
 
 def delete_lesson_db(db: Session, lesson: Lesson):
@@ -68,9 +68,8 @@ def delete_lesson_db(db: Session, lesson: Lesson):
 def select_three_next_lesson_db(db: Session, subject_id: int):
     today = datetime.today()
 
-    query = db.query(Lesson.lesson_date, LessonType.type) \
+    query = db.query(Lesson.lesson_date, Lesson.lesson_type) \
         .join(Subject, Lesson.subject_id == Subject.id) \
-        .join(LessonType, LessonType.id == Lesson.lesson_type_id) \
         .filter(Subject.id == subject_id) \
         .filter(Lesson.is_published) \
         .filter(Lesson.lesson_date >= today) \
@@ -82,7 +81,7 @@ def select_three_next_lesson_db(db: Session, subject_id: int):
     for lesson in lessons:
         lesson_dict = {
             "lesson_date": lesson.lesson_date,
-            "lesson_type": lesson.type
+            "lesson_type": lesson.lesson_type
         }
         lessons_list.append(lesson_dict)
 
@@ -96,12 +95,11 @@ def get_lessons_by_subject_id_db(db: Session, subject_id: int):
         Module.number.label("module_number"),
         Module.description.label("module_desc"),
         Lesson.id.label("lesson_id"),
-        LessonType.type.label("lesson_type"),
+        Lesson.lesson_type.label("lesson_type"),
         Lesson.number.label("lesson_number"),
         Lesson.title.label("lesson_title"),
         Lesson.description.label("lesson_desc"),
         Lesson.lesson_date.label("lesson_date")) \
-        .join(LessonType, LessonType.id == Lesson.lesson_type_id) \
         .join(Module, Module.id == Lesson.module_id) \
         .join(Subject, Subject.id == Module.subject_id) \
         .filter(Lesson.is_published == 1) \

@@ -3,18 +3,20 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from app.models import UserTypeOption
 
-class UserType(str, Enum):
-    student = 'student'
-    moder = 'moder'
-    teacher = 'teacher'
-    curator = 'curator'
+
+# class UserType(str, Enum):
+#     student = 'student'
+#     moder = 'moder'
+#     teacher = 'teacher'
+#     curator = 'curator'
 
 
 class StudentCreate(BaseModel):
     username: str
     password: str
-    usertype: UserType
+    usertype: UserTypeOption
     name: str
     surname: str
     lastname: str
@@ -52,7 +54,7 @@ class StudentUpdate(BaseModel):
 class TeacherCreate(BaseModel):
     username: str
     password: str
-    usertype: UserType
+    usertype: UserTypeOption
     name: str
     surname: str
     lastname: str
@@ -65,7 +67,7 @@ class TeacherCreate(BaseModel):
 class CuratorCreate(BaseModel):
     username: str
     password: str
-    usertype: UserType
+    usertype: UserTypeOption
     name: str
     surname: str
     lastname: str
@@ -78,7 +80,7 @@ class CuratorCreate(BaseModel):
 class ModerCreate(BaseModel):
     username: str
     password: str
-    usertype: UserType
+    usertype: UserTypeOption
     name: str
     surname: str
     lastname: str

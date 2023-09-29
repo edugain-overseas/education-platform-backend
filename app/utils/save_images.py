@@ -3,21 +3,20 @@ from datetime import datetime
 
 from fastapi import UploadFile
 
-STUDENT_AVATAR_FOLDER = 'static/images/student-avatar'
-TEACHER_AVATAR_FOLDER = 'static/images/teacher-avatar'
-SUBJECT_AVATAR_FOLDER = 'static/images/subject-photo'
-SUBJECT_LOGO_FOLDER = 'static/images/subject-logo'
-SUBJECT_PROGRAM_FOLDER = 'static/subject-files/program/'
-SUBJECT_ICON_FOLDER = 'static/subject-files/icons'
-SUBJECT_INSTRUCTION_FOLDER = 'static/subject-files/instruction'
-SUBJECT_CHAT_FOLDER = 'static/subject-files/chat/'
-LESSON_FILE_FOLDER = 'static/lesson-files/'
-GROUP_CHAT_FOLDER = 'static/chat-files/'
+STUDENT_AVATAR_FOLDER = 'static/images/student-avatar/'
+TEACHER_AVATAR_FOLDER = 'static/images/teacher-avatar/'
+SUBJECT_AVATAR_FOLDER = 'static/images/subject/photo/'
+SUBJECT_LOGO_FOLDER = 'static/images/subject/logo/'
+SUBJECT_PROGRAM_FOLDER = 'static/images/subject/program/'
+SUBJECT_ICON_FOLDER = 'static/images/subject/icons/'
+SUBJECT_INSTRUCTION_FOLDER = 'static/images/subject/instruction/'
+LESSON_FILE_FOLDER = 'static/images/lesson-files/'
+SUBJECT_CHAT_FOLDER = 'static/chat/subject/'
+GROUP_CHAT_FOLDER = 'static/chat/group/'
 
 
-def save_student_avatar(photo: UploadFile, name, surname) -> str:
-    filename = f'{name}-{surname}–{photo.filename}'
-    file_path = os.path.join(STUDENT_AVATAR_FOLDER, filename)
+def save_student_avatar(photo: UploadFile) -> str:
+    file_path = os.path.join(STUDENT_AVATAR_FOLDER, photo.filename)
     os.makedirs(STUDENT_AVATAR_FOLDER, exist_ok=True)
 
     with open(file_path, "wb") as f:
@@ -111,19 +110,14 @@ def save_subject_icon(file: UploadFile):
     return file_path
 
 
-def save_subject_instructions(files: list[UploadFile]):
-    result = []
+def save_subject_instructions(file: UploadFile):
+    file_path = os.path.join(SUBJECT_INSTRUCTION_FOLDER, file.filename)
+    os.makedirs(SUBJECT_INSTRUCTION_FOLDER, exist_ok=True)
 
-    for file in files:
-        file_path = os.path.join(SUBJECT_INSTRUCTION_FOLDER, file.filename)
-        os.makedirs(SUBJECT_INSTRUCTION_FOLDER, exist_ok=True)
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
 
-        with open(file_path, "wb") as f:
-            f.write(file.file.read())
-
-        result.append(file_path)
-
-    return result
+    return file_path
 
 
 def delete_file(file_path: str):

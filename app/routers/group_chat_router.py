@@ -81,14 +81,15 @@ async def group_chat_socket(
         websocket: WebSocket,
         db: Session = Depends(get_db)
 ):
-    user = get_user_by_token(db=db, token=token)
+    # user = get_user_by_token(db=db, token=token)
+    user = get_current_user(db=db, token=token)
     try:
         group_id = select_group_by_name_db(db=db, group_name=group_name)
         await websocket.accept()
     except Exception as e:
         print(f'{e}')
 
-    connection = {"websocket": websocket, "user": user.id}
+    connection = {"websocket": websocket, "user": user.id, "user_type": str(user.user_type.type)}
     await manager.add_connection(group_name, connection)
     print(manager.connections)
 
@@ -217,14 +218,15 @@ async def group_chat_socket(
 
     except WebSocketDisconnect:
         await manager.remove_connection(group_name=group_name, connection=connection)
+        print(manager.connections)
 
 
 @router.post("/group-chat/attachment-file")
 async def attach_file_to_chat(
         file: UploadFile = File(...),
-        current_user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
-    if current_user.student or current_user.curator or current_user.moder:
+    if user.student or user.curator or user.moder:
         file_path = save_group_chat_file(file=file)
         return file_path
     return HTTPException(status_code="403", detail="Teacher can't use group chat")

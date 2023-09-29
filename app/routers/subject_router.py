@@ -24,7 +24,7 @@ from app.crud.subject_crud import (create_new_subject_db, create_or_update_parti
 from app.models import User
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
                                          SubjectInstructionCategoryUpdate, SubjectInstructionCreate,
-                                         SubjectInstructionUpdate, SubjectUpdate)
+                                         SubjectInstructionUpdate, SubjectUpdate, SubjectInstructionAttachFile)
 from app.session import get_db
 from app.utils.save_images import (delete_file, save_subject_avatar, save_subject_icon, save_subject_instructions,
                                    save_subject_logo, save_subject_program)
@@ -455,7 +455,7 @@ async def update_subject_instruction_category(
             instruction_category_data=instruction_category_data
         )
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/subject/instruction/category")
@@ -472,7 +472,7 @@ async def delete_subject_instruction_category(
         delete_subject_instruction_category_db(db=db, instruction_category=instruction_category)
         return {"message": "Instruction category has been deleted"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/subject/instruction/file")
@@ -481,10 +481,22 @@ async def upload_subject_instruction_file(
         user: User = Depends(get_current_user)
 ):
     if user.teacher or user.moder:
-        files_paths = save_subject_instructions(files=files)
-        return files_paths
+        result = []
+
+        for file in files:
+            file_path = save_subject_instructions(file=file)
+
+            file_info_dict = {
+                "filePath": file_path,
+                "fileName": file.filename,
+                "fileSize": file.size
+            }
+
+            result.append(file_info_dict)
+
+        return result
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/subject/instruction/file/")
@@ -498,26 +510,19 @@ async def delete_subject_instruction_file(
         delete_file(file_path=file_path)
         return {"message": "File have been deleted"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/subjects/instruction/attach-file")
 async def attach_file_for_instruction(
-        subject_instruction_id: int,
-        file_path: str,
-        file_type: str,
+        file_data: SubjectInstructionAttachFile,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
     if user.moder or user.teacher:
-        return create_subject_instruction_file_db(
-            db=db,
-            subject_instruction_id=subject_instruction_id,
-            file=file_path,
-            file_type=file_type
-        )
+        return create_subject_instruction_file_db(db=db, file_data=file_data)
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/subject/instruction")
@@ -531,7 +536,7 @@ async def create_subject_instruction(
             db=db,
             subject_id=instruction_data.subject_id,
             number=instruction_data.number,
-            header=instruction_data.header,
+            title=instruction_data.title,
             text=instruction_data.text,
             subtitle=instruction_data.subtitle,
             subject_category_id=instruction_data.subject_category_id,
@@ -550,7 +555,7 @@ async def create_subject_instruction(
             instruction_dict = {
                 "instructionId": instruction.id,
                 "number": instruction.number,
-                "title": instruction.header,
+                "title": instruction.title,
                 "subTitle": instruction.subtitle,
                 "text": instruction.text,
                 "subjectCategoryId": instruction.subject_category_id,
@@ -563,7 +568,7 @@ async def create_subject_instruction(
             return {
                 "instructionId": instruction.id,
                 "number": instruction.number,
-                "title": instruction.header,
+                "title": instruction.title,
                 "subTitle": instruction.subtitle,
                 "text": instruction.text,
                 "subjectCategoryId": instruction.subject_category_id,
@@ -572,7 +577,7 @@ async def create_subject_instruction(
             }
 
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.put("/subject/instruction")
@@ -586,7 +591,7 @@ async def update_subject_instruction(
         instruction = select_subject_instruction_db(db=db, instruction_id=instruction_id)
         return update_subject_instruction_db(db=db, instruction=instruction, instruction_data=instruction_data)
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/subject/instruction")
@@ -600,7 +605,7 @@ async def delete_subject_instruction(
         delete_subject_instruction_db(db=db, instruction=instruction)
         return {"message": "Instruction has been deleted"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.get("/subject/{subject_id}/instruction/")

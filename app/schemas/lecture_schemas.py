@@ -1,25 +1,15 @@
-from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
-
-class AttributeType(str, Enum):
-    title = "title"
-    text = "text"
-    present = "present"
-    audio = "audio"
-    picture = "picture"
-    file = "file"
-    link = "link"
-    homework = "homework"
+from app.models import LectureAttributeType
 
 
 class AttributeTextBase(BaseModel):
-    attr_type: AttributeType
+    attr_type: LectureAttributeType
     attr_title: str
+    attr_subtitle: Optional[str] = None
     attr_number: int
-    download_allowed: bool
     value: str
 
 
@@ -48,3 +38,11 @@ class LectureText(LectureTextBase):
 
     class Config:
         orm_mode = True
+
+
+class AttributeBase(BaseModel):
+    attr_type: LectureAttributeType
+    attr_title: str
+    attr_subtitle: Optional[str] = None
+    attr_number: int
+    download_allowed: bool

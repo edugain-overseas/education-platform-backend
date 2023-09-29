@@ -7,7 +7,8 @@ from app.models import (Group, ParticipantComment, StudentAdditionalSubject, Sub
                         SubjectInstructionCategory, SubjectInstructionFiles, SubjectItem, SubjectTeacherAssociation,
                         Teacher, User)
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
-                                         SubjectInstructionCategoryUpdate, SubjectInstructionUpdate, SubjectUpdate)
+                                         SubjectInstructionCategoryUpdate, SubjectInstructionUpdate, SubjectUpdate,
+                                         SubjectInstructionAttachFile)
 from app.utils.save_images import delete_file
 
 
@@ -282,7 +283,7 @@ def create_subject_instruction_db(
         db: Session,
         subject_id: int,
         number: int,
-        header: str,
+        title: str,
         text: str,
         subtitle: str,
         subject_category_id: int,
@@ -291,9 +292,8 @@ def create_subject_instruction_db(
     new_instruction = SubjectInstruction(
         subject_id=subject_id,
         number=number,
-        header=header,
+        title=title,
         text=text,
-        date=datetime.date.today(),
         subtitle=subtitle,
         subject_category_id=subject_category_id,
         is_view=is_view
@@ -307,16 +307,9 @@ def create_subject_instruction_db(
 
 def create_subject_instruction_file_db(
         db: Session,
-        subject_instruction_id: int,
-        file: str,
-        file_type: str
+        file_data: SubjectInstructionAttachFile
 ):
-    new_instruction_file = SubjectInstructionFiles(
-        subject_instruction_id=subject_instruction_id,
-        file=file,
-        file_type=file_type
-    )
-
+    new_instruction_file = SubjectInstructionFiles(**file_data.dict())
     db.add(new_instruction_file)
     db.commit()
     db.refresh(new_instruction_file)
@@ -363,12 +356,14 @@ def select_subject_instructions_db(subject_id: int, db: Session):
             db.query(
                 SubjectInstruction.id,
                 SubjectInstruction.number,
-                SubjectInstruction.header,
+                SubjectInstruction.title,
                 SubjectInstruction.subtitle,
                 SubjectInstruction.text,
                 SubjectInstruction.is_view,
-                func.group_concat(SubjectInstructionFiles.file).label("filesPath"),
-                func.group_concat(SubjectInstructionFiles.file_type).label("filesType")
+                func.group_concat(SubjectInstructionFiles.file_path).label("filesPath"),
+                func.group_concat(SubjectInstructionFiles.file_type).label("filesType"),
+                func.group_concat(SubjectInstructionFiles.filename).label("filesName"),
+                func.group_concat(SubjectInstructionFiles.file_size).label("filesSize")
             )
             .outerjoin(
                 SubjectInstructionFiles,
@@ -378,7 +373,7 @@ def select_subject_instructions_db(subject_id: int, db: Session):
             .group_by(
                 SubjectInstruction.id,
                 SubjectInstruction.number,
-                SubjectInstruction.header,
+                SubjectInstruction.title,
                 SubjectInstruction.subtitle,
                 SubjectInstruction.text,
                 SubjectInstruction.is_view
@@ -390,17 +385,21 @@ def select_subject_instructions_db(subject_id: int, db: Session):
             instruction_dict = {
                 "instructionId": row.id,
                 "number": row.number,
-                "title": row.header,
+                "title": row.title,
                 "subTitle": row.subtitle,
                 "text": row.text,
                 "isView": row.is_view,
                 "files": [
                     {
                         "filePath": filepath,
-                        "fileType": filetype
-                    } for filepath, filetype in zip(
+                        "fileType": filetype,
+                        "fileName": filename,
+                        "fileSize": filesize,
+                    } for filepath, filetype, filename, filesize in zip(
                         row.filesPath.split(','),
-                        row.filesType.split(',')
+                        row.filesType.split(','),
+                        row.filesName.split(','),
+                        row.filesSize.split(','),
                     )
                 ] if row.filesPath else []
             }
