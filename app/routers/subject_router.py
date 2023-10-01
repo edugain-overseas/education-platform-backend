@@ -20,11 +20,13 @@ from app.crud.subject_crud import (create_new_subject_db, create_or_update_parti
                                    set_teacher_for_subject_db, sign_student_for_addition_subject_db,
                                    update_subject_image_path_db, update_subject_info_db,
                                    update_subject_instruction_category_db, update_subject_instruction_db,
-                                   update_subject_item_text_db, update_subject_logo_path_db)
+                                   update_subject_item_text_db, update_subject_logo_path_db,
+                                   create_subject_instruction_link_db, delete_subject_instruction_link_db)
 from app.models import User
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
                                          SubjectInstructionCategoryUpdate, SubjectInstructionCreate,
-                                         SubjectInstructionUpdate, SubjectUpdate, SubjectInstructionAttachFile)
+                                         SubjectInstructionUpdate, SubjectUpdate, SubjectInstructionAttachFile,
+                                         SubjectInstructionAttachLink)
 from app.session import get_db
 from app.utils.save_images import (delete_file, save_subject_avatar, save_subject_icon, save_subject_instructions,
                                    save_subject_logo, save_subject_program)
@@ -525,6 +527,30 @@ async def attach_file_for_instruction(
         raise HTTPException(status_code=403, detail="Permission denied")
 
 
+@router.post("/subject/instruction/link")
+async def attach_link_for_instruction(
+        links_data: List[SubjectInstructionAttachLink],
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    result = []
+    for link_data in links_data:
+        new_link = create_subject_instruction_link_db(db=db, link_data=link_data)
+        result.append(new_link)
+
+    return result
+
+
+@router.delete("/subject/instruction/link")
+async def delete_subject_instruction_link(
+        instruction_link_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    delete_subject_instruction_link_db(db=db, link_id=instruction_link_id)
+    return {"message": "Instruction link has been deleted"}
+
+
 @router.post("/subject/instruction")
 async def create_subject_instruction(
         instruction_data: SubjectInstructionCreate,
@@ -532,49 +558,19 @@ async def create_subject_instruction(
         user: User = Depends(get_current_user)
 ):
     if user.teacher or user.moder:
-        instruction = create_subject_instruction_db(
-            db=db,
-            subject_id=instruction_data.subject_id,
-            number=instruction_data.number,
-            title=instruction_data.title,
-            text=instruction_data.text,
-            subtitle=instruction_data.subtitle,
-            subject_category_id=instruction_data.subject_category_id,
-            is_view=instruction_data.is_view
-        )
+        instruction = create_subject_instruction_db(db=db, instruction_data=instruction_data)
 
-        if instruction_data.files is not None:
-            for file in instruction_data.files:
-                create_subject_instruction_file_db(
-                    db=db,
-                    subject_instruction_id=instruction.id,
-                    file=file["filePath"],
-                    file_type=file["fileType"]
-                )
-
-            instruction_dict = {
-                "instructionId": instruction.id,
-                "number": instruction.number,
-                "title": instruction.title,
-                "subTitle": instruction.subtitle,
-                "text": instruction.text,
-                "subjectCategoryId": instruction.subject_category_id,
-                "isView": instruction.is_view,
-                "files": instruction_data.files
-            }
-            return instruction_dict
-
-        else:
-            return {
-                "instructionId": instruction.id,
-                "number": instruction.number,
-                "title": instruction.title,
-                "subTitle": instruction.subtitle,
-                "text": instruction.text,
-                "subjectCategoryId": instruction.subject_category_id,
-                "isView": instruction.is_view,
-                "files": []
-            }
+        return {
+            "instructionId": instruction.id,
+            "number": instruction.number,
+            "title": instruction.title,
+            "subTitle": instruction.subtitle,
+            "text": instruction.text,
+            "subjectCategoryId": instruction.subject_category_id,
+            "isView": instruction.is_view,
+            "files": [],
+            "links": []
+        }
 
     else:
         raise HTTPException(status_code=403, detail="Permission denied")

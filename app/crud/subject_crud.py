@@ -1,14 +1,13 @@
-import datetime
-
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.models import (Group, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon, SubjectInstruction,
-                        SubjectInstructionCategory, SubjectInstructionFiles, SubjectItem, SubjectTeacherAssociation,
-                        Teacher, User)
+                        SubjectInstructionCategory, SubjectInstructionFiles, SubjectInstructionLink, SubjectItem,
+                        SubjectTeacherAssociation, Teacher, User)
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
                                          SubjectInstructionCategoryUpdate, SubjectInstructionUpdate, SubjectUpdate,
-                                         SubjectInstructionAttachFile)
+                                         SubjectInstructionAttachFile, SubjectInstructionAttachLink,
+                                         SubjectInstructionCreate)
 from app.utils.save_images import delete_file
 
 
@@ -281,24 +280,9 @@ def update_subject_instruction_category_db(
 
 def create_subject_instruction_db(
         db: Session,
-        subject_id: int,
-        number: int,
-        title: str,
-        text: str,
-        subtitle: str,
-        subject_category_id: int,
-        is_view: bool
+        instruction_data: SubjectInstructionCreate
 ):
-    new_instruction = SubjectInstruction(
-        subject_id=subject_id,
-        number=number,
-        title=title,
-        text=text,
-        subtitle=subtitle,
-        subject_category_id=subject_category_id,
-        is_view=is_view
-    )
-
+    new_instruction = SubjectInstruction(**instruction_data.dict())
     db.add(new_instruction)
     db.commit()
     db.refresh(new_instruction)
@@ -363,11 +347,18 @@ def select_subject_instructions_db(subject_id: int, db: Session):
                 func.group_concat(SubjectInstructionFiles.file_path).label("filesPath"),
                 func.group_concat(SubjectInstructionFiles.file_type).label("filesType"),
                 func.group_concat(SubjectInstructionFiles.filename).label("filesName"),
-                func.group_concat(SubjectInstructionFiles.file_size).label("filesSize")
+                func.group_concat(SubjectInstructionFiles.file_size).label("filesSize"),
+                func.group_concat(SubjectInstructionFiles.number).label("numbers"),
+                func.group_concat(SubjectInstructionLink.link).label("links"),
+                func.group_concat(SubjectInstructionLink.number).label("link_numbers")
             )
             .outerjoin(
                 SubjectInstructionFiles,
                 SubjectInstruction.id == SubjectInstructionFiles.subject_instruction_id
+            )
+            .outerjoin(
+                SubjectInstructionLink,
+                SubjectInstruction.id == SubjectInstructionLink.subject_instruction_id
             )
             .filter(SubjectInstruction.subject_category_id == category.id)
             .group_by(
@@ -395,13 +386,24 @@ def select_subject_instructions_db(subject_id: int, db: Session):
                         "fileType": filetype,
                         "fileName": filename,
                         "fileSize": filesize,
-                    } for filepath, filetype, filename, filesize in zip(
+                        "number": number
+                    } for filepath, filetype, filename, filesize, number in zip(
                         row.filesPath.split(','),
                         row.filesType.split(','),
                         row.filesName.split(','),
                         row.filesSize.split(','),
+                        row.numbers.split(','),
                     )
-                ] if row.filesPath else []
+                ] if row.filesPath else [],
+                "links": [
+                    {
+                        "link": link,
+                        "number": number
+                    } for link, number in zip(
+                        row.links.split(','),
+                        row.link_numbers.split(',')
+                    )
+                ] if row.links else []
             }
 
             subject_instructions["instructions"].append(instruction_dict)
@@ -455,4 +457,18 @@ def delete_subject_instruction_category_db(db: Session, instruction_category: Su
         delete_subject_instruction_db(db=db, instruction=instruction)
 
     db.delete(instruction_category)
+    db.commit()
+
+
+def create_subject_instruction_link_db(db: Session, link_data: SubjectInstructionAttachLink):
+    new_link = SubjectInstructionLink(**link_data.dict())
+    db.add(new_link)
+    db.commit()
+    db.refresh(new_link)
+    return new_link
+
+
+def delete_subject_instruction_link_db(db: Session, link_id: int):
+    instruction_link = db.query(SubjectInstructionLink).filter(SubjectInstructionLink.id == link_id).first()
+    db.delete(instruction_link)
     db.commit()

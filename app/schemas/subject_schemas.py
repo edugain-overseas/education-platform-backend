@@ -49,7 +49,6 @@ class SubjectInstructionCreate(BaseModel):
     subtitle: str
     subject_category_id: int
     is_view: bool
-    files: Optional[List[Dict[str, str]]] = None
 
 
 class SubjectInstructionUpdate(BaseModel):
@@ -80,3 +79,10 @@ class SubjectInstructionAttachFile(BaseModel):
     filename: str
     file_size: int
     file_type: str
+    number: int
+
+
+class SubjectInstructionAttachLink(BaseModel):
+    subject_instruction_id: int
+    link: str
+    number: int

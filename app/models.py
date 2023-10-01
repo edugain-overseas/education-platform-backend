@@ -316,6 +316,7 @@ class SubjectInstruction(Base):
 
     subject = relationship('Subject', back_populates='subject_instruction')
     subject_instruction_files = relationship('SubjectInstructionFiles', back_populates='subject_instruction')
+    subject_instruction_link = relationship('SubjectInstructionLink', back_populates='subject_instruction')
     subject_category = relationship('SubjectInstructionCategory', back_populates='subject_instruction')
 
 
@@ -328,8 +329,20 @@ class SubjectInstructionFiles(Base):
     file_type = Column(String, nullable=False)
     filename = Column(String, nullable=False)
     file_size = Column(Integer, nullable=False)
+    number = Column(Integer)
 
     subject_instruction = relationship('SubjectInstruction', back_populates='subject_instruction_files')
+
+
+class SubjectInstructionLink(Base):
+    __tablename__ = "subject_instruction_link"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_instruction_id = Column(Integer, ForeignKey('subject_instruction.id'))
+    link = Column(String, nullable=False)
+    number = Column(Integer)
+
+    subject_instruction = relationship('SubjectInstruction', back_populates='subject_instruction_link')
 
 
 class ParticipantComment(Base):
@@ -1054,6 +1067,7 @@ class GroupChat(Base):
     group_id = Column(Integer, ForeignKey('group.id'))
     message_type = Column(Enum(MessageTypeOption), nullable=False)
     read_by = Column(String)
+    deleted = Column(Boolean)
 
     user = relationship('User', back_populates='chat_message')
     group = relationship('Group', back_populates='group_chat')
@@ -1072,6 +1086,7 @@ class GroupChatAnswer(Base):
     sender_id = Column(Integer, ForeignKey('user.id'))
     group_chat_id = Column(Integer, ForeignKey('group_chat.id'))
     read_by = Column(String)
+    deleted = Column(Boolean)
 
     user = relationship('User', back_populates='chat_answer')
     group_chat = relationship('GroupChat', back_populates='group_chat_answer')
@@ -1117,6 +1132,7 @@ class SubjectChat(Base):
     subject_id = Column(Integer, ForeignKey('subject.id'))
     message_type = Column(Enum(MessageTypeOption), nullable=False)
     read_by = Column(String)
+    deleted = Column(Boolean)
 
     user = relationship('User', back_populates='subject_message')
     subject = relationship('Subject', back_populates='subject_chat')
@@ -1135,6 +1151,7 @@ class SubjectChatAnswer(Base):
     sender_id = Column(Integer, ForeignKey('user.id'))
     subject_chat_id = Column(Integer, ForeignKey('subject_chat.id'))
     read_by = Column(String)
+    deleted = Column(Boolean)
 
     user = relationship('User', back_populates='subject_answer')
     subject_chat = relationship('SubjectChat', back_populates='subject_chat_answer')
