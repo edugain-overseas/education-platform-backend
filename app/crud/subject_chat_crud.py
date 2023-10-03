@@ -63,7 +63,8 @@ def create_subject_chat_message(
         sender_id=sender_id,
         sender_type=sender_type,
         subject_id=subject_id,
-        message_type=message_type
+        message_type=message_type,
+        deleted=False
     )
 
     db.add(new_message)
@@ -85,7 +86,8 @@ def create_subject_chat_answer(
         datetime_message=datetime_message,
         subject_chat_id=subject_chat_id,
         sender_id=sender_id,
-        sender_type=sender_type
+        sender_type=sender_type,
+        deleted=False
     )
 
     db.add(new_answer)
@@ -101,19 +103,24 @@ def create_subject_attach_file_db(
     subject_chat_message: int = None
 ):
     attach_file_objs = []
+
     for attach_file in attach_files:
         if subject_chat_answer is not None:
             attach_file_obj = SubjectChatAttachFile(
                 chat_answer=subject_chat_answer,
                 file_path=attach_file['path'],
-                mime_type=attach_file['mime-type']
+                mime_type=attach_file['type'],
+                filename=attach_file['filename'],
+                size=attach_file['size']
             )
 
         elif subject_chat_message is not None:
             attach_file_obj = SubjectChatAttachFile(
                 chat_message=subject_chat_message,
                 file_path=attach_file['path'],
-                mime_type=attach_file['mime-type']
+                mime_type=attach_file['type'],
+                filename=attach_file['filename'],
+                size=attach_file['size']
             )
         else:
             continue
@@ -122,10 +129,9 @@ def create_subject_attach_file_db(
         attach_file_objs.append(attach_file_obj)
 
     db.commit()
+
     for attach_file_obj in attach_file_objs:
         db.refresh(attach_file_obj)
-
-    return
 
 
 def create_subject_recipient_db(
@@ -143,6 +149,7 @@ def create_subject_recipient_db(
             db.commit()
             db.refresh(rec_obj)
         return
+
     else:
         recipient_obj = SubjectRecipient(
             subject_chat_id=subject_chat_id,
@@ -254,25 +261,40 @@ def select_recipient_by_message_id(db: Session, message_id: int):
 
 
 def select_last_message_db(db: Session, subject_id: int, sender_id: int):
-    subquery = select(
-        SubjectChat.id).filter(
+    subquery = select(SubjectChat.id).filter(
         SubjectChat.sender_id == sender_id,
-        SubjectChat.subject_id == subject_id)
+        SubjectChat.subject_id == subject_id
+    )
 
     message_obj = db.query(
-            SubjectChat.id, SubjectChat.message, SubjectChat.datetime_message,
-            SubjectChat.fixed, SubjectChat.message_type,
-            SubjectChat.subject_id, SubjectChat.sender_id,
-            SubjectChat.sender_type, SubjectChat.read_by,
-            func.group_concat(SubjectChatAttachFile.id).label("fileIds"),
-            func.group_concat(SubjectChatAttachFile.file_path).label("filePaths"),
-            func.group_concat(SubjectChatAttachFile.mime_type).label("mimeTypes"))\
-        .join(SubjectChatAttachFile, SubjectChatAttachFile.chat_message == SubjectChat.id, isouter=True)\
-        .filter(SubjectChat.id.in_(subquery.scalar_subquery()))\
+        SubjectChat.id,
+        SubjectChat.message,
+        SubjectChat.datetime_message,
+        SubjectChat.fixed,
+        SubjectChat.message_type,
+        SubjectChat.subject_id,
+        SubjectChat.sender_id,
+        SubjectChat.sender_type,
+        SubjectChat.read_by,
+        func.group_concat(SubjectChatAttachFile.id).label("fileIds"),
+        func.group_concat(SubjectChatAttachFile.file_path).label("filePaths"),
+        func.group_concat(SubjectChatAttachFile.mime_type).label("mimeTypes"),
+        func.group_concat(SubjectChatAttachFile.filename).label("fileNames"),
+        func.group_concat(SubjectChatAttachFile.size).label("fileSizes")
+    ) \
+        .join(SubjectChatAttachFile, SubjectChatAttachFile.chat_message == SubjectChat.id, isouter=True) \
+        .filter(SubjectChat.id.in_(subquery.scalar_subquery())) \
         .group_by(
-            SubjectChat.id, SubjectChat.message, SubjectChat.datetime_message, SubjectChat.fixed,
-            SubjectChat.message_type, SubjectChat.subject_id, SubjectChat.sender_id, SubjectChat.sender_type)\
-        .order_by(desc(SubjectChat.datetime_message))\
+        SubjectChat.id,
+        SubjectChat.message,
+        SubjectChat.datetime_message,
+        SubjectChat.fixed,
+        SubjectChat.message_type,
+        SubjectChat.subject_id,
+        SubjectChat.sender_id,
+        SubjectChat.sender_type
+    ) \
+        .order_by(desc(SubjectChat.datetime_message)) \
         .limit(1) \
         .first()
 
@@ -283,10 +305,13 @@ def select_last_answer_db(db: Session, sender_id: int):
     subquery = select(SubjectChatAnswer.id).filter(SubjectChatAnswer.sender_id == sender_id)
 
     answer_obj = db.query(
-            SubjectChatAnswer,
-            func.group_concat(SubjectChatAttachFile.id).label("fileIds"),
-            func.group_concat(SubjectChatAttachFile.file_path).label("filePaths"),
-            func.group_concat(SubjectChatAttachFile.mime_type).label("mimeTypes")) \
+        SubjectChatAnswer,
+        func.group_concat(SubjectChatAttachFile.id).label("fileIds"),
+        func.group_concat(SubjectChatAttachFile.file_path).label("filePaths"),
+        func.group_concat(SubjectChatAttachFile.mime_type).label("mimeTypes"),
+        func.group_concat(SubjectChatAttachFile.filename).label("fileNames"),
+        func.group_concat(SubjectChatAttachFile.size).label("fileSizes")
+    ) \
         .join(SubjectChatAttachFile, SubjectChatAttachFile.chat_answer == SubjectChatAnswer.id, isouter=True) \
         .filter(SubjectChatAnswer.id.in_(subquery.scalar_subquery())) \
         .group_by(SubjectChatAnswer.id) \

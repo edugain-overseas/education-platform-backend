@@ -45,8 +45,8 @@ class ConnectionManager:
             active_users.append(connection['user'])
 
         total_json = {
-            "total_active": total_active,
-            "id_active_users": active_users
+            "totalActive": total_active,
+            "idsActiveUsers": active_users
         }
         await self.send_message_to_group(group_name=group_name, message=total_json)
 
@@ -83,13 +83,19 @@ async def group_chat_socket(
 ):
     # user = get_user_by_token(db=db, token=token)
     user = get_current_user(db=db, token=token)
+    group_id = select_group_by_name_db(db=db, group_name=group_name)[0]
+
     try:
-        group_id = select_group_by_name_db(db=db, group_name=group_name)
         await websocket.accept()
     except Exception as e:
-        print(f'{e}')
+        print(f'Exception – {e}')
 
-    connection = {"websocket": websocket, "user": user.id, "user_type": str(user.user_type.type)}
+    connection = {
+        "websocket": websocket,
+        "user": user.id,
+        "user_type": str(user.user_type.type)
+    }
+
     await manager.add_connection(group_name, connection)
     print(manager.connections)
 
@@ -97,9 +103,14 @@ async def group_chat_socket(
     user_info = set_keyword_for_users_data(users)
 
     try:
-        messages_obj = select_last_messages_db(db=db, group_id=group_id[0], recipient_id=user.id)
+        messages_obj = select_last_messages_db(
+            db=db,
+            group_id=group_id,
+            recipient_id=user.id
+        )
+
         last_messages = set_last_messages_dict(messages_obj=messages_obj)
-        last_messages['user_info'] = user_info
+        last_messages['userInfo'] = user_info
         await websocket.send_json(last_messages)
 
         while True:
@@ -112,15 +123,15 @@ async def group_chat_socket(
                     db=db,
                     message=data.get("message"),
                     datetime_message=datetime.utcnow(),
-                    group_chat_id=data.get("message_id"),
-                    sender_id=data.get("sender_id"),
-                    sender_type=data.get("sender_type")
+                    group_chat_id=data.get("messageId"),
+                    sender_id=data.get("senderId"),
+                    sender_type=data.get("senderType")
                 )
 
-                if data.get("attach_file_path") is not None:
+                if data.get("attachFiles") is not None:
                     create_attach_file_db(
                         db=db,
-                        attach_files=data.get("attach_file_path"),
+                        attach_files=data.get("attachFiles"),
                         chat_answer=new_answer.id
                     )
 
@@ -129,11 +140,11 @@ async def group_chat_socket(
                     db=db,
                     message=data.get("message"),
                     datetime_message=datetime.utcnow(),
-                    message_type=data.get("message_type"),
+                    message_type=data.get("messageType"),
                     fixed=data.get("fixed"),
-                    group_id=group_id[0],
-                    sender_id=data.get("sender_id"),
-                    sender_type=data.get("sender_type")
+                    group_id=group_id,
+                    sender_id=data.get("senderId"),
+                    sender_type=data.get("senderType")
                 )
 
                 if data.get("recipient") is not None:
@@ -143,16 +154,16 @@ async def group_chat_socket(
                         group_chat_id=new_message.id
                     )
 
-                if data.get("attach_file_path") is not None:
+                if data.get("attachFiles") is not None:
                     create_attach_file_db(
                         db=db,
-                        attach_files=data.get("attach_file_path"),
+                        attach_files=data.get("attachFiles"),
                         chat_message=new_message.id
                     )
 
             # Logic to send new message in websocket
-            if data.get("message_type") == "alone":
-                message_obj = get_last_message_db(db=db, group_id=group_id[0], sender_id=data.get("sender_id"))
+            if data.get("messageType") == "alone":
+                message_obj = get_last_message_db(db=db, group_id=group_id, sender_id=data.get("senderId"))
                 message_to_send = set_last_message_dict(message_obj)
                 await manager.send_message_to_user(
                     group_name=group_name,
@@ -161,8 +172,8 @@ async def group_chat_socket(
                 )
                 await websocket.send_json(message_to_send)
 
-            elif data.get("message_type") == "several":
-                message_obj = get_last_message_db(db=db, group_id=group_id[0], sender_id=data.get("sender_id"))
+            elif data.get("messageType") == "several":
+                message_obj = get_last_message_db(db=db, group_id=group_id, sender_id=data.get("senderId"))
                 message_to_send = set_last_message_dict(message_obj)
                 await manager.send_message_to_users(
                     group_name=group_name,
@@ -171,8 +182,8 @@ async def group_chat_socket(
                 )
                 await websocket.send_json(message_to_send)
 
-            elif data.get("message_type") == "everyone":
-                message_obj = get_last_message_db(db=db, group_id=group_id[0], sender_id=data.get("sender_id"))
+            elif data.get("messageType") == "everyone":
+                message_obj = get_last_message_db(db=db, group_id=group_id, sender_id=data.get("senderId"))
                 message_to_send = set_last_message_dict(message_obj)
                 await manager.send_message_to_group(
                     group_name=group_name,
@@ -181,9 +192,9 @@ async def group_chat_socket(
 
             # Logic to send new answer in websocket
             else:
-                answer_obj = get_last_answer_db(db=db, sender_id=data.get("sender_id"))
+                answer_obj = get_last_answer_db(db=db, sender_id=data.get("senderId"))
                 answer_to_send = set_last_answer_dict(answer_obj)
-                message_obj = select_message_by_id_db(db=db, message_id=data.get("message_id"))
+                message_obj = select_message_by_id_db(db=db, message_id=data.get("messageId"))
 
                 if message_obj.message_type == "alone":
                     await manager.send_message_to_user(
@@ -228,7 +239,11 @@ async def attach_file_to_chat(
 ):
     if user.student or user.curator or user.moder:
         file_path = save_group_chat_file(file=file)
-        return file_path
+        return {
+            "filePath": file_path,
+            "fileName": file.filename,
+            "fileSize": file.size
+        }
     return HTTPException(status_code="403", detail="Teacher can't use group chat")
 
 
@@ -278,3 +293,4 @@ async def get_chat_messages(
 
     result = set_last_messages_dict(messages_obj=messages_obj)
     return result
+

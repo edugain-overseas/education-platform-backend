@@ -32,7 +32,7 @@ def select_users_in_subject(subject_id: int, db: Session) -> list[tuple]:
 
 def set_keyword_for_users_data(users: list) -> list[dict]:
     users_info = []
-    fields = ['user_id', 'is_active', 'username', 'user_type', 'name', 'surname', 'image_path']
+    fields = ['userId', 'isActive', 'username', 'userType', 'name', 'surname', 'imagePath']
 
     for user in users:
         user_dict = dict(zip(fields, user))

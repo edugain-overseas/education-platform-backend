@@ -75,7 +75,8 @@ def create_group_chat_massage(
         sender_id=sender_id,
         sender_type=sender_type,
         group_id=group_id,
-        message_type=message_type
+        message_type=message_type,
+        deleted=False
     )
 
     db.add(new_message)
@@ -97,7 +98,8 @@ def create_group_chat_answer(
         datetime_message=datetime_message,
         group_chat_id=group_chat_id,
         sender_id=sender_id,
-        sender_type=sender_type
+        sender_type=sender_type,
+        deleted=False
     )
     db.add(new_answer)
     db.commit()
@@ -117,14 +119,18 @@ def create_attach_file_db(
             attach_file_obj = GroupChatAttachFile(
                 chat_message=chat_message,
                 file_path=attach_file['path'],
-                mime_type=attach_file['mime-type']
+                mime_type=attach_file['type'],
+                filename=attach_file['filename'],
+                size=attach_file['size']
             )
 
         elif chat_answer is not None:
             attach_file_obj = GroupChatAttachFile(
                 chat_answer=chat_answer,
                 file_path=attach_file['path'],
-                mime_type=attach_file['mime-type']
+                mime_type=attach_file['type'],
+                filename=attach_file['filename'],
+                size=attach_file['size']
             )
         else:
             continue
@@ -135,8 +141,6 @@ def create_attach_file_db(
     db.commit()
     for attach_file_obj in attach_file_objs:
         db.refresh(attach_file_obj)
-
-    return
 
 
 def create_recipient_db(
@@ -265,20 +269,38 @@ def select_recipient_by_message_id(db: Session, message_id: int):
 
 
 def get_last_message_db(db: Session, group_id: int, sender_id: int):
-    subquery = select(GroupChat.id).filter(GroupChat.sender_id == sender_id, GroupChat.group_id == group_id)
+    subquery = (select(GroupChat.id)
+                .filter(GroupChat.sender_id == sender_id, GroupChat.group_id == group_id))
 
     message_obj = db.query(
-            GroupChat.id, GroupChat.message, GroupChat.datetime_message, GroupChat.fixed, GroupChat.message_type,
-            GroupChat.group_id, GroupChat.sender_id, GroupChat.sender_type, GroupChat.read_by,
-            func.group_concat(GroupChatAttachFile.id).label("fileIds"),
-            func.group_concat(GroupChatAttachFile.file_path).label("filePaths"),
-            func.group_concat(GroupChatAttachFile.mime_type).label("mimeTypes"))\
-        .join(GroupChatAttachFile, GroupChatAttachFile.chat_message == GroupChat.id, isouter=True)\
-        .filter(GroupChat.id.in_(subquery.scalar_subquery()))\
+        GroupChat.id,
+        GroupChat.message,
+        GroupChat.datetime_message,
+        GroupChat.fixed,
+        GroupChat.message_type,
+        GroupChat.group_id,
+        GroupChat.sender_id,
+        GroupChat.sender_type,
+        GroupChat.read_by,
+        func.group_concat(GroupChatAttachFile.id).label("fileIds"),
+        func.group_concat(GroupChatAttachFile.file_path).label("filePaths"),
+        func.group_concat(GroupChatAttachFile.mime_type).label("mimeTypes"),
+        func.group_concat(GroupChatAttachFile.filename).label("fileNames"),
+        func.group_concat(GroupChatAttachFile.size).label("fileSizes")
+    ) \
+        .join(GroupChatAttachFile, GroupChatAttachFile.chat_message == GroupChat.id, isouter=True) \
+        .filter(GroupChat.id.in_(subquery.scalar_subquery())) \
         .group_by(
-            GroupChat.id, GroupChat.message, GroupChat.datetime_message, GroupChat.fixed,
-            GroupChat.message_type, GroupChat.group_id, GroupChat.sender_id, GroupChat.sender_type)\
-        .order_by(desc(GroupChat.datetime_message))\
+        GroupChat.id,
+        GroupChat.message,
+        GroupChat.datetime_message,
+        GroupChat.fixed,
+        GroupChat.message_type,
+        GroupChat.group_id,
+        GroupChat.sender_id,
+        GroupChat.sender_type
+    ) \
+        .order_by(desc(GroupChat.datetime_message)) \
         .limit(1) \
         .first()
 
@@ -289,10 +311,13 @@ def get_last_answer_db(db: Session, sender_id: int):
     subquery = select(GroupChatAnswer.id).filter(GroupChatAnswer.sender_id == sender_id)
 
     answer_obj = db.query(
-            GroupChatAnswer,
-            func.group_concat(GroupChatAttachFile.id).label("fileIds"),
-            func.group_concat(GroupChatAttachFile.file_path).label("filePaths"),
-            func.group_concat(GroupChatAttachFile.mime_type).label("mimeTypes")) \
+        GroupChatAnswer,
+        func.group_concat(GroupChatAttachFile.id).label("fileIds"),
+        func.group_concat(GroupChatAttachFile.file_path).label("filePaths"),
+        func.group_concat(GroupChatAttachFile.mime_type).label("mimeTypes"),
+        func.group_concat(GroupChatAttachFile.filename).label("fileNames"),
+        func.group_concat(GroupChatAttachFile.size).label("fileSizes")
+    )\
         .join(GroupChatAttachFile, GroupChatAttachFile.chat_answer == GroupChatAnswer.id, isouter=True) \
         .filter(GroupChatAnswer.id.in_(subquery.scalar_subquery())) \
         .group_by(GroupChatAnswer.id) \
