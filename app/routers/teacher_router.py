@@ -44,7 +44,7 @@ async def get_my_schedule(
 
     for lesson in lessons:
         schedule_data = {
-            'subject_title': lesson[0],
+            'subject_name': lesson[0],
             'lesson_date': lesson[1],
             'lesson_end': lesson[2]
         }
@@ -61,4 +61,8 @@ async def update_teacher_image(
 ):
     teacher = get_teacher_by_user_id_db(db=db, user_id=user.id)
     image_path = save_teacher_avatar(photo=file)
-    return update_teacher_image_db(db=db, teacher=teacher, image_path=image_path)
+    update_teacher_image_db(db=db, teacher=teacher, image_path=image_path)
+    return {
+        "message": "Avatar updated successfully",
+        "photo_path": image_path
+    }
