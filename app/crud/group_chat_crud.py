@@ -9,7 +9,7 @@ from app.models import (Curator, Group, GroupChat, GroupChatAnswer, GroupChatAtt
                         MessageTypeOption, Moder, Student, User, UserType, UserTypeOption)
 
 
-def select_student_in_group_db(db: Session, group_name: str):
+def select_student_in_group_db(db: Session, group_id: int):
     students = db.query(
         User.id,
         User.is_active,
@@ -18,11 +18,13 @@ def select_student_in_group_db(db: Session, group_name: str):
         Student.name,
         Student.surname,
         Student.image_path
-    ).select_from(Group).join(
-        Student, Student.group_id == Group.id).join(
-        User, User.id == Student.user_id).join(
-        UserType, UserType.id == User.user_type_id).filter(
-        Group.group_name == group_name).all()
+    )\
+        .select_from(Group)\
+        .join(Student, Student.group_id == Group.id)\
+        .join(User, User.id == Student.user_id)\
+        .join(UserType, UserType.id == User.user_type_id)\
+        .filter(Group.id == group_id)\
+        .all()
 
     return students
 
@@ -33,14 +35,16 @@ def select_moder_db(db: Session):
         User.is_active,
         User.username,
         UserType.type
-    ).select_from(Moder).join(
-        User, User.id == Moder.user_id).join(
-        UserType, UserType.id == User.user_type_id).all()
+    )\
+        .select_from(Moder)\
+        .join(User, User.id == Moder.user_id)\
+        .join(UserType, UserType.id == User.user_type_id)\
+        .all()
 
     return moderators
 
 
-def select_curator_in_group_db(db: Session, group_name: str):
+def select_curator_in_group_db(db: Session, group_id: int):
     curator = db.query(
         User.id,
         User.is_active,
@@ -49,11 +53,13 @@ def select_curator_in_group_db(db: Session, group_name: str):
         Curator.name,
         Curator.surname,
         Curator.image_path
-    ).select_from(Group).join(
-        Curator, Curator.id == Group.curator_id).join(
-        User, User.id == Curator.user_id).join(
-        UserType, UserType.id == User.user_type_id).filter(
-        Group.group_name == group_name).all()
+    )\
+        .select_from(Group)\
+        .join(Curator, Curator.id == Group.curator_id)\
+        .join(User, User.id == Curator.user_id)\
+        .join(UserType, UserType.id == User.user_type_id)\
+        .filter(Group.id == group_id)\
+        .all()
 
     return curator
 
@@ -61,7 +67,6 @@ def select_curator_in_group_db(db: Session, group_name: str):
 def create_group_chat_massage(
         db: Session,
         message: str,
-        datetime_message: datetime,
         fixed: bool,
         sender_id: int,
         sender_type: UserTypeOption,
@@ -70,7 +75,7 @@ def create_group_chat_massage(
 ):
     new_message = GroupChat(
         message=message,
-        datetime_message=datetime_message,
+        datetime_message=datetime.utcnow(),
         fixed=fixed,
         sender_id=sender_id,
         sender_type=sender_type,
@@ -88,14 +93,13 @@ def create_group_chat_massage(
 def create_group_chat_answer(
         db: Session,
         message: str,
-        datetime_message: datetime,
         group_chat_id: int,
         sender_id: int,
         sender_type: str,
 ):
     new_answer = GroupChatAnswer(
         message=message,
-        datetime_message=datetime_message,
+        datetime_message=datetime.utcnow(),
         group_chat_id=group_chat_id,
         sender_id=sender_id,
         sender_type=sender_type,
@@ -358,3 +362,54 @@ def update_answer_read_by_db(db: Session, answer_id: int, user_id: int):
     db.commit()
     db.refresh(answer)
     return answer
+
+
+def delete_message_db(db: Session, message: GroupChat):
+    message.deleted = True
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+def delete_answer_db(db: Session, answer_id: int):
+    chat_answer = db.query(GroupChatAnswer).filter(GroupChatAnswer.id == answer_id).first()
+    chat_answer.deleted = True
+    db.commit()
+    db.refresh(chat_answer)
+    return
+
+
+def update_message_text_db(db: Session, message_text: str, message_id: int):
+    chat_message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
+    chat_message.message = message_text
+    db.commit()
+    db.refresh(chat_message)
+    return
+
+
+def update_message_fixed_db(db: Session, fixed: bool, message_id: int):
+    chat_message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
+    chat_message.fixed = fixed
+    db.commit()
+    db.refresh(chat_message)
+    return
+
+
+def update_message_type_db(db: Session, message_type: str, message_id: int, recipients: List[int]):
+    chat_message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
+    chat_message.message_type = message_type
+    db.commit()
+    db.refresh(chat_message)
+
+    db_recipients = db.query(MessageRecipient).filter(MessageRecipient.group_chat_id == message_id).all()
+    for recipient in db_recipients:
+        db.delete(recipient)
+        db.commit()
+
+    create_recipient_db(db=db,group_chat_id=message_id, recipient=recipients)
+
+
+def delete_attached_file_db(db: Session, file_id: int):
+    attach_file = db.query(GroupChatAttachFile).filter(GroupChatAttachFile.id == file_id).first()
+    db.delete(attach_file)
+    db.commit()

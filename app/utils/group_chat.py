@@ -1,3 +1,13 @@
+from typing import List, Dict
+from sqlalchemy.orm import Session
+
+from app.crud.group_chat_crud import (select_last_messages_db, create_group_chat_massage, create_attach_file_db,
+                                      create_recipient_db, create_group_chat_answer, delete_message_db,
+                                      select_message_by_id_db, select_recipient_by_message_id)
+from app.models import User
+from app.utils.count_users import set_keyword_for_users_data, select_users_in_group
+
+
 def set_last_messages_dict(messages_obj):
     messages_data = {"messages": []}
 
@@ -123,3 +133,78 @@ def set_last_answer_dict(answer_obj):
     }
 
     return answer
+
+
+def create_last_message_data(db: Session, group_id: int, user: User):
+    users = select_users_in_group(group_id=group_id, db=db)
+    user_info = set_keyword_for_users_data(users)
+
+    messages_obj = select_last_messages_db(
+        db=db,
+        group_id=group_id,
+        recipient_id=user.id
+    )
+
+    last_messages = set_last_messages_dict(messages_obj=messages_obj)
+    last_messages['userInfo'] = user_info
+    return last_messages
+
+
+def save_message_data_to_db(db: Session, group_id: int, data: Dict):
+    new_message = create_group_chat_massage(
+        db=db,
+        message=data.get("message"),
+        message_type=data.get("messageType"),
+        fixed=data.get("fixed"),
+        group_id=group_id,
+        sender_id=data.get("senderId"),
+        sender_type=data.get("senderType")
+    )
+
+    if data.get("attachFiles") is not None:
+        create_attach_file_db(db=db, attach_files=data.get("attachFiles"), chat_message=new_message.id)
+
+    if data.get("recipient") is not None:
+        create_recipient_db(db=db, recipient=data.get("recipient"), group_chat_id=new_message.id)
+
+
+def save_answer_data_to_db(db: Session, data: Dict):
+    new_answer = create_group_chat_answer(
+        db=db,
+        message=data.get("message"),
+        group_chat_id=data.get("messageId"),
+        sender_id=data.get("senderId"),
+        sender_type=data.get("senderType")
+    )
+
+    if data.get("attachFiles") is not None:
+        create_attach_file_db(
+            db=db,
+            attach_files=data.get("attachFiles"),
+            chat_answer=new_answer.id
+        )
+
+
+def delete_message_data(db: Session, data: Dict):
+    chat_message = select_message_by_id_db(db=db, message_id=data.get("messageId"))
+    chat_message = delete_message_db(db=db, message=chat_message)
+
+    if chat_message.message_type == "everyone":
+        return {"messageType": "everyone"}
+    else:
+        return {
+            "messageType": "other",
+            "recipient": [recipient.recipient_id for recipient in chat_message.recipient]
+        }
+
+
+def delete_answer_data(db: Session, data: Dict):
+    pass
+
+
+def update_message_data_to_db(db: Session, data: Dict):
+    pass
+
+
+def update_answer_data_to_db(db: Session, data: Dict):
+    pass
