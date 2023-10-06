@@ -44,22 +44,11 @@ async def get_student_info(
 
 @router.get("/student/my/schedule")
 async def get_student_schedule(
-        group_name: str,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    result = get_student_schedule_db(db=db, group_name=group_name)
-    schedule_result_list = []
-
-    for item in result:
-        schedule_result_list.append({
-            'subject_name': item[0],
-            'lesson_date': item[1],
-            'lesson_end': item[2],
-            'teacher_name': item[3],
-            'teacher_surname': item[4]
-        })
-    return schedule_result_list
+    result = get_student_schedule_db(db=db, student_id=user.student[0].id)
+    return result
 
 
 @router.put("/student/update/photo")

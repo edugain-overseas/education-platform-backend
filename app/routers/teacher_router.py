@@ -45,8 +45,10 @@ async def get_my_schedule(
     for lesson in lessons:
         schedule_data = {
             'subject_name': lesson[0],
-            'lesson_date': lesson[1],
-            'lesson_end': lesson[2]
+            'lesson_name': lesson[1],
+            'lesson_date': lesson[2],
+            'lesson_end': lesson[3],
+            'group_name': lesson[4]
         }
         result.append(schedule_data)
 

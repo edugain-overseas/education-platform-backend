@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -51,11 +51,23 @@ def get_teacher_subjects_db(db: Session, user_id: int):
 
 def get_teacher_lessons_db(db: Session, teacher_id: int):
     current_date = datetime.now().date()
+    end_date = current_date + timedelta(days=10)
 
-    lessons = db.query(Subject.title, Lesson.lesson_date, Lesson.lesson_end)\
-        .join(Lesson, Subject.id == Lesson.subject_id)\
-        .filter(Lesson.teacher_id == teacher_id, Lesson.lesson_date >= current_date)\
-        .all()
+    lessons = db.query(
+        Subject.title,
+        Lesson.title,
+        Lesson.lesson_date,
+        Lesson.lesson_end,
+        Group.group_name
+    ).join(
+        Lesson, Subject.id == Lesson.subject_id
+    ).join(
+        Group, Subject.group_id == Group.id
+    ).filter(
+        Lesson.teacher_id == teacher_id,
+        Lesson.lesson_date >= current_date,
+        Lesson.lesson_date < end_date
+    ).all()
 
     return lessons
 
