@@ -191,7 +191,7 @@ def select_dop_subjects(db: Session, student_id: int):
 
 
 def select_subject_exam_date(db: Session, subject_id: int):
-    exam_date = db.query(Subject.exam_date).filter(subject_id == subject_id).first()
+    exam_date = db.query(Subject.exam_date).filter(Subject.id == subject_id).first()
     return exam_date[0].strftime('%Y-%m-%d')
 
 
