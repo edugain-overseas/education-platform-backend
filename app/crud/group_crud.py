@@ -52,11 +52,17 @@ def delete_group_db(db: Session, group: Group):
 
 def select_group_curator_db(db: Session, group_id: int):
     curator_data = db.query(
-        Curator.id, Curator.name, Curator.surname,
-        Curator.email, Curator.image_path, User.last_active)\
+        Curator.id,
+        Curator.name,
+        Curator.surname,
+        Curator.email,
+        Curator.image_path,
+        User.last_active
+    )\
         .join(Group, Group.curator_id == Curator.id)\
         .join(User, Curator.user_id == User.id)\
-        .filter(Group.id == group_id).first()
+        .filter(Group.id == group_id)\
+        .first()
 
     fields = ['id', 'name', 'surname', 'email', 'image_path', 'last_active']
     curator = dict(zip(fields, curator_data))
@@ -66,8 +72,13 @@ def select_group_curator_db(db: Session, group_id: int):
 
 def select_group_students_db(db: Session, group_id: int, subject_id: int):
     students = db.query(
-        Student.id, Student.name, Student.surname,
-        Student.email, Student.image_path, User.last_active)\
+        Student.id,
+        Student.name,
+        Student.surname,
+        Student.email,
+        Student.image_path,
+        User.last_active
+    )\
         .join(User, Student.user_id == User.id)\
         .filter(Student.group_id == group_id)\
         .all()

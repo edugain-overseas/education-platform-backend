@@ -30,7 +30,7 @@ from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCatego
 from app.session import get_db
 from app.utils.save_images import (delete_file, save_subject_avatar, save_subject_icon, save_subject_instructions,
                                    save_subject_logo, save_subject_program)
-from app.utils.subject_utils import set_subject_structure
+from app.utils.subject_utils import set_subjects_lessons_structure
 from app.utils.token import get_current_user
 
 router = APIRouter()
@@ -248,7 +248,8 @@ async def get_subject_tapes(
     subject_teachers = select_teachers_for_subject_db(db=db, subject_id=subject_id)
     next_lesson_date = select_three_next_lesson_db(db=db, subject_id=subject_id)
     subject_data = get_lessons_by_subject_id_db(db=db, subject_id=subject_id)
-    subjects_lessons = set_subject_structure(subject_data=subject_data)
+    subjects_lessons = set_subjects_lessons_structure(subject_data=subject_data)
+    # subjects_lessons = set_subject_structure(subject_data=subject_data)
     exam_date = select_subject_exam_date(db=db, subject_id=subject_id)
 
     response_data = {

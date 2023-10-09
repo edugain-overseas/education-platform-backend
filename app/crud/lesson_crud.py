@@ -99,11 +99,10 @@ def get_lessons_by_subject_id_db(db: Session, subject_id: int):
         Lesson.number.label("lesson_number"),
         Lesson.title.label("lesson_title"),
         Lesson.description.label("lesson_desc"),
-        Lesson.lesson_date.label("lesson_date")) \
-        .join(Module, Module.id == Lesson.module_id) \
-        .join(Subject, Subject.id == Module.subject_id) \
-        .filter(Lesson.is_published == 1) \
-        .filter(Subject.id == subject_id) \
+        Lesson.lesson_date.label("lesson_date")
+    )\
+        .outerjoin(Lesson, Lesson.module_id == Module.id) \
+        .filter(Module.subject_id == subject_id) \
         .all()
 
     return query_result
