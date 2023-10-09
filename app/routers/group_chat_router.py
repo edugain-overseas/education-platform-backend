@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.websockets import WebSocket, WebSocketDisconnect
@@ -62,21 +62,21 @@ class ConnectionManager:
         messages_data = create_last_message_data(db=db, group_id=group_id, user=user)
         await websocket.send_json(messages_data)
 
-    async def send_message_to_user(self, group_name: str, user_id: int, message):
+    async def send_message_to_user(self, group_name: str, user_id: int, message: Dict):
         if group_name in self.connections:
             connections = self.connections[group_name]
             for connection in connections:
                 if connection["user"] == user_id:
                     await connection["websocket"].send_json(message)
 
-    async def send_message_to_users(self, group_name: str, user_ids: List[int], message):
+    async def send_message_to_users(self, group_name: str, user_ids: List[int], message: Dict):
         if group_name in self.connections:
             connections = self.connections[group_name]
             for connection in connections:
                 if connection["user"] in user_ids:
                     await connection["websocket"].send_json(message)
 
-    async def send_message_to_group(self, group_name: str, message):
+    async def send_message_to_group(self, group_name: str, message: Dict):
         if group_name in self.connections:
             connections = self.connections[group_name]
             for connection in connections:
@@ -105,11 +105,9 @@ async def group_chat_socket(
 
         while True:
             data = await websocket.receive_json()
-            print(data)
 
             if data.get("type") == "message":
                 save_message_data_to_db(db=db, group_id=group_id, data=data)
-
                 message_obj = get_last_message_db(db=db, group_id=group_id, sender_id=data.get("senderId"))
                 message_to_send = set_last_message_dict(message_obj)
 
@@ -166,7 +164,6 @@ async def group_chat_socket(
                     )
             elif data.get("type") == "deleteMessage":
                 info = delete_message_data(db=db, data=data)
-                print(info)
                 message = f"Message with id {data.get('messageId')} have been deleted"
                 if info["messageType"] == "everyone":
                     await manager.send_message_to_group(group_name=group_name, message={"message": message})
@@ -179,10 +176,51 @@ async def group_chat_socket(
                     )
 
             elif data.get("type") == "deleteAnswer":
-                delete_answer_data(db=db, data=data)
+                info = delete_answer_data(db=db, data=data)
+                message = f"Answer with id {data.get('answerId')} have been deleted"
+                if info["messageType"] == "everyone":
+                    await manager.send_message_to_group(group_name=group_name, message={"message": message})
+                elif info["messageType"] == "alone":
+                    await manager.send_message_to_user(
+                        group_name=group_name,
+                        user_id=info["messageSenderId"],
+                        message={"message": message}
+                    )
+                    await manager.send_message_to_user(
+                        group_name=group_name,
+                        user_id=data['senderId'],
+                        message={"message": message}
+                    )
+                else:
+                    await manager.send_message_to_user(
+                        group_name=group_name,
+                        user_id=info["messageSenderId"],
+                        message={"message": message}
+                    )
+                    await manager.send_message_to_users(
+                        group_name=group_name,
+                        user_ids=info["recipients"],
+                        message={"message": message}
+                    )
 
             elif data.get("type") == "updateMessage":
-                update_message_data_to_db(db=db, data=data)
+                update_message = update_message_data_to_db(db=db, data=data)
+                if update_message["messageType"] == "everyone":
+                    await manager.send_message_to_group(group_name=group_name, message=update_message)
+                elif update_message["messageType"] == "alone":
+                    await websocket.send_json(update_message)
+                    await manager.send_message_to_user(
+                        group_name=group_name,
+                        user_id=data["recipient"],
+                        message=update_message
+                    )
+                else:
+                    await websocket.send_json(update_message)
+                    await manager.send_message_to_users(
+                        group_name=group_name,
+                        user_ids=data["recipient"],
+                        message=update_message
+                    )
 
             elif data.get("type") == "updateAnswer":
                 update_answer_data_to_db(db=db, data=data)

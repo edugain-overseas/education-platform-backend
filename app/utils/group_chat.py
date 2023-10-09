@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.crud.group_chat_crud import (select_last_messages_db, create_group_chat_massage, create_attach_file_db,
                                       create_recipient_db, create_group_chat_answer, delete_message_db,
-                                      select_message_by_id_db, select_recipient_by_message_id)
+                                      delete_answer_db, select_message_by_id_db, select_answer_by_id_db,
+                                      delete_attached_file_db, update_message_text_and_fixed_db, update_message_type_db)
 from app.models import User
 from app.utils.count_users import set_keyword_for_users_data, select_users_in_group
+from app.utils.save_images import delete_file
 
 
 def set_last_messages_dict(messages_obj):
@@ -128,11 +130,69 @@ def set_last_answer_dict(answer_obj):
         "messageId": answer_obj[0].group_chat.id,
         "senderId": answer_obj[0].sender_id,
         "senderType": answer_obj[0].sender_type,
-        "readBy": answer_obj[0].read_by.split(", ") if answer_obj[0].read_by else [],
+        "readBy": answer_obj[0].read_by.split(",") if answer_obj[0].read_by else [],
         "attachFiles": attach_files
     }
 
     return answer
+
+
+def set_updated_message(message_obj):
+    attach_file = []
+    if message_obj.attach_file:
+        for file in message_obj.attach_file:
+            file_obj = {
+                "fileId": file.id,
+                "filePath": file.file_path,
+                "mimeType": file.mime_type,
+                "fileName": file.filename,
+                "fileSize": file.size
+            }
+            attach_file.append(file_obj)
+
+    answers = []
+    if message_obj.group_chat_answer:
+        for answer in message_obj.group_chat_answer:
+            answer_attach_files = []
+            if answer.attach_file:
+                for answer_file in answer.attach_file:
+                    answer_file_obj = {
+                        "fileId": answer_file.id,
+                        "filePath": answer_file.file_path,
+                        "mimeType": answer_file.mime_type,
+                        "fileName": answer_file.filename,
+                        "fileSize": answer_file.size
+                    }
+                    answer_attach_files.append(answer_file_obj)
+
+            answer_obj = {
+                "answerId": answer.id,
+                "answer": answer.message,
+                "answerDatetime": answer.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+                "senderId": answer.sender_id,
+                "senderType": answer.sender_type,
+                "readBy": answer.read_by.split(",") if answer.read_by else [],
+                "deleted": answer.deleted,
+                "attachFiles": answer_attach_files
+            }
+            answers.append(answer_obj)
+
+    message = {
+        "messageId": message_obj.id,
+        "messageText": message_obj.message,
+        "messageType": message_obj.message_type,
+        "messageDatetime": message_obj.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+        "groupId": message_obj.group_id,
+        "senderId": message_obj.sender_id,
+        "senderType": message_obj.sender_type,
+        "fixed": message_obj.fixed,
+        "deleted": message_obj.deleted,
+        "readBy": message_obj.read_by.split(",") if message_obj.read_by else [],
+        "recipient": [rec.recipient_id for rec in message_obj.recipient] if message_obj.recipient else [],
+        "attachFiles": attach_file,
+        "answers": answers
+    }
+    return message
 
 
 def create_last_message_data(db: Session, group_id: int, user: User):
@@ -161,7 +221,7 @@ def save_message_data_to_db(db: Session, group_id: int, data: Dict):
         sender_type=data.get("senderType")
     )
 
-    if data.get("attachFiles") is not None:
+    if data.get("attachFiles"):
         create_attach_file_db(db=db, attach_files=data.get("attachFiles"), chat_message=new_message.id)
 
     if data.get("recipient") is not None:
@@ -199,11 +259,55 @@ def delete_message_data(db: Session, data: Dict):
 
 
 def delete_answer_data(db: Session, data: Dict):
-    pass
+    answer = select_answer_by_id_db(db=db, answer_id=data.get("answerId"))
+    answer = delete_answer_db(db=db, answer=answer)
+    message = answer.group_chat
+    if message.message_type == "everyone":
+        return {"messageType": "everyone"}
+    elif message.message_type == "alone":
+        return {
+            "messageType": "alone",
+            "messageSenderId": message.sender_id,
+        }
+    else:
+        return {
+            "messageType": "several",
+            "messageSenderId": message.sender_id,
+            "recipients": [recipient.recipient_id for recipient in message.recipient]
+        }
 
 
 def update_message_data_to_db(db: Session, data: Dict):
-    pass
+    message = select_message_by_id_db(db=db, message_id=data["messageId"])
+
+    if len(message.attach_file) >= 1:
+        for attach_file in message.attach_file:
+            delete_file(file_path=attach_file.file_path)
+            delete_attached_file_db(db=db, file_id=attach_file.id)
+
+    if data['attachFiles']:
+        create_attach_file_db(db=db, attach_files=data["attachFiles"], chat_message=data["messageId"])
+
+    if data["message"] != message.message or data["fixed"] != message.fixed:
+        update_message_text_and_fixed_db(
+            db=db,
+            new_text=data["message"],
+            fixed=data["fixed"],
+            message=message
+        )
+
+    if message.message_type == data["messageType"]:
+        message_data = set_updated_message(message)
+        return message_data
+    else:
+        update_message_type_db(
+            db=db,
+            message_type=data["messageType"],
+            recipients=data["recipient"],
+            message=message
+        )
+        message_data = set_updated_message(message)
+        return message_data
 
 
 def update_answer_data_to_db(db: Session, data: Dict):

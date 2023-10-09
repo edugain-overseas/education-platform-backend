@@ -268,6 +268,10 @@ def select_message_by_id_db(db: Session, message_id: int):
     return db.query(GroupChat).filter(GroupChat.id == message_id).first()
 
 
+def select_answer_by_id_db(db: Session, answer_id: int):
+    return db.query(GroupChatAnswer).filter(GroupChatAnswer.id == answer_id).first()
+
+
 def select_recipient_by_message_id(db: Session, message_id: int):
     return db.query(MessageRecipient).filter(MessageRecipient.group_chat_id == message_id).all()
 
@@ -371,42 +375,41 @@ def delete_message_db(db: Session, message: GroupChat):
     return message
 
 
-def delete_answer_db(db: Session, answer_id: int):
-    chat_answer = db.query(GroupChatAnswer).filter(GroupChatAnswer.id == answer_id).first()
-    chat_answer.deleted = True
+def delete_answer_db(db: Session, answer: GroupChatAnswer):
+    answer.deleted = True
     db.commit()
-    db.refresh(chat_answer)
-    return
+    db.refresh(answer)
+    return answer
 
 
-def update_message_text_db(db: Session, message_text: str, message_id: int):
-    chat_message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
-    chat_message.message = message_text
+def update_message_text_and_fixed_db(db: Session, new_text: str, fixed: bool, message: GroupChat):
+    message.message = new_text
+    message.fixed = fixed
     db.commit()
-    db.refresh(chat_message)
-    return
+    db.refresh(message)
+    return message
 
 
-def update_message_fixed_db(db: Session, fixed: bool, message_id: int):
-    chat_message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
-    chat_message.fixed = fixed
-    db.commit()
-    db.refresh(chat_message)
-    return
+# def update_message_fixed_db(db: Session, fixed: bool, message_id: int):
+#     chat_message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
+#     chat_message.fixed = fixed
+#     db.commit()
+#     db.refresh(chat_message)
+#     return chat_message
 
 
-def update_message_type_db(db: Session, message_type: str, message_id: int, recipients: List[int]):
-    chat_message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
-    chat_message.message_type = message_type
-    db.commit()
-    db.refresh(chat_message)
-
-    db_recipients = db.query(MessageRecipient).filter(MessageRecipient.group_chat_id == message_id).all()
+def update_message_type_db(db: Session, message_type: str, recipients: List[int], message: GroupChat):
+    db_recipients = db.query(MessageRecipient).filter(MessageRecipient.group_chat_id == message.id).all()
     for recipient in db_recipients:
         db.delete(recipient)
         db.commit()
 
-    create_recipient_db(db=db,group_chat_id=message_id, recipient=recipients)
+    message.message_type = message_type
+    db.commit()
+    db.refresh(message)
+
+    create_recipient_db(db=db, group_chat_id=message.id, recipient=recipients)
+    return message
 
 
 def delete_attached_file_db(db: Session, file_id: int):
