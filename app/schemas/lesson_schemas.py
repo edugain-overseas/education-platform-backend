@@ -10,7 +10,7 @@ class LessonBase(BaseModel):
     number: int
     title: str
     description: str
-    is_published: Optional[bool] = False
+    is_published: Optional[bool] = True
     lesson_date: datetime
     lesson_end: time
     lesson_type: LessonTypeOption

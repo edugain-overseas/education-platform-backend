@@ -34,6 +34,7 @@ def update_lesson_db(db: Session, lesson: Lesson, lesson_data: LessonUpdate):
 
     db.commit()
     db.refresh(lesson)
+    return lesson
 
 
 def select_all_lessons_db(db: Session):

@@ -108,7 +108,7 @@ def update_subject_logo_path_db(db: Session, subject: Subject, new_path: str):
 
 def update_subject_info_db(db: Session, subject: Subject, subject_data: SubjectUpdate):
     if subject_data.is_published is None:
-        subject_data.is_published = False
+        subject_data.is_published = True
 
     for field, value in subject_data:
         if value is not None:
@@ -116,6 +116,7 @@ def update_subject_info_db(db: Session, subject: Subject, subject_data: SubjectU
 
     db.commit()
     db.refresh(subject)
+    return subject
 
 
 def update_subject_item_text_db(db: Session, subject_item: SubjectItem, text: str):

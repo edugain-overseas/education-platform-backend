@@ -63,8 +63,8 @@ async def update_subject_info(
         subject = select_subject_by_id_db(db=db, subject_id=subject_id)
         if not subject:
             raise HTTPException(status_code=404, detail="Subject not found")
-        update_subject_info_db(db=db, subject=subject, subject_data=subject_data)
-        return {"massage": "Subject information have been successful updated"}
+        subject = update_subject_info_db(db=db, subject=subject, subject_data=subject_data)
+        return subject
     else:
         raise HTTPException(
             status_code=403,

@@ -38,8 +38,7 @@ async def update_module(
         module = select_module_by_id_db(db=db, module_id=module_id)
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
-        update_module_db(db=db, module=module, module_data=module_data)
-        return {"massage": "Module information have been successful updated"}
+        return update_module_db(db=db, module=module, module_data=module_data)
     else:
         raise HTTPException(
             status_code=403,

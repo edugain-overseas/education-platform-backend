@@ -39,8 +39,20 @@ async def update_lesson(
         lesson = select_lesson_by_id_db(db=db, lesson_id=lesson_id)
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        update_lesson_db(db=db, lesson=lesson, lesson_data=lesson_data)
-        return {"massage": "Lesson have been successful updated"}
+        lesson = update_lesson_db(db=db, lesson=lesson, lesson_data=lesson_data)
+        return {
+            "id": lesson.id,
+            "number": lesson.number,
+            "title": lesson.title,
+            "description": lesson.description,
+            "is_published": lesson.is_published,
+            "lesson_date": lesson.lesson_date.strftime("%d.%m.%Y %H:%M:%S"),
+            "lesson_end": lesson.lesson_end,
+            "lesson_type": lesson.lesson_type,
+            "module_id": lesson.module_id,
+            "subject_id": lesson.subject_id,
+            "teacher_id": lesson.teacher_id
+        }
     else:
         raise HTTPException(status_code=403, detail="Permission denied")
 

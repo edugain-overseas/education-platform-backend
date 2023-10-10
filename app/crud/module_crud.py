@@ -25,6 +25,7 @@ def update_module_db(db: Session, module: Module, module_data: UpdateModule):
 
     db.commit()
     db.refresh(module)
+    return module
 
 
 def select_modules_db(db: Session):
