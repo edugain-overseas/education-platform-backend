@@ -100,7 +100,8 @@ def get_lessons_by_subject_id_db(db: Session, subject_id: int):
         Lesson.number.label("lesson_number"),
         Lesson.title.label("lesson_title"),
         Lesson.description.label("lesson_desc"),
-        Lesson.lesson_date.label("lesson_date")
+        Lesson.lesson_date.label("lesson_date"),
+        Lesson.lesson_end.label("lesson_end")
     )\
         .outerjoin(Lesson, Lesson.module_id == Module.id) \
         .filter(Module.subject_id == subject_id) \

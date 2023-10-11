@@ -18,7 +18,8 @@ def set_subjects_lessons_structure(subject_data):
                 "lesson_number": item.lesson_number,
                 "lesson_title": item.lesson_title,
                 "lesson_desc": item.lesson_desc,
-                "lesson_date": item.lesson_date.strftime('%Y-%m-%dT%H:%M:%S.%f')
+                "lesson_date": item.lesson_date.strftime('%Y-%m-%dT%H:%M:%S.%f'),
+                "lesson_end": item.lesson_end
             }
             modules[item.module_id]["module_lessons"].append(lesson_data)
 
