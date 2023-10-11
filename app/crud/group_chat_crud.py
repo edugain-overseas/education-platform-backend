@@ -289,6 +289,7 @@ def get_last_message_db(db: Session, group_id: int, sender_id: int):
         GroupChat.group_id,
         GroupChat.sender_id,
         GroupChat.sender_type,
+        GroupChat.deleted,
         GroupChat.read_by,
         func.group_concat(GroupChatAttachFile.id).label("fileIds"),
         func.group_concat(GroupChatAttachFile.file_path).label("filePaths"),
@@ -390,14 +391,6 @@ def update_message_text_and_fixed_db(db: Session, new_text: str, fixed: bool, me
     return message
 
 
-# def update_message_fixed_db(db: Session, fixed: bool, message_id: int):
-#     chat_message = db.query(GroupChat).filter(GroupChat.id == message_id).first()
-#     chat_message.fixed = fixed
-#     db.commit()
-#     db.refresh(chat_message)
-#     return chat_message
-
-
 def update_message_type_db(db: Session, message_type: str, recipients: List[int], message: GroupChat):
     db_recipients = db.query(MessageRecipient).filter(MessageRecipient.group_chat_id == message.id).all()
     for recipient in db_recipients:
@@ -410,6 +403,13 @@ def update_message_type_db(db: Session, message_type: str, recipients: List[int]
 
     create_recipient_db(db=db, group_chat_id=message.id, recipient=recipients)
     return message
+
+
+def update_answer_text_db(db: Session, answer_text: str, answer: GroupChatAnswer):
+    answer.message = answer_text
+    db.commit()
+    db.refresh(answer)
+    return answer
 
 
 def delete_attached_file_db(db: Session, file_id: int):

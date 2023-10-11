@@ -223,7 +223,34 @@ async def group_chat_socket(
                     )
 
             elif data.get("type") == "updateAnswer":
-                update_answer_data_to_db(db=db, data=data)
+                result_after_update = update_answer_data_to_db(db=db, data=data)
+                if result_after_update["messageType"] == "everyone":
+                    await manager.send_message_to_group(
+                        group_name=group_name,
+                        message=result_after_update["answerData"]
+                    )
+                elif result_after_update["messageType"] == "alone":
+                    await manager.send_message_to_user(
+                        group_name=group_name,
+                        user_id=result_after_update["messageSenderId"],
+                        message=result_after_update["answerData"]
+                    )
+                    await manager.send_message_to_user(
+                        group_name=group_name,
+                        user_id=data['senderId'],
+                        message=result_after_update["answerData"]
+                    )
+                else:
+                    await manager.send_message_to_user(
+                        group_name=group_name,
+                        user_id=result_after_update["messageSenderId"],
+                        message=result_after_update["answerData"]
+                    )
+                    await manager.send_message_to_users(
+                        group_name=group_name,
+                        user_ids=result_after_update["messageRecipient"],
+                        message=result_after_update["answerData"]
+                    )
 
     except WebSocketDisconnect:
         await manager.remove_connection(group_name=group_name, connection=connection)

@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.crud.group_chat_crud import (select_last_messages_db, create_group_chat_massage, create_attach_file_db,
                                       create_recipient_db, create_group_chat_answer, delete_message_db,
                                       delete_answer_db, select_message_by_id_db, select_answer_by_id_db,
-                                      delete_attached_file_db, update_message_text_and_fixed_db, update_message_type_db)
+                                      delete_attached_file_db, update_message_text_and_fixed_db, update_message_type_db,
+                                      update_answer_text_db)
 from app.models import User
 from app.utils.count_users import set_keyword_for_users_data, select_users_in_group
 from app.utils.save_images import delete_file
@@ -23,6 +24,7 @@ def set_last_messages_dict(messages_obj):
             "groupId": message.group_id,
             "senderId": message.sender_id,
             "senderType": message.sender_type.value,
+            "deleted": message.deleted,
             "readBy": message.read_by.split(", ") if message.read_by else [],
             "answers": [],
             "attachFiles": []
@@ -36,6 +38,7 @@ def set_last_messages_dict(messages_obj):
                 "answerDatetime": answer.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
                 "senderId": answer.sender_id,
                 "senderType": answer.sender_type.value,
+                "deleted": answer.deleted,
                 "readBy": answer.read_by.split(", ") if answer.read_by else [],
                 "attachFiles": []
             }
@@ -95,6 +98,7 @@ def set_last_message_dict(message_obj):
         "groupId": message_obj.group_id,
         "senderId": message_obj.sender_id,
         "senderType": message_obj.sender_type.value,
+        "deleted": message_obj.deleted,
         "readBy": message_obj.read_by.split(", ") if message_obj.read_by else [],
         "attachFiles": attach_files
     }
@@ -130,6 +134,7 @@ def set_last_answer_dict(answer_obj):
         "messageId": answer_obj[0].group_chat.id,
         "senderId": answer_obj[0].sender_id,
         "senderType": answer_obj[0].sender_type,
+        "deleted": answer_obj[0].deleted,
         "readBy": answer_obj[0].read_by.split(",") if answer_obj[0].read_by else [],
         "attachFiles": attach_files
     }
@@ -193,6 +198,32 @@ def set_updated_message(message_obj):
         "answers": answers
     }
     return message
+
+
+def set_updated_answer(answer_obj):
+    attach_file = []
+    if answer_obj.attach_file:
+        for file in answer_obj.attach_file:
+            file_obj = {
+                "fileId": file.id,
+                "filePath": file.file_path,
+                "mimeType": file.mime_type,
+                "fileName": file.filename,
+                "fileSize": file.size
+            }
+            attach_file.append(file_obj)
+
+    answer = {
+        "answerId": answer_obj.id,
+        "answer": answer_obj.message,
+        "answerDatetime": answer_obj.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
+        "senderId": answer_obj.sender_id,
+        "senderType": answer_obj.sender_type,
+        "readBy": answer_obj.read_by.split(",") if answer_obj.read_by else [],
+        "deleted": answer_obj.deleted,
+        "attachFiles": attach_file
+    }
+    return answer
 
 
 def create_last_message_data(db: Session, group_id: int, user: User):
@@ -311,4 +342,30 @@ def update_message_data_to_db(db: Session, data: Dict):
 
 
 def update_answer_data_to_db(db: Session, data: Dict):
-    pass
+    answer = select_answer_by_id_db(db=db, answer_id=data["answerId"])
+
+    if len(answer.attach_file) >= 1:
+        for attach_file in answer.attach_file:
+            delete_file(file_path=attach_file.file_path)
+            delete_attached_file_db(db=db, file_id=attach_file.id)
+
+    if data['attachFiles']:
+        create_attach_file_db(db=db, attach_files=data["attachFiles"], chat_answer=data["answerId"])
+
+    message = answer.group_chat
+    result = {
+        "answerData": None,
+        "messageType": message.message_type,
+        "messageSenderId": message.sender_id,
+        "messageRecipient": [rec.recipient_id for rec in message.recipient] if message.recipient else []
+    }
+
+    if answer.message == data["answerText"]:
+        answer_data = set_updated_answer(answer)
+        result["answerData"] = answer_data
+        return result
+    else:
+        update_answer_text_db(db=db, answer_text=data["answerText"], answer=answer)
+        answer_data = set_updated_answer(answer)
+        result["answerData"] = answer_data
+        return result
