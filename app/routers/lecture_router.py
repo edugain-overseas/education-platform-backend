@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.crud.lecture_crud import (create_lecture_db, set_file_attr_for_lecture_db,
-                                   set_text_attr_for_lecture_db, get_lecture_db, get_lecture_text_attribute_db,
-                                   get_lecture_file_attribute_db)
+                                   set_text_attr_for_lecture_db, get_lesson_info_db, get_lecture_db,
+                                   get_lecture_text_attribute_db, get_lecture_file_attribute_db)
 from app.models import User, LectureAttributeType
 from app.schemas.lecture_schemas import LectureTextCreate, AttributeBase
 from app.session import get_db
@@ -80,7 +80,7 @@ async def get_lecture(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    lecture_base = get_lecture_db(db=db, lesson_id=lesson_id)
+    lecture_base = get_lesson_info_db(db=db, lesson_id=lesson_id)
 
     result = {
         "lessonTitle": lecture_base.lessonTitle,
@@ -90,7 +90,11 @@ async def get_lecture(
         "lectureInfo": []
     }
 
-    text_attrs = get_lecture_text_attribute_db(db=db, lecture_id=lecture_base.lectureId)
+    lecture = get_lecture_db(db=db, lesson_id=lesson_id)
+    if lecture is None:
+        return result
+
+    text_attrs = get_lecture_text_attribute_db(db=db, lecture_id=lecture.id)
     for attr in text_attrs:
         text_attr = {
             "attributeId": attr.attributeId,
@@ -102,7 +106,7 @@ async def get_lecture(
         }
         result["lectureInfo"].append(text_attr)
 
-    file_attrs = get_lecture_file_attribute_db(db=db, lecture_id=lecture_base.lectureId)
+    file_attrs = get_lecture_file_attribute_db(db=db, lecture_id=lecture.id)
     for attr in file_attrs:
         file_attr = {
             "attributeId": attr.attributeId,

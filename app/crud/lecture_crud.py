@@ -70,44 +70,21 @@ def set_file_attr_for_lecture_db(
     db.commit()
 
 
-# def get_lecture_info_db(db: Session, lesson_id: int):
-#     result = db.query(
-#         Lesson.title,
-#         Lesson.description,
-#         Lesson.lesson_date,
-#         Lesson.lesson_end,
-#         LectureAttribute.attr_number,
-#         LectureAttribute.attr_type,
-#         LectureAttribute.attr_title,
-#         LectureAttribute.attr_subtitle,
-#         LectureValue.value,
-#         LectureFile.filename,
-#         LectureFile.file_path,
-#         LectureFile.file_size,
-#         LectureFile.download_allowed,
-#     )\
-#         .join(Lecture, Lecture.lesson_id == Lesson.id)\
-#         .join(LectureAttribute, LectureAttribute.lecture_id == Lecture.id)\
-#         .join(LectureValue, LectureValue.lecture_attribute_id == LectureAttribute.id)\
-#         .join(LectureFile, LectureFile.lecture_attribute_id == LectureAttribute.id)\
-#         .filter(Lesson.id == lesson_id).all()
-#
-#     return result
-
-
-def get_lecture_db(db: Session, lesson_id: int):
+def get_lesson_info_db(db: Session, lesson_id: int):
     result = db.query(
         Lesson.title.label("lessonTitle"),
         Lesson.description.label("lessonDescription"),
         Lesson.lesson_date.label("lessonDate"),
         Lesson.lesson_end.label("lessonEnd"),
-        Lecture.id.label("lectureId")
     )\
-        .join(Lecture, Lecture.lesson_id == Lesson.id)\
         .filter(Lesson.id == lesson_id)\
         .first()
 
     return result
+
+
+def get_lecture_db(db: Session, lesson_id: int):
+    return db.query(Lecture).filter(Lecture.lesson_id == lesson_id).first()
 
 
 def get_lecture_text_attribute_db(db: Session, lecture_id: int):
