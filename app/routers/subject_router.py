@@ -9,9 +9,10 @@ from app.crud.lesson_crud import get_lessons_by_subject_id_db, select_three_next
 from app.crud.subject_crud import (create_new_subject_db, create_or_update_participant_comment_db,
                                    create_subject_icon_db, create_subject_instruction_category_db,
                                    create_subject_instruction_db, create_subject_instruction_file_db,
-                                   create_subject_item_db, delete_subject_db, delete_subject_icon_db,
-                                   delete_subject_instruction_category_db, delete_subject_instruction_db,
-                                   delete_subject_instruction_file_db, select_all_subjects_db, select_dop_subjects,
+                                   create_subject_instruction_link_db, create_subject_item_db, delete_subject_db,
+                                   delete_subject_icon_db, delete_subject_instruction_category_db,
+                                   delete_subject_instruction_db, delete_subject_instruction_file_db,
+                                   delete_subject_instruction_link_db, select_all_subjects_db, select_dop_subjects,
                                    select_subject_by_id_db, select_subject_exam_date, select_subject_icon_db,
                                    select_subject_icons_db, select_subject_instruction_category_db,
                                    select_subject_instruction_db, select_subject_instructions_db,
@@ -20,13 +21,11 @@ from app.crud.subject_crud import (create_new_subject_db, create_or_update_parti
                                    set_teacher_for_subject_db, sign_student_for_addition_subject_db,
                                    update_subject_image_path_db, update_subject_info_db,
                                    update_subject_instruction_category_db, update_subject_instruction_db,
-                                   update_subject_item_text_db, update_subject_logo_path_db,
-                                   create_subject_instruction_link_db, delete_subject_instruction_link_db)
+                                   update_subject_item_text_db, update_subject_logo_path_db)
 from app.models import User
-from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
-                                         SubjectInstructionCategoryUpdate, SubjectInstructionCreate,
-                                         SubjectInstructionUpdate, SubjectUpdate, SubjectInstructionAttachFile,
-                                         SubjectInstructionAttachLink)
+from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionAttachFile, SubjectInstructionAttachLink,
+                                         SubjectInstructionCategoryCreate, SubjectInstructionCategoryUpdate,
+                                         SubjectInstructionCreate, SubjectInstructionUpdate, SubjectUpdate)
 from app.session import get_db
 from app.utils.save_images import (delete_file, save_subject_avatar, save_subject_icon, save_subject_instructions,
                                    save_subject_logo, save_subject_program)

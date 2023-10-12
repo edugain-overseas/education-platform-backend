@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 from app.models import UserTypeOption
 
-
 # class UserType(str, Enum):
 #     student = 'student'
 #     moder = 'moder'

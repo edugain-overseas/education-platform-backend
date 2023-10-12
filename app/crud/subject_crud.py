@@ -4,10 +4,9 @@ from sqlalchemy.orm import Session
 from app.models import (Group, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon, SubjectInstruction,
                         SubjectInstructionCategory, SubjectInstructionFiles, SubjectInstructionLink, SubjectItem,
                         SubjectTeacherAssociation, Teacher, User)
-from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionCategoryCreate,
-                                         SubjectInstructionCategoryUpdate, SubjectInstructionUpdate, SubjectUpdate,
-                                         SubjectInstructionAttachFile, SubjectInstructionAttachLink,
-                                         SubjectInstructionCreate)
+from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionAttachFile, SubjectInstructionAttachLink,
+                                         SubjectInstructionCategoryCreate, SubjectInstructionCategoryUpdate,
+                                         SubjectInstructionCreate, SubjectInstructionUpdate, SubjectUpdate)
 from app.utils.save_images import delete_file
 
 

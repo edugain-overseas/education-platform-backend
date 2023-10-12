@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.crud.lecture_crud import (create_lecture_db, set_file_attr_for_lecture_db,
-                                   set_text_attr_for_lecture_db, get_lesson_info_db, get_lecture_db,
-                                   get_lecture_text_attribute_db, get_lecture_file_attribute_db)
-from app.models import User, LectureAttributeType
-from app.schemas.lecture_schemas import LectureTextCreate, AttributeBase
+from app.crud.lecture_crud import (create_lecture_db, get_lecture_db, get_lecture_file_attribute_db,
+                                   get_lecture_text_attribute_db, get_lesson_info_db, set_file_attr_for_lecture_db,
+                                   set_text_attr_for_lecture_db)
+from app.models import LectureAttributeType, User
+from app.schemas.lecture_schemas import AttributeBase, LectureTextCreate
 from app.session import get_db
 from app.utils.save_images import save_lesson_file
 from app.utils.token import get_current_user

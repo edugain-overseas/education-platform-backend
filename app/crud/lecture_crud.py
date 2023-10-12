@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Lecture, LectureAttribute, LectureValue, LectureFile, Lesson
+from app.models import Lecture, LectureAttribute, LectureFile, LectureValue, Lesson
 from app.schemas.lecture_schemas import LectureTextCreate
 
 
