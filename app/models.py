@@ -38,7 +38,8 @@ class LectureAttributeType(str, EnumType):
 class QuestionTypeOption(str, EnumType):
     test = 'test'
     boolean = 'boolean'
-    test_with_photo = 'test_with_photo'
+    answer_with_photo = 'answer_with_photo'
+    question_with_photo = 'question_with_photo'
     test_with_input = 'test_with_input'
     matching = 'matching'
     open_question = 'open_question'
@@ -160,6 +161,7 @@ class Teacher(Base):
 
     test_feedback_answer = relationship('TestFeedbackAnswer', back_populates='teacher')
     seminar_feedback_answer = relationship('SeminarFeedbackAnswer', back_populates='teacher')
+    teacher_template = relationship('TeacherTemplate', back_populates='teacher')
 
 
 class Curator(Base):
@@ -540,10 +542,12 @@ class TestLesson(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     is_published = Column(Boolean, nullable=False)
+    min_score = Column(Integer)
     set_timer = Column(Boolean)
     timer = Column(Time)
     attempts = Column(Integer, default=1, nullable=False)
     show_answer = Column(Boolean)
+    shuffle_answer = Column(Boolean)
     deadline = Column(DateTime)
     lesson_id = Column(Integer, ForeignKey('lesson.id'))
 
@@ -559,6 +563,8 @@ class TestQuestion(Base):
     question_text = Column(Text, nullable=False)
     question_number = Column(Integer, default=1, nullable=False)
     question_score = Column(Integer, nullable=False)
+    hided = Column(Boolean, nullable=False, default=False, autoincrement=True)
+    image_path = Column(String)
 
     question_type_id = Column(Integer, ForeignKey('question_type.id'))
     test_lesson_id = Column(Integer, ForeignKey('test_lesson.id'))
@@ -579,6 +585,7 @@ class TestAnswer(Base):
     id = Column(Integer, primary_key=True, index=True)
     answer_text = Column(String, nullable=False)
     is_correct = Column(Boolean, nullable=False)
+    image_path = Column(String)
 
     question_id = Column(Integer, ForeignKey('test_question.id'), nullable=False)
 
@@ -610,6 +617,18 @@ class TestMatchingRight(Base):
     left_option = relationship('TestMatchingLeft', back_populates='right_option')
     test_question = relationship('TestQuestion', back_populates='matching_right')
     student_test_matching = relationship('StudentTestMatching', back_populates='right_option')
+
+
+class TeacherTemplate(Base):
+    __tablename__ = "teacher_template"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    template = Column(JSON, nullable=False)
+    basis = Column(Enum(LessonTypeOption), nullable=False)
+    teacher_id = Column(Integer, ForeignKey('teacher.id'))
+
+    teacher = relationship('Teacher', back_populates='teacher_template')
 
 
 class StudentTest(Base):
