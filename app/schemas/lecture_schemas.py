@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -21,10 +21,6 @@ class LectureTextCreate(LectureTextBase):
     pass
 
 
-class LectureTextUpdate(LectureTextBase):
-    pass
-
-
 class AttributeText(AttributeTextBase):
     id: int
 
@@ -40,9 +36,26 @@ class LectureText(LectureTextBase):
         orm_mode = True
 
 
-class AttributeBase(BaseModel):
-    attr_type: LectureAttributeType
-    attr_title: str
-    attr_subtitle: Optional[str] = None
-    attr_number: int
-    download_allowed: bool
+class TextAttribute(BaseModel):
+    attributeId: int
+    attributeNumber: int
+    attributeType: LectureAttributeType
+    attributeTitle: str
+    attributeSubTitle: str
+    attributeValue: str
+
+
+class FileAttribute(BaseModel):
+    attributeId: int
+    attributeNumber: int
+    attributeType: LectureAttributeType
+    attributeTitle: str
+    attributeSubTitle: str
+    fileName: str
+    fileSize: int
+    filePath: str
+    downloadAllowed: bool
+
+
+class LectureUpdate(BaseModel):
+    lectureInfo: List[Union[TextAttribute, FileAttribute]]

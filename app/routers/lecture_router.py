@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.crud.lecture_crud import (create_lecture_db, get_lecture_db, get_lecture_file_attribute_db,
                                    get_lecture_text_attribute_db, get_lesson_info_db, set_file_attr_for_lecture_db,
-                                   set_text_attr_for_lecture_db)
+                                   set_text_attr_for_lecture_db, get_attribute_db, get_attribute_file_db,
+                                   get_attribute_value_db, update_attribute_db, update_attribute_value_db,
+                                   update_attribute_file_db)
 from app.models import LectureAttributeType, User
-from app.schemas.lecture_schemas import AttributeBase, LectureTextCreate
+from app.schemas.lecture_schemas import LectureTextCreate, LectureUpdate
 from app.session import get_db
 from app.utils.save_images import save_lesson_file
 from app.utils.token import get_current_user
@@ -122,3 +124,38 @@ async def get_lecture(
         result["lectureInfo"].append(file_attr)
 
     return result
+
+
+@router.put("/lecture/{lecture_id}")
+async def update_lecture(
+        lecture_id: int,
+        lecture_data: LectureUpdate,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    for attr in lecture_data.lectureInfo:
+        attribute = get_attribute_db(db=db, attr_id=attr.attributeId)
+        update_attribute_db(
+            db=db,
+            lecture_attribute=attribute,
+            attr_title=attr.attributeTitle,
+            attr_subtitle=attr.attributeSubTitle,
+            attr_number=attr.attributeNumber,
+            attr_type=attr.attributeType
+        )
+
+        if attr.attributeType not in ["text", "link"]:
+            attribute_file = get_attribute_file_db(db=db, attr_id=attr.attributeId)
+            update_attribute_file_db(
+                db=db,
+                attribute_file=attribute_file,
+                filename=attr.fileName,
+                file_path=attr.filePath,
+                file_size=attr.fileSize,
+                download=attr.downloadAllowed
+            )
+        else:
+            attribute_value = get_attribute_value_db(db=db, attr_id=attr.attributeId)
+            update_attribute_value_db(db=db, attribute_value=attribute_value, value=attr.attributeValue)
+
+    return {"message": "Lecture data have been saved"}

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Lecture, LectureAttribute, LectureFile, LectureValue, Lesson
+from app.models import Lecture, LectureAttribute, LectureFile, LectureValue, Lesson, LectureAttributeType
 from app.schemas.lecture_schemas import LectureTextCreate
 
 
@@ -120,3 +120,60 @@ def get_lecture_file_attribute_db(db: Session, lecture_id: int):
         .all()
 
     return result
+
+
+def get_attribute_db(db: Session, attr_id: int):
+    return db.query(LectureAttribute).filter(LectureAttribute.id == attr_id).first()
+
+
+def get_attribute_value_db(db: Session, attr_id: int):
+    return db.query(LectureValue).filter(LectureValue.lecture_attribute_id == attr_id).first()
+
+
+def get_attribute_file_db(db: Session, attr_id: int):
+    return db.query(LectureFile).filter(LectureFile.lecture_attribute_id == attr_id).first()
+
+
+def update_attribute_db(
+        db: Session,
+        lecture_attribute: LectureAttribute,
+        attr_title: str,
+        attr_subtitle: str,
+        attr_number: str,
+        attr_type: LectureAttributeType
+):
+    lecture_attribute.attr_title = attr_title
+    lecture_attribute.attr_subtitle = attr_subtitle
+    lecture_attribute.attr_number = attr_number
+    lecture_attribute.attr_type = attr_type
+    db.commit()
+    db.refresh(lecture_attribute)
+    return lecture_attribute
+
+
+def update_attribute_value_db(
+        db: Session,
+        attribute_value: LectureValue,
+        value: str
+):
+    attribute_value.value = value
+    db.commit()
+    db.refresh(attribute_value)
+    return attribute_value
+
+
+def update_attribute_file_db(
+        db: Session,
+        attribute_file: LectureFile,
+        filename: str,
+        file_path: str,
+        file_size: int,
+        download: bool
+):
+    attribute_file.filename = filename
+    attribute_file.file_path = file_path
+    attribute_file.file_size = file_size
+    attribute_file.download_allowed = download
+    db.commit()
+    db.refresh(attribute_file)
+    return attribute_file
