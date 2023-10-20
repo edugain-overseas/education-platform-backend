@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from app.models import LessonTypeOption
+from app.enums import LessonTypeOption
 
 
 class LessonBase(BaseModel):
@@ -19,7 +19,7 @@ class LessonBase(BaseModel):
     teacher_id: int
 
 
-class Lesson(LessonBase):
+class LessonSchemas(LessonBase):
     id: int
 
     class Config:

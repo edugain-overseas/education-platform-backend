@@ -1,60 +1,12 @@
-from enum import Enum as EnumType
-
 from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Enum, ForeignKey, Integer, String, Text, Time
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
+from app.enums import (UserTypeOption, LessonTypeOption, LectureAttributeType,
+                       QuestionTypeOption, MessageTypeOption, ModuleControlTypeOption)
+
+
 Base = declarative_base()
-
-
-class UserTypeOption(str, EnumType):
-    student = 'student'
-    moder = 'moder'
-    teacher = 'teacher'
-    curator = 'curator'
-
-
-class LessonTypeOption(str, EnumType):
-    lecture = 'lecture'
-    seminar = 'seminar'
-    test = 'test'
-    online_lecture = 'online_lecture'
-    online_seminar = 'online_seminar'
-    module_control = 'module_control'
-    exam = 'exam'
-
-
-class LectureAttributeType(str, EnumType):
-    title = "title"
-    text = "text"
-    present = "present"
-    audio = "audio"
-    picture = "picture"
-    file = "file"
-    link = "link"
-    homework = "homework"
-
-
-class QuestionTypeOption(str, EnumType):
-    test = 'test'
-    boolean = 'boolean'
-    answer_with_photo = 'answer_with_photo'
-    question_with_photo = 'question_with_photo'
-    test_with_input = 'test_with_input'
-    matching = 'matching'
-    open_question = 'open_question'
-    multiple_choice = 'multiple_choice'
-
-
-class MessageTypeOption(str, EnumType):
-    alone = 'alone'
-    everyone = 'everyone'
-    several = 'several'
-
-
-class ModuleControlTypeOption(str, EnumType):
-    with_video = 'with_video'
-    only_test = 'only_test'
 
 
 class UserType(Base):
@@ -479,24 +431,15 @@ class LectureAttribute(Base):
     id = Column(Integer, primary_key=True, index=True)
     attr_type = Column(Enum(LectureAttributeType), nullable=False)
     attr_title = Column(String, nullable=False)
-    attr_subtitle = Column(String)
-    attr_number = Column(Integer)
+    attr_number = Column(Integer, nullable=False)
+    attr_text = Column(Text)
+    hided = Column(Boolean, default=False)
 
     lecture_id = Column(Integer, ForeignKey('lecture.id'))
 
     lecture = relationship('Lecture', back_populates='attributes')
-    lecture_value = relationship('LectureValue', back_populates='lecture_attribute')
     lecture_file = relationship('LectureFile', back_populates='lecture_attribute')
-
-
-class LectureValue(Base):
-    __tablename__ = "lecture_value"
-
-    id = Column(Integer, primary_key=True, index=True)
-    value = Column(Text)
-
-    lecture_attribute_id = Column(Integer, ForeignKey('lecture_attribute.id'))
-    lecture_attribute = relationship('LectureAttribute', back_populates='lecture_value')
+    lecture_link = relationship('LectureLink', back_populates='lecture_attribute')
 
 
 class LectureFile(Base):
@@ -510,6 +453,18 @@ class LectureFile(Base):
 
     lecture_attribute_id = Column(Integer, ForeignKey('lecture_attribute.id'))
     lecture_attribute = relationship('LectureAttribute', back_populates='lecture_file')
+
+
+class LectureLink(Base):
+    __tablename__ = "lecture_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    link = Column(String, nullable=False)
+    anchor = Column(String)
+
+    lecture_attribute_id = Column(Integer, ForeignKey('lecture_attribute.id'))
+
+    lecture_attribute = relationship('LectureAttribute', back_populates='lecture_link')
 
 
 class LectureScore(Base):

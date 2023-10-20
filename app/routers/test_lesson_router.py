@@ -124,6 +124,15 @@ async def create_test_data(
     return {"Message": "Test data have been saved"}
 
 
+@router.put("/test/update-question")
+async def update_test_question(
+        data: List[QuestionBase],
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    pass
+
+
 @router.put("/test/update")
 async def update_test(
         test_id: int,

@@ -5,8 +5,9 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import func
 
-from app.models import (MessageTypeOption, Student, Subject, SubjectChat, SubjectChatAnswer, SubjectChatAttachFile,
-                        SubjectRecipient, SubjectTeacherAssociation, Teacher, User, UserType, UserTypeOption)
+from app.enums import MessageTypeOption, UserTypeOption
+from app.models import (Student, Subject, SubjectChat, SubjectChatAnswer, SubjectChatAttachFile,
+                        SubjectRecipient, SubjectTeacherAssociation, Teacher, User, UserType)
 
 
 def select_students_for_subject_db(db: Session, subject_id: int):

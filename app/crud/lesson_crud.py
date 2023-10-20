@@ -3,8 +3,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models import Lesson, Module, Subject
-from app.schemas.lesson_schemas import Lesson as LessonSchemas
-from app.schemas.lesson_schemas import LessonUpdate
+from app.schemas.lesson_schemas import LessonSchemas, LessonUpdate
 
 
 def create_new_lesson_db(db: Session, lesson_data: LessonSchemas):
@@ -108,3 +107,16 @@ def get_lessons_by_subject_id_db(db: Session, subject_id: int):
         .all()
 
     return query_result
+
+
+def get_lesson_info_db(db: Session, lesson_id: int):
+    result = db.query(
+        Lesson.title.label("lessonTitle"),
+        Lesson.description.label("lessonDescription"),
+        Lesson.lesson_date.label("lessonDate"),
+        Lesson.lesson_end.label("lessonEnd"),
+    )\
+        .filter(Lesson.id == lesson_id)\
+        .first()
+
+    return result

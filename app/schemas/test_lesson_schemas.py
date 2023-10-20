@@ -3,7 +3,7 @@ from typing import Optional, List, Union
 
 from pydantic import BaseModel, validator
 
-from app.models import QuestionTypeOption
+from app.enums import QuestionTypeOption
 
 
 class TestConfigBase(BaseModel):

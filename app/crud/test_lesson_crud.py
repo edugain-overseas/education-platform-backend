@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models import (Lesson, TestAnswer, TestFeedback, TestFeedbackAnswer, TestLesson, TestMatchingLeft,
                         TestMatchingRight, TestQuestion, QuestionType)
-from app.schemas.test_lesson_schemas import FeedbackAnswer,TestConfigBase, TestConfigUpdate,  TestQuestionFeedback
+from app.schemas.test_lesson_schemas import TestConfigBase, TestConfigUpdate, FeedbackAnswer, TestQuestionFeedback
 
 
 def create_test_db(db: Session, test_data: TestConfigBase):
@@ -183,13 +183,23 @@ def select_test_question_db(db: Session, question_id: int):
     return db.query(TestQuestion).filter(TestQuestion.id == question_id).first()
 
 
-# def update_test_question_db(db: Session, question: TestQuestion, question_data: TestQuestionUpdate):
-#     for field, value in question_data:
-#         if value is not None:
-#             setattr(question, field, value)
-#     db.commit()
-#     db.refresh(question)
-#     return question
+def update_test_question_db(
+        db: Session,
+        question: TestQuestion,
+        text: str,
+        number: int,
+        hided: bool,
+        image_path: str = None
+):
+    question.question_text = text
+    question.question_number = number
+    question.hided = hided
+    if image_path:
+        question.image_path = image_path
+
+    db.commit()
+    db.refresh(question)
+    return question
 
 
 def create_test_answer_db(
@@ -232,13 +242,21 @@ def select_test_answer_db(db: Session, answer_id: int):
     return db.query(TestAnswer).filter(TestAnswer.id == answer_id).first()
 
 
-# def update_test_answer_db(db: Session, answer: TestAnswer, answer_data: TestAnswerUpdate):
-#     for filed, value in answer_data:
-#         if value is not None:
-#             setattr(answer, filed, value)
-#     db.commit()
-#     db.refresh(answer)
-#     return answer
+def update_test_answer_db(
+        db: Session,
+        answer: TestAnswer,
+        text: str,
+        is_correct: bool,
+        image_path: str = None
+):
+    answer.answer_text = text
+    answer.is_correct = is_correct
+    if image_path:
+        answer.image_path = image_path
+
+    db.commit()
+    db.refresh(answer)
+    return answer
 
 
 def create_test_matching_db(db: Session, right_text: str, left_text: str, question_id: int):

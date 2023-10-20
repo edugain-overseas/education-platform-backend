@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 
-from app.models import Lecture, LectureAttribute, LectureFile, LectureValue, Lesson, LectureAttributeType
-from app.schemas.lecture_schemas import LectureTextCreate
+from app.enums import LectureAttributeType
+from app.models import Lecture, LectureAttribute, LectureFile, LectureLink
 
 
-def create_lecture_db(db: Session, lesson_id: int):
+def create_lecture_db(db: Session, lesson_id: int) -> object:
     new_lecture = Lecture(lesson_id=lesson_id)
     db.add(new_lecture)
     db.commit()
@@ -12,79 +12,128 @@ def create_lecture_db(db: Session, lesson_id: int):
     return new_lecture
 
 
-def set_text_attr_for_lecture_db(db: Session, item: LectureTextCreate, lecture_id: int):
-    for attribute in item.attributes:
+def get_lecture_db(db: Session, lesson_id: int):
+    return db.query(Lecture).filter(Lecture.lesson_id == lesson_id).first()
 
-        attribute_model = LectureAttribute(
-            attr_type=attribute.attr_type,
-            attr_title=attribute.attr_title,
-            attr_subtitle=attribute.attr_subtitle,
-            attr_number=attribute.attr_number,
-            lecture_id=lecture_id
-        )
-        db.add(attribute_model)
-        db.flush()
 
-        value_model = LectureValue(
-            value=attribute.value,
-            lecture_attribute_id=attribute_model.id
-        )
+def create_attribute_base_db(
+        db: Session,
+        lecture_id: int,
+        attr_type: LectureAttributeType,
+        attr_title: str,
+        attr_text: str,
+        attr_number: int,
+        hided: bool
+):
+    attribute = LectureAttribute(
+        attr_type=attr_type,
+        attr_title=attr_title,
+        attr_text=attr_text,
+        attr_number=attr_number,
+        hided=hided,
+        lecture_id=lecture_id
+    )
+    db.add(attribute)
+    db.commit()
+    db.refresh(attribute)
+    return attribute
 
-        db.add(value_model)
 
+def update_attribute_db(
+        db: Session,
+        attribute: LectureAttribute,
+        title: str = None,
+        text: str = None,
+        number: int = None,
+        hided: bool = None
+):
+    if title is not None:
+        attribute.attr_title = title
+    if text is not None:
+        attribute.attr_text = text
+    if number is not None:
+        attribute.attr_number = number
+    if hided is not None:
+        attribute.hided = hided
+
+    db.commit()
+    db.refresh(attribute)
+    return attribute
+
+
+def delete_attribute_db(db: Session, attribute: LectureAttribute):
+    db.delete(attribute)
     db.commit()
 
 
-def set_file_attr_for_lecture_db(
+def create_attribute_file_db(
         db: Session,
-        attr_type: str,
-        attr_title: str,
-        attr_subtitle: str,
-        attr_number: int,
-        lecture_id: int,
+        attribute_id: int,
         filename: str,
         file_path: str,
         file_size: int,
         download_allowed: bool
-
 ):
-    attribute_model = LectureAttribute(
-        attr_type=attr_type,
-        attr_title=attr_title,
-        attr_subtitle=attr_subtitle,
-        attr_number=attr_number,
-        lecture_id=lecture_id
-    )
-    db.add(attribute_model)
-    db.flush()
-
-    value_model = LectureFile(
+    file = LectureFile(
         filename=filename,
         file_path=file_path,
         file_size=file_size,
         download_allowed=download_allowed,
-        lecture_attribute_id=attribute_model.id
+        lecture_attribute_id=attribute_id
     )
+    db.add(file)
+    db.commit()
+    db.refresh(file)
 
-    db.add(value_model)
+
+def update_attribute_file_db(
+        db: Session,
+        file: LectureFile,
+        file_path: str = None,
+        filename: str = None,
+        file_size: str = None,
+        download_allowed: bool = None
+):
+    if file_path is not None:
+        file.file_path = file_path
+    if filename is not None:
+        file.filename = filename
+    if file_size is not None:
+        file.file_size = file_size
+    if download_allowed is not None:
+        file.download_allowed = download_allowed
+    db.commit()
+    db.refresh(file)
+
+
+def delete_attribute_file_db(db: Session, file: LectureFile):
+    db.delete(file)
     db.commit()
 
 
-def get_lesson_info_db(db: Session, lesson_id: int):
-    result = db.query(
-        Lesson.title.label("lessonTitle"),
-        Lesson.description.label("lessonDescription"),
-        Lesson.lesson_date.label("lessonDate"),
-        Lesson.lesson_end.label("lessonEnd"),
-    )\
-        .filter(Lesson.id == lesson_id)\
-        .first()
-
-    return result
+def create_attribute_link_db(db: Session, attribute_id: int, link: str, anchor: str):
+    link = LectureLink(link=link, anchor=anchor, lecture_attribute_id=attribute_id)
+    db.add(link)
+    db.commit()
+    db.refresh(link)
 
 
-def get_lecture_db(db: Session, lesson_id: int):
-    return db.query(Lecture).filter(Lecture.lesson_id == lesson_id).first()
+def update_attribute_link_db(db: Session, attr_link: LectureLink, link: str = None, anchor: str = None):
+    if link is not None:
+        attr_link.link = link
+    if anchor is not None:
+        attr_link.anchor = anchor
+    db.commit()
+    db.refresh(link)
+
+
+def delete_attribute_link_db(db: Session, link: LectureLink):
+    db.delete(link)
+    db.commit()
+
+
+def get_lecture_attributes_db(db: Session, lecture_id: int):
+    return db.query(LectureAttribute).filter(LectureAttribute.lecture_id == lecture_id).all()
 
 
 def get_lecture_text_attribute_db(db: Session, lecture_id: int):
@@ -93,87 +142,41 @@ def get_lecture_text_attribute_db(db: Session, lecture_id: int):
         LectureAttribute.attr_type.label("attributeType"),
         LectureAttribute.attr_number.label("attributeNumber"),
         LectureAttribute.attr_title.label("attributeTitle"),
-        LectureAttribute.attr_subtitle.label("attributeSubTitle"),
-        LectureValue.value.label("attributeValue")
+        LectureAttribute.attr_text.label("attributeText"),
+        LectureAttribute.hided.label("hided")
     )\
-        .join(LectureValue, LectureValue.lecture_attribute_id == LectureAttribute.id) \
         .filter(LectureAttribute.lecture_id == lecture_id) \
         .all()
 
     return result
 
 
-def get_lecture_file_attribute_db(db: Session, lecture_id: int):
-    result = db.query(
-        LectureAttribute.id.label("attributeId"),
-        LectureAttribute.attr_type.label("attributeType"),
-        LectureAttribute.attr_number.label("attributeNumber"),
-        LectureAttribute.attr_title.label("attributeTitle"),
-        LectureAttribute.attr_subtitle.label("attributeSubTitle"),
-        LectureFile.filename.label("fileName"),
-        LectureFile.file_size.label("fileSize"),
-        LectureFile.file_path.label("filePath"),
-        LectureFile.download_allowed.label("downloadAllowed"),
-    )\
-        .join(LectureFile, LectureFile.lecture_attribute_id == LectureAttribute.id) \
-        .filter(LectureAttribute.lecture_id == lecture_id) \
-        .all()
-
-    return result
+# def get_lecture_file_attribute_db(db: Session, lecture_id: int):
+#     result = db.query(
+#         LectureAttribute.id.label("attributeId"),
+#         LectureAttribute.attr_type.label("attributeType"),
+#         LectureAttribute.attr_number.label("attributeNumber"),
+#         LectureAttribute.attr_title.label("attributeTitle"),
+#         LectureAttribute.attr_text.label("attributeText"),
+#         LectureFile.filename.label("fileName"),
+#         LectureFile.file_size.label("fileSize"),
+#         LectureFile.file_path.label("filePath"),
+#         LectureFile.download_allowed.label("downloadAllowed"),
+#     )\
+#         .join(LectureFile, LectureFile.lecture_attribute_id == LectureAttribute.id) \
+#         .filter(LectureAttribute.lecture_id == lecture_id) \
+#         .all()
+#
+#     return result
 
 
 def get_attribute_db(db: Session, attr_id: int):
     return db.query(LectureAttribute).filter(LectureAttribute.id == attr_id).first()
 
 
-def get_attribute_value_db(db: Session, attr_id: int):
-    return db.query(LectureValue).filter(LectureValue.lecture_attribute_id == attr_id).first()
+def get_attribute_file_db(db: Session, file_id: int):
+    return db.query(LectureFile).filter(LectureFile.id == file_id).first()
 
 
-def get_attribute_file_db(db: Session, attr_id: int):
-    return db.query(LectureFile).filter(LectureFile.lecture_attribute_id == attr_id).first()
-
-
-def update_attribute_db(
-        db: Session,
-        lecture_attribute: LectureAttribute,
-        attr_title: str,
-        attr_subtitle: str,
-        attr_number: str,
-        attr_type: LectureAttributeType
-):
-    lecture_attribute.attr_title = attr_title
-    lecture_attribute.attr_subtitle = attr_subtitle
-    lecture_attribute.attr_number = attr_number
-    lecture_attribute.attr_type = attr_type
-    db.commit()
-    db.refresh(lecture_attribute)
-    return lecture_attribute
-
-
-def update_attribute_value_db(
-        db: Session,
-        attribute_value: LectureValue,
-        value: str
-):
-    attribute_value.value = value
-    db.commit()
-    db.refresh(attribute_value)
-    return attribute_value
-
-
-def update_attribute_file_db(
-        db: Session,
-        attribute_file: LectureFile,
-        filename: str,
-        file_path: str,
-        file_size: int,
-        download: bool
-):
-    attribute_file.filename = filename
-    attribute_file.file_path = file_path
-    attribute_file.file_size = file_size
-    attribute_file.download_allowed = download
-    db.commit()
-    db.refresh(attribute_file)
-    return attribute_file
+def get_attribute_link_db(db: Session, link_id: int):
+    return db.query(LectureLink).filter(LectureLink.id == link_id).first()

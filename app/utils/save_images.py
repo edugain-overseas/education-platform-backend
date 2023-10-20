@@ -57,7 +57,7 @@ def save_subject_logo(photo: UploadFile, subject_title) -> str:
     return file_path
 
 
-def save_lesson_file(file: UploadFile) -> tuple:
+def save_lesson_file(file: UploadFile) -> str:
     folder = LESSON_FILE_FOLDER + datetime.now().strftime("%d-%m-%Y")
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
@@ -68,7 +68,7 @@ def save_lesson_file(file: UploadFile) -> tuple:
     return file_path
 
 
-def save_group_chat_file(file: UploadFile):
+def save_group_chat_file(file: UploadFile) -> str:
     folder = GROUP_CHAT_FOLDER + datetime.now().strftime("%d-%m-%Y")
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
@@ -79,7 +79,7 @@ def save_group_chat_file(file: UploadFile):
     return file_path
 
 
-def save_subject_chat_file(file: UploadFile):
+def save_subject_chat_file(file: UploadFile) -> str:
     folder = SUBJECT_CHAT_FOLDER + datetime.now().strftime("%d-%m-%Y")
     file_path = os.path.join(folder, file.filename)
     os.makedirs(folder, exist_ok=True)
@@ -90,7 +90,7 @@ def save_subject_chat_file(file: UploadFile):
     return file_path
 
 
-def save_subject_program(file: UploadFile):
+def save_subject_program(file: UploadFile) -> str:
     file_path = os.path.join(SUBJECT_PROGRAM_FOLDER, file.filename)
     os.makedirs(SUBJECT_PROGRAM_FOLDER, exist_ok=True)
 
@@ -100,7 +100,7 @@ def save_subject_program(file: UploadFile):
     return file_path
 
 
-def save_subject_icon(file: UploadFile):
+def save_subject_icon(file: UploadFile) -> str:
     file_path = os.path.join(SUBJECT_ICON_FOLDER, file.filename)
     os.makedirs(SUBJECT_ICON_FOLDER, exist_ok=True)
 
@@ -110,7 +110,7 @@ def save_subject_icon(file: UploadFile):
     return file_path
 
 
-def save_subject_instructions(file: UploadFile):
+def save_subject_instructions(file: UploadFile) -> str:
     file_path = os.path.join(SUBJECT_INSTRUCTION_FOLDER, file.filename)
     os.makedirs(SUBJECT_INSTRUCTION_FOLDER, exist_ok=True)
 

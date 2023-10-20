@@ -1,15 +1,8 @@
-from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel
 
-from app.models import UserTypeOption
-
-# class UserType(str, Enum):
-#     student = 'student'
-#     moder = 'moder'
-#     teacher = 'teacher'
-#     curator = 'curator'
+from app.enums import UserTypeOption
 
 
 class StudentCreate(BaseModel):
