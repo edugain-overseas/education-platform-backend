@@ -57,7 +57,8 @@ class ConnectionManager:
         }
         await self.send_message_to_group(group_name=group_name, message=total_json)
 
-    async def send_first_message(self, db: Session, websocket: WebSocket, group_id: int, user: User):
+    @staticmethod
+    async def send_first_message(db: Session, websocket: WebSocket, group_id: int, user: User):
         messages_data = create_last_message_data(db=db, group_id=group_id, user=user)
         await websocket.send_json(messages_data)
 

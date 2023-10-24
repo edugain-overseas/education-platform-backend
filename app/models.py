@@ -79,11 +79,9 @@ class Student(Base):
     student_test = relationship('StudentTest', back_populates='student')
     student_test_answer = relationship('StudentTestAnswer', back_populates='student')
     student_test_matching = relationship('StudentTestMatching', back_populates='student')
-    test_feedback = relationship('TestFeedback', back_populates='student')
     student_seminar = relationship('StudentSeminar', back_populates='student')
     student_seminar_answer = relationship('StudentSeminarAnswer', back_populates='student')
     student_seminar_matching = relationship('StudentSeminarMatching', back_populates='student')
-    seminar_feedback = relationship('SeminarFeedback', back_populates='student')
     video_lecture_score = relationship('VideoLectureScore', back_populates='student')
     video_seminar_score = relationship('VideoSeminarScore', back_populates='student')
     student_module = relationship('StudentModule', back_populates='student')
@@ -110,8 +108,6 @@ class Teacher(Base):
     groups = relationship('Group', secondary='group_teacher_association', back_populates='teachers')
     lesson = relationship('Lesson', back_populates='teacher')
 
-    test_feedback_answer = relationship('TestFeedbackAnswer', back_populates='teacher')
-    seminar_feedback_answer = relationship('SeminarFeedbackAnswer', back_populates='teacher')
     teacher_template = relationship('TeacherTemplate', back_populates='teacher')
 
 
@@ -347,15 +343,6 @@ class Module(Base):
     module_control = relationship('ModuleControl', back_populates='module')
 
 
-# class LessonType(Base):
-#     __tablename__ = "lesson_type"
-#
-#     id = Column(Integer, primary_key=True, index=True)
-#     type = Column(Enum(LessonTypeOption), nullable=False)
-#
-#     lesson = relationship('Lesson', back_populates='lesson_type')
-
-
 class Lesson(Base):
     __tablename__ = "lesson"
 
@@ -448,6 +435,7 @@ class LectureFile(Base):
     filename = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     file_size = Column(Integer)
+    file_description = Column(String)
     download_allowed = Column(Boolean)
 
     lecture_attribute_id = Column(Integer, ForeignKey('lecture_attribute.id'))
@@ -530,7 +518,6 @@ class TestQuestion(Base):
     matching_right = relationship('TestMatchingRight', back_populates='test_question')
     student_test_answer = relationship('StudentTestAnswer', back_populates='test_question')
     student_test_matching = relationship('StudentTestMatching', back_populates='test_question')
-    test_feedback = relationship('TestFeedback', back_populates='test_question')
 
 
 class TestAnswer(Base):
@@ -637,33 +624,6 @@ class StudentTestMatching(Base):
     student_test = relationship('StudentTest', back_populates='student_test_matching')
 
 
-class TestFeedback(Base):
-    __tablename__ = "test_feedback"
-
-    id = Column(Integer, primary_key=True, index=True)
-    text = Column(String)
-
-    student_id = Column(Integer, ForeignKey('student.id'))
-    question_id = Column(Integer, ForeignKey('test_question.id'))
-
-    student = relationship('Student', back_populates='test_feedback')
-    test_question = relationship('TestQuestion', back_populates='test_feedback')
-    feedback_answer = relationship('TestFeedbackAnswer', back_populates='test_feedback')
-
-
-class TestFeedbackAnswer(Base):
-    __tablename__ = "test_feedback_answer"
-
-    id = Column(Integer, primary_key=True, index=True)
-    answer = Column(String)
-
-    teacher_id = Column(Integer, ForeignKey('teacher.id'))
-    test_feedback_id = Column(Integer, ForeignKey('test_feedback.id'))
-
-    teacher = relationship('Teacher', back_populates='test_feedback_answer')
-    test_feedback = relationship('TestFeedback', back_populates='feedback_answer')
-
-
 class Seminar(Base):
     __tablename__ = "seminar"
 
@@ -697,7 +657,6 @@ class SeminarQuestion(Base):
     matching_right = relationship('SeminarMatchingRight', back_populates='seminar_question')
     student_seminar_answer = relationship('StudentSeminarAnswer', back_populates='seminar_question')
     student_seminar_matching = relationship('StudentSeminarMatching', back_populates='seminar_question')
-    seminar_feedback = relationship('SeminarFeedback', back_populates='seminar_question')
 
 
 class SeminarAnswer(Base):
@@ -790,33 +749,6 @@ class StudentSeminarMatching(Base):
     left_option = relationship('SeminarMatchingLeft', back_populates='student_seminar_matching')
     right_option = relationship('SeminarMatchingRight', back_populates='student_seminar_matching')
     student_seminar = relationship('StudentSeminar', back_populates='student_seminar_matching')
-
-
-class SeminarFeedback(Base):
-    __tablename__ = "seminar_feedback"
-
-    id = Column(Integer, primary_key=True, index=True)
-    text = Column(String)
-
-    student_id = Column(Integer, ForeignKey('student.id'))
-    question_id = Column(Integer, ForeignKey('seminar_question.id'))
-
-    student = relationship('Student', back_populates='seminar_feedback')
-    seminar_question = relationship('SeminarQuestion', back_populates='seminar_feedback')
-    feedback_answer = relationship('SeminarFeedbackAnswer', back_populates='seminar_feedback')
-
-
-class SeminarFeedbackAnswer(Base):
-    __tablename__ = "seminar_feedback_answer"
-
-    id = Column(Integer, primary_key=True, index=True)
-    answer = Column(String)
-
-    teacher_id = Column(Integer, ForeignKey('teacher.id'))
-    seminar_feedback_id = Column(Integer, ForeignKey('seminar_feedback.id'))
-
-    teacher = relationship('Teacher', back_populates='seminar_feedback_answer')
-    seminar_feedback = relationship('SeminarFeedback', back_populates='feedback_answer')
 
 
 class VideoLecture(Base):

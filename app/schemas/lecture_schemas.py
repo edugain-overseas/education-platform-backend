@@ -25,9 +25,9 @@ class Link(BaseModel):
     anchor: str
 
 
-class UpdateLink(BaseModel):
-    link: Optional[str] = None
-    anchor: Optional[str] = None
+# class UpdateLink(BaseModel):
+#     link: Optional[str] = None
+#     anchor: Optional[str] = None
 
 
 class File(BaseModel):
@@ -37,15 +37,27 @@ class File(BaseModel):
     downloadAllowed: bool
 
 
-class UpdateFile(BaseModel):
-    fileName: Optional[str] = None
-    filePath: Optional[str] = None
-    fileSize: Optional[int] = None
-    downloadAllowed: Optional[bool] = None
+# class UpdateFile(BaseModel):
+#     fileName: Optional[str] = None
+#     filePath: Optional[str] = None
+#     fileSize: Optional[int] = None
+#     downloadAllowed: Optional[bool] = None
+
+
+class Image(BaseModel):
+    imageName: str
+    imagePath: str
+    imageSize: int
+    imageDescription: Optional[str] = None
+    downloadAllowed: bool
 
 
 class AttributeFiles(AttributeBase):
     attributeFiles: List[File]
+
+
+class AttributeImages(AttributeBase):
+    attributeImages: List[Image]
 
 
 class AttributeLinks(AttributeBase):
@@ -73,6 +85,10 @@ class UpdateAttributeFile(UpdateAttributeBase):
 
 class UpdateAttributeFiles(UpdateAttributeBase):
     attributeFiles: Optional[List[File]] = None
+
+
+class UpdateAttributeImages(UpdateAttributeBase):
+    attributeImages: Optional[List[Image]] = None
 
 
 class UpdateAttributeLinks(UpdateAttributeBase):

@@ -86,6 +86,28 @@ def create_attribute_file_db(
     db.refresh(file)
 
 
+def create_attribute_file_with_description_db(
+        db: Session,
+        attribute_id: int,
+        filename: str,
+        file_path: str,
+        file_size: int,
+        file_description: str,
+        download_allowed: bool
+):
+    file = LectureFile(
+        filename=filename,
+        file_path=file_path,
+        file_size=file_size,
+        file_description=file_description,
+        download_allowed=download_allowed,
+        lecture_attribute_id=attribute_id
+    )
+    db.add(file)
+    db.commit()
+    db.refresh(file)
+
+
 def update_attribute_file_db(
         db: Session,
         file: LectureFile,

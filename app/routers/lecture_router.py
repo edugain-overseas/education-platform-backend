@@ -4,12 +4,14 @@ from sqlalchemy.orm import Session
 from app.crud.lecture_crud import (create_attribute_base_db, create_attribute_file_db, create_attribute_link_db,
                                    create_lecture_db, delete_attribute_db, delete_attribute_file_db,
                                    delete_attribute_link_db, get_attribute_db, get_attribute_file_db,
-                                   get_attribute_link_db, get_lecture_db, update_attribute_db)
+                                   get_attribute_link_db, get_lecture_db, update_attribute_db,
+                                   create_attribute_file_with_description_db)
 from app.crud.lesson_crud import get_lesson_info_db
 from app.models import User
 from app.schemas.lecture_schemas import (AttributeBase, AttributeFile, AttributeFiles, AttributeHomeWork,
-                                         AttributeLinks, UpdateAttributeBase, UpdateAttributeFile, UpdateAttributeFiles,
-                                         UpdateAttributeHomeWork, UpdateAttributeLinks)
+                                         AttributeImages, AttributeLinks, UpdateAttributeBase, UpdateAttributeFile,
+                                         UpdateAttributeFiles, UpdateAttributeHomeWork, UpdateAttributeLinks,
+                                         UpdateAttributeImages)
 from app.session import get_db
 from app.utils.save_images import delete_file, save_lesson_file
 from app.utils.token import get_current_user
@@ -241,6 +243,77 @@ async def update_files_attribute(
                 download_allowed=file.downloadAllowed,
             )
 
+        return {"message": "Attribute have been saved"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.post("/lecture/create/images")
+async def create_images_attribute(
+        lecture_id: int,
+        item: AttributeImages,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder:
+        attribute = create_attribute_base_db(
+            db=db,
+            lecture_id=lecture_id,
+            attr_type=item.attributeType,
+            attr_title=item.attributeTitle,
+            attr_text=item.attributeText,
+            attr_number=item.attributeNumber,
+            hided=item.hided
+        )
+
+        for image in item.attributeImages:
+            create_attribute_file_with_description_db(
+                db=db,
+                attribute_id=attribute.id,
+                filename=image.imageName,
+                file_path=image.imagePath,
+                file_size=image.imageSize,
+                file_description=image.imageDescription,
+                download_allowed=image.downloadAllowed,
+            )
+        return {"message": "Attribute have been saved"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.put("/lecture/update/images")
+async def update_images_attribute(
+        attribute_id: int,
+        item: UpdateAttributeImages,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder:
+        attribute = get_attribute_db(db=db, attr_id=attribute_id)
+        update_attribute_db(
+            db=db,
+            attribute=attribute,
+            title=item.attributeTitle,
+            text=item.attributeText,
+            number=item.attributeNumber,
+            hided=item.hided
+        )
+
+        for att_file in attribute.lecture_file:
+            file = get_attribute_file_db(db=db, file_id=att_file.id)
+            delete_file(att_file.file_path)
+            delete_attribute_file_db(db=db, file=file)
+
+        for image in item.attributeImages:
+            create_attribute_file_with_description_db(
+                db=db,
+                attribute_id=attribute.id,
+                filename=image.imageName,
+                file_path=image.imagePath,
+                file_size=image.imageSize,
+                file_description=image.imageDescription,
+                download_allowed=image.downloadAllowed,
+            )
         return {"message": "Attribute have been saved"}
     else:
         raise HTTPException(status_code=401, detail="Permission denied")
