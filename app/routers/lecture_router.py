@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.crud.lecture_crud import (create_attribute_base_db, create_attribute_file_db, create_attribute_link_db,
+                                   create_lecture_db, delete_attribute_db, delete_attribute_file_db,
+                                   delete_attribute_link_db, get_attribute_db, get_attribute_file_db,
+                                   get_attribute_link_db, get_lecture_db, update_attribute_db)
 from app.crud.lesson_crud import get_lesson_info_db
-from app.crud.lecture_crud import (create_lecture_db, create_attribute_base_db, create_attribute_file_db,
-                                   create_attribute_link_db, delete_attribute_file_db, delete_attribute_link_db,
-                                   delete_attribute_db, get_attribute_db, get_attribute_file_db, get_attribute_link_db,
-                                   update_attribute_db, get_lecture_db, get_lecture_attributes_db)
 from app.models import User
-from app.schemas.lecture_schemas import (AttributeBase, AttributeFile, AttributeFiles, AttributeLinks,
-                                         AttributeHomeWork, UpdateAttributeBase, UpdateAttributeFile,
-                                         UpdateAttributeFiles, UpdateAttributeLinks, UpdateAttributeHomeWork)
+from app.schemas.lecture_schemas import (AttributeBase, AttributeFile, AttributeFiles, AttributeHomeWork,
+                                         AttributeLinks, UpdateAttributeBase, UpdateAttributeFile, UpdateAttributeFiles,
+                                         UpdateAttributeHomeWork, UpdateAttributeLinks)
 from app.session import get_db
-from app.utils.save_images import save_lesson_file, delete_file
+from app.utils.save_images import delete_file, save_lesson_file
 from app.utils.token import get_current_user
 
 router = APIRouter()
@@ -77,10 +77,10 @@ async def create_text_attribute(
         create_attribute_base_db(
             db=db,
             lecture_id=lecture_id,
-            attr_type=item.AttributeType,
-            attr_title=item.AttributeTitle,
-            attr_text=item.AttributeText,
-            attr_number=item.AttributeNumber,
+            attr_type=item.attributeType,
+            attr_title=item.attributeTitle,
+            attr_text=item.attributeText,
+            attr_number=item.attributeNumber,
             hided=item.hided
         )
         return {"message": "Attribute have been saved"}
@@ -100,9 +100,9 @@ async def update_text_attribute(
         update_attribute_db(
             db=db,
             attribute=attribute,
-            title=item.AttributeTitle,
-            text=item.AttributeText,
-            number=item.AttributeNumber,
+            title=item.attributeTitle,
+            text=item.attributeText,
+            number=item.attributeNumber,
             hided=item.hided
         )
         return {"message": "Attribute have been updated"}
@@ -119,17 +119,17 @@ async def create_file_attribute(
         attribute = create_attribute_base_db(
             db=db,
             lecture_id=lecture_id,
-            attr_type=item.AttributeType,
-            attr_title=item.AttributeTitle,
-            attr_text=item.AttributeText,
-            attr_number=item.AttributeNumber,
+            attr_type=item.attributeType,
+            attr_title=item.attributeTitle,
+            attr_text=item.attributeText,
+            attr_number=item.attributeNumber,
             hided=item.hided
         )
 
         create_attribute_file_db(
             db=db,
             attribute_id=attribute.id,
-            filename=item.filename,
+            filename=item.fileName,
             file_size=item.fileSize,
             file_path=item.filePath,
             download_allowed=item.downloadAllowed
@@ -151,9 +151,9 @@ async def update_file_attribute(
         update_attribute_db(
             db=db,
             attribute=attribute,
-            title=item.AttributeTitle,
-            text=item.AttributeText,
-            number=item.AttributeNumber,
+            title=item.attributeTitle,
+            text=item.attributeText,
+            number=item.attributeNumber,
             hided=item.hided
         )
 
@@ -164,7 +164,7 @@ async def update_file_attribute(
         create_attribute_file_db(
             db=db,
             attribute_id=attribute.id,
-            filename=item.filename,
+            filename=item.fileName,
             file_size=item.fileSize,
             file_path=item.filePath,
             download_allowed=item.downloadAllowed
@@ -186,18 +186,18 @@ async def create_files_attribute(
         attribute = create_attribute_base_db(
             db=db,
             lecture_id=lecture_id,
-            attr_type=item.AttributeType,
-            attr_title=item.AttributeTitle,
-            attr_text=item.AttributeText,
-            attr_number=item.AttributeNumber,
+            attr_type=item.attributeType,
+            attr_title=item.attributeTitle,
+            attr_text=item.attributeText,
+            attr_number=item.attributeNumber,
             hided=item.hided
         )
 
-        for file in item.AttributeFiles:
+        for file in item.attributeFiles:
             create_attribute_file_db(
                 db=db,
                 attribute_id=attribute.id,
-                filename=file.filename,
+                filename=file.fileName,
                 file_path=file.filePath,
                 file_size=file.fileSize,
                 download_allowed=file.downloadAllowed,
@@ -220,9 +220,9 @@ async def update_files_attribute(
         update_attribute_db(
             db=db,
             attribute=attribute,
-            title=item.AttributeTitle,
-            text=item.AttributeText,
-            number=item.AttributeNumber,
+            title=item.attributeTitle,
+            text=item.attributeText,
+            number=item.attributeNumber,
             hided=item.hided
         )
 
@@ -231,11 +231,11 @@ async def update_files_attribute(
             delete_file(att_file.file_path)
             delete_attribute_file_db(db=db, file=file)
 
-        for file in item.AttributeFiles:
+        for file in item.attributeFiles:
             create_attribute_file_db(
                 db=db,
                 attribute_id=attribute.id,
-                filename=file.filename,
+                filename=file.fileName,
                 file_path=file.filePath,
                 file_size=file.fileSize,
                 download_allowed=file.downloadAllowed,
@@ -257,14 +257,14 @@ async def create_link_attribute(
         attribute = create_attribute_base_db(
             db=db,
             lecture_id=lecture_id,
-            attr_type=item.AttributeType,
-            attr_title=item.AttributeTitle,
-            attr_text=item.AttributeText,
-            attr_number=item.AttributeNumber,
+            attr_type=item.attributeType,
+            attr_title=item.attributeTitle,
+            attr_text=item.attributeText,
+            attr_number=item.attributeNumber,
             hided=item.hided
         )
 
-        for link in item.AttributeLinks:
+        for link in item.attributeLinks:
             create_attribute_link_db(db=db, link=link.link, anchor=link.anchor, attribute_id=attribute.id)
 
         return {"message": "Attribute have been saved"}
@@ -284,9 +284,9 @@ async def update_link_attribute(
         update_attribute_db(
             db=db,
             attribute=attribute,
-            title=item.AttributeTitle,
-            text=item.AttributeText,
-            number=item.AttributeNumber,
+            title=item.attributeTitle,
+            text=item.attributeText,
+            number=item.attributeNumber,
             hided=item.hided
         )
 
@@ -294,7 +294,7 @@ async def update_link_attribute(
             link = get_attribute_link_db(db=db, link_id=attr_link.id)
             delete_attribute_link_db(db=db, link=link)
 
-        for new_link in item.AttributeLinks:
+        for new_link in item.attributeLinks:
             create_attribute_link_db(db=db, attribute_id=attribute.id, link=new_link.link, anchor=new_link.anchor)
 
         return {"message": "Attribute have been saved"}
@@ -313,26 +313,26 @@ async def create_homework_attribute(
         attribute = create_attribute_base_db(
             db=db,
             lecture_id=lecture_id,
-            attr_type=item.AttributeType,
-            attr_title=item.AttributeTitle,
-            attr_text=item.AttributeText,
-            attr_number=item.AttributeNumber,
+            attr_type=item.attributeType,
+            attr_title=item.attributeTitle,
+            attr_text=item.attributeText,
+            attr_number=item.attributeNumber,
             hided=item.hided
         )
 
-        if item.AttributeFiles:
-            for file in item.AttributeFiles:
+        if item.attributeFiles:
+            for file in item.attributeFiles:
                 create_attribute_file_db(
                     db=db,
-                    filename=file.filename,
+                    filename=file.fileName,
                     file_path=file.filePath,
                     file_size=file.fileSize,
                     download_allowed=file.downloadAllowed,
                     attribute_id=attribute.id
                 )
 
-        if item.AttributeLinks:
-            for link in item.AttributeLinks:
+        if item.attributeLinks:
+            for link in item.attributeLinks:
                 create_attribute_link_db(
                     db=db,
                     link=link.link,
@@ -357,18 +357,18 @@ async def update_homework_attribute(
         update_attribute_db(
             db=db,
             attribute=attribute,
-            title=item.AttributeTitle,
-            text=item.AttributeText,
-            number=item.AttributeNumber,
+            title=item.attributeTitle,
+            text=item.attributeText,
+            number=item.attributeNumber,
             hided=item.hided
         )
 
-        if item.AttributeLinks:
+        if item.attributeLinks:
             for attr_link in attribute.lecture_link:
                 link = get_attribute_link_db(db=db, link_id=attr_link.id)
                 delete_attribute_link_db(db=db, link=link)
 
-            for new_link in item.AttributeLinks:
+            for new_link in item.attributeLinks:
                 create_attribute_link_db(
                     db=db,
                     attribute_id=attribute.id,
@@ -376,17 +376,17 @@ async def update_homework_attribute(
                     anchor=new_link.anchor
                 )
 
-        if item.AttributeFiles:
+        if item.attributeFiles:
             for attr_file in attribute.lecture_file:
                 file = get_attribute_file_db(db=db, file_id=attr_file.id)
                 delete_file(attr_file.file_path)
                 delete_attribute_file_db(db=db, file=file)
 
-            for new_file in item.AttributeFiles:
+            for new_file in item.attributeFiles:
                 create_attribute_file_db(
                     db=db,
                     attribute_id=attribute.id,
-                    filename=new_file.filename,
+                    filename=new_file.fileName,
                     file_path=new_file.filePath,
                     file_size=new_file.fileSize,
                     download_allowed=new_file.downloadAllowed
@@ -442,7 +442,8 @@ async def get_lecture_data(
                 "attributeTitle": attr.attr_title,
                 "attributeText": attr.attr_text,
                 "hided": attr.hided,
-                "filename": attr.lecture_file[0].filename,
+                "fileId": attr.lecture_file[0].id,
+                "fileName": attr.lecture_file[0].filename,
                 "filePath": attr.lecture_file[0].file_path,
                 "fileSize": attr.lecture_file[0].file_size,
                 "downloadAllowed": attr.lecture_file[0].download_allowed
@@ -462,7 +463,8 @@ async def get_lecture_data(
 
             for file in attr.lecture_file:
                 file_data = {
-                    "filename": file.filename,
+                    "fileId": file.id,
+                    "fileName": file.filename,
                     "filePath": file.file_path,
                     "fileSize": file.file_size,
                     "downloadAllowed": file.download_allowed
@@ -484,6 +486,7 @@ async def get_lecture_data(
 
             for link in attr.lecture_link:
                 link_data = {
+                    "linkId": link.id,
                     "link": link.link,
                     "anchor": link.anchor
                 }
@@ -506,7 +509,8 @@ async def get_lecture_data(
             if len(attr.lecture_file) >= 1:
                 for file in attr.lecture_file:
                     file_data = {
-                        "filename": file.filename,
+                        "fileId": file.id,
+                        "fileName": file.filename,
                         "filePath": file.file_path,
                         "fileSize": file.file_size,
                         "downloadAllowed": file.download_allowed
@@ -517,6 +521,7 @@ async def get_lecture_data(
             if len(attr.lecture_link) >= 1:
                 for link in attr.lecture_link:
                     link_data = {
+                        "linkId": link.id,
                         "link": link.link,
                         "anchor": link.anchor
                     }

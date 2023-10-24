@@ -6,15 +6,15 @@ from app.enums import LectureAttributeType
 
 
 class AttributeBase(BaseModel):
-    AttributeType: LectureAttributeType
-    AttributeTitle: str
-    AttributeNumber: int
-    AttributeText: Optional[str] = ""
+    attributeType: LectureAttributeType
+    attributeTitle: str
+    attributeNumber: int
+    attributeText: Optional[str] = ""
     hided: Optional[bool] = False
 
 
 class AttributeFile(AttributeBase):
-    filename: str
+    fileName: str
     filePath: str
     fileSize: int
     downloadAllowed: bool
@@ -31,54 +31,54 @@ class UpdateLink(BaseModel):
 
 
 class File(BaseModel):
-    filename: str
+    fileName: str
     filePath: str
     fileSize: int
     downloadAllowed: bool
 
 
 class UpdateFile(BaseModel):
-    filename: Optional[str] = None
+    fileName: Optional[str] = None
     filePath: Optional[str] = None
     fileSize: Optional[int] = None
     downloadAllowed: Optional[bool] = None
 
 
 class AttributeFiles(AttributeBase):
-    AttributeFiles: List[File]
+    attributeFiles: List[File]
 
 
 class AttributeLinks(AttributeBase):
-    AttributeLinks: List[Link]
+    attributeLinks: List[Link]
 
 
 class AttributeHomeWork(AttributeBase):
-    AttributeFiles: Optional[List[File]] = None
-    AttributeLinks: Optional[List[Link]] = None
+    attributeFiles: Optional[List[File]] = None
+    attributeLinks: Optional[List[Link]] = None
 
 
 class UpdateAttributeBase(BaseModel):
-    AttributeTitle: Optional[str] = None
-    AttributeNumber: Optional[int] = None
-    AttributeText: Optional[str] = None
+    attributeTitle: Optional[str] = None
+    attributeNumber: Optional[int] = None
+    attributeText: Optional[str] = None
     hided: Optional[bool] = None
 
 
 class UpdateAttributeFile(UpdateAttributeBase):
-    filename: Optional[str] = None
+    fileName: Optional[str] = None
     filePath: Optional[str] = None
     fileSize: Optional[int] = None
     downloadAllowed: Optional[bool] = None
 
 
 class UpdateAttributeFiles(UpdateAttributeBase):
-    AttributeFiles: Optional[List[File]] = None
+    attributeFiles: Optional[List[File]] = None
 
 
 class UpdateAttributeLinks(UpdateAttributeBase):
-    AttributeLinks: Optional[List[Link]] = None
+    attributeLinks: Optional[List[Link]] = None
 
 
 class UpdateAttributeHomeWork(UpdateAttributeBase):
-    AttributeFiles: Optional[List[File]] = None
-    AttributeLinks: Optional[List[Link]] = None
+    attributeFiles: Optional[List[File]] = None
+    attributeLinks: Optional[List[Link]] = None

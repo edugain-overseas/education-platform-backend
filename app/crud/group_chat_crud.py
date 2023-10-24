@@ -5,9 +5,9 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import func
 
-from app.enums import UserTypeOption, MessageTypeOption
-from app.models import (Curator, Group, GroupChat, GroupChatAnswer, GroupChatAttachFile, MessageRecipient,
-                        Moder, Student, User, UserType)
+from app.enums import MessageTypeOption, UserTypeOption
+from app.models import (Curator, Group, GroupChat, GroupChatAnswer, GroupChatAttachFile, MessageRecipient, Moder,
+                        Student, User, UserType)
 
 
 def select_student_in_group_db(db: Session, group_id: int):

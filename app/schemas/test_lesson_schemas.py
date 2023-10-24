@@ -1,5 +1,5 @@
 from datetime import datetime, time
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, validator
 
@@ -63,15 +63,3 @@ class QuestionBase(BaseModel):
         if value > 200:
             raise ValueError("questionScore cannot be greater than 200")
         return value
-
-
-class TestQuestionFeedback(BaseModel):
-    text: str
-    student_id: int
-    question_id: int
-
-
-class FeedbackAnswer(BaseModel):
-    answer: str
-    teacher_id: int
-    test_feedback_id: int

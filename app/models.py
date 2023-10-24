@@ -2,9 +2,8 @@ from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Enum, ForeignKey, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-from app.enums import (UserTypeOption, LessonTypeOption, LectureAttributeType,
-                       QuestionTypeOption, MessageTypeOption, ModuleControlTypeOption)
-
+from app.enums import (LectureAttributeType, LessonTypeOption, MessageTypeOption, ModuleControlTypeOption,
+                       QuestionTypeOption, UserTypeOption)
 
 Base = declarative_base()
 

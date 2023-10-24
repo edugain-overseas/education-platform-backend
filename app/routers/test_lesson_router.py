@@ -3,29 +3,48 @@ from typing import List
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.crud.test_lesson_crud import (create_feedback_answer_db, create_test_answer_db, create_test_db,
-                                       create_test_feedback_db, create_test_matching_db, create_test_question_db,
-                                       select_feedback_answer_db, select_test_answer_db, select_test_db,
-                                       select_test_feedback_db, select_test_info_db, select_test_question_db,
-                                       select_question_type_id, update_test_db,
-                                       create_test_answer_with_photo_db, create_test_question_with_photo_db)
+from app.crud.lesson_crud import get_lesson_info_db
+from app.crud.test_lesson_crud import (create_test_answer_db, create_test_answer_with_photo_db, create_test_db,
+                                       create_test_matching_db, create_test_question_db,
+                                       create_test_question_with_photo_db, delete_answer_db, delete_matching_left_db,
+                                       delete_matching_right_db, delete_test_question_db, select_matching_left_db,
+                                       select_matching_right_db, select_mathing_left_by_right_id_db,
+                                       select_question_type_id, select_test_answer_db, select_test_db,
+                                       select_test_info_db, select_test_question_db, set_none_for_left_option_db,
+                                       update_test_db, update_test_question_db)
 from app.models import User
-from app.schemas.test_lesson_schemas import (FeedbackAnswer, QuestionBase,
-                                             TestConfigBase, TestConfigUpdate, TestQuestionFeedback)
+from app.schemas.test_lesson_schemas import QuestionBase, TestConfigBase, TestConfigUpdate
 from app.session import get_db
-from app.utils.save_images import save_lesson_file
+from app.utils.save_images import delete_file, save_lesson_file
 from app.utils.token import get_current_user
 
 router = APIRouter()
 
 
-@router.post("/test/create")
+@router.post("/test/")
 async def create_test_config(
         test_data: TestConfigBase,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    return create_test_db(db=db, test_data=test_data)
+    if user.moder or user.teacher:
+        return create_test_db(db=db, test_data=test_data)
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.put("/test/")
+async def update_test_config(
+        test_id: int,
+        test_data: TestConfigUpdate,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.moder or user.teacher:
+        test = select_test_db(db=db, test_id=test_id)
+        return update_test_db(db=db, test=test, test_data=test_data)
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
 
 
 @router.post("/test/create-data/{test_id}")
@@ -124,24 +143,144 @@ async def create_test_data(
     return {"Message": "Test data have been saved"}
 
 
-@router.put("/test/update-question")
-async def update_test_question(
-        data: List[QuestionBase],
+@router.put("/test/question")
+async def update_question(
+        question_id: int,
+        data: QuestionBase,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    pass
+    if user.moder or user.teacher:
+        question = select_test_question_db(db=db, question_id=question_id)
+        update_test_question_db(
+            db=db,
+            question=question,
+            text=data.questionText,
+            number=data.questionNumber,
+            score=data.questionScore,
+            hided=data.hided,
+            image_path=data.imagePath
+        )
+
+        if data.questionType == "matching":
+            for right in question.matching_right:
+                delete_matching_right_db(db=db, right_option=right)
+            for left in question.matching_left:
+                delete_matching_left_db(db=db, left_option=left)
+
+        else:
+            for answer in question.test_answer:
+                if answer.image_path:
+                    delete_file(answer.image_path)
+                delete_answer_db(db=db, answer=answer)
+
+        if data.questionType == "answer_with_photo":
+            for new_answer in data.questionAnswers:
+                create_test_answer_with_photo_db(
+                    db=db,
+                    answer_text=new_answer.answerText,
+                    is_correct=new_answer.isCorrect,
+                    image_path=new_answer.imagePath,
+                    question_id=question_id
+                )
+        elif data.questionType in ["test", "boolean", "multiple_choice", "question_with_photo"]:
+            for new_answer in data.questionAnswers:
+                create_test_answer_db(
+                    db=db,
+                    answer_text=new_answer.answerText,
+                    is_correct=new_answer.isCorrect,
+                    question_id=question_id
+                )
+        else:
+            for matching in data.questionAnswers:
+                create_test_matching_db(
+                    db=db,
+                    right_text=matching.rightText,
+                    left_text=matching.leftText,
+                    question_id=question_id
+                )
+        return {"message": "Question data have been updated"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
 
 
-@router.put("/test/update")
-async def update_test(
-        test_id: int,
-        test_data: TestConfigUpdate,
+@router.delete("/test/delete-question")
+async def delete_question(
+        question_id: int,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    test = select_test_db(db=db, test_id=test_id)
-    return update_test_db(db=db, test=test, test_data=test_data)
+    if user.moder or user.teacher:
+        question = select_test_question_db(db=db, question_id=question_id)
+        if question.question_type == "matching":
+            for left in question.matching_left:
+                delete_matching_left_db(db=db, left_option=left)
+            for right in question.matching_right:
+                delete_matching_right_db(db=db, right_option=right)
+            delete_test_question_db(db=db, question=question)
+        elif question.question_type == "question_with_photo":
+            delete_file(question.image_path)
+            for answer in question.test_answer:
+                delete_answer_db(db=db, answer=answer)
+            delete_test_question_db(db=db, question=question)
+        elif question.question_type == "answer_with_photo":
+            for answer in question.test_answer:
+                delete_file(answer.image_path)
+                delete_answer_db(db=db, answer=answer)
+            delete_test_question_db(db=db, question=question)
+        else:
+            for answer in question.test_answer:
+                delete_answer_db(db=db, answer=answer)
+            delete_test_question_db(db=db, question=question)
+        return {"message": "Question have been deleted"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.delete("/test/delete-answer")
+async def delete_answer(
+        answer_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.moder or user.teacher:
+        answer = select_test_answer_db(db=db, answer_id=answer_id)
+        if answer.image_path:
+            delete_file(answer.image_path)
+        delete_answer_db(db=db, answer=answer)
+        return {"message": "Answer have been deleted"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.delete("/test/delete-matching-left")
+async def delete_matching_left(
+        left_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.moder or user.teacher:
+        left_option = select_matching_left_db(db=db, left_id=left_id)
+        delete_matching_left_db(db=db, left_option=left_option)
+        return {"message": "Left option have been deleted"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.delete("/test/delete/matching-right")
+async def delete_matching_right(
+        right_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.moder or user.teacher:
+        right_option = select_matching_right_db(db=db, right_id=right_id)
+        left_option = select_mathing_left_by_right_id_db(db=db, right_id=right_id)
+        set_none_for_left_option_db(db=db, left_option=left_option)
+        delete_matching_right_db(db=db, right_option=right_option)
+        return {"message": "Right option have been deleted"}
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
 
 
 @router.get("/test/{lesson_id}")
@@ -150,10 +289,20 @@ async def get_test_info(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
+    lesson_base = get_lesson_info_db(db=db, lesson_id=lesson_id)
+
+    result = {
+        "lessonTitle": lesson_base.lessonTitle,
+        "lessonDescription": lesson_base.lessonDescription,
+        "lessonDate": lesson_base.lessonDate,
+        "lessonEnd": lesson_base.lessonEnd,
+    }
+
     test_info = select_test_info_db(db=db, lesson_id=lesson_id)
 
     if test_info is None:
-        raise HTTPException(status_code=404, detail="Test not found")
+        return result
+
     return test_info
 
 
@@ -166,95 +315,4 @@ async def upload_test_image(
         file_path = save_lesson_file(file=file)
         return {"filePath": file_path}
     else:
-        raise HTTPException(
-            status_code=401,
-            detail="Permission denied"
-        )
-
-
-# @router.post("/test/feedback")
-# async def create_test_feedback(
-#         test_feedback_data: TestQuestionFeedback,
-#         db: Session = Depends(get_db),
-#         user: User = Depends(get_current_user)
-# ):
-#     if user.student:
-#         return create_test_feedback_db(db=db, feedback_data=test_feedback_data)
-#     else:
-#         raise HTTPException(
-#             status_code=401,
-#             detail='Permission denied'
-#         )
-
-
-# @router.get("/test/feedback/question/{question_id}")
-# async def get_test_feedback_by_question(
-#         question_id: int,
-#         db: Session = Depends(get_db),
-#         user: User = Depends(get_current_user)
-# ):
-#     return select_test_feedback_db(db=db, question_id=question_id)
-
-
-# @router.get("/test/feedback/student/{student_id}")
-# async def get_test_feedback_by_student(
-#         student_id: int,
-#         db: Session = Depends(get_db),
-#         user: User = Depends(get_current_user)
-# ):
-#     return select_test_feedback_db(db=db, student_id=student_id)
-
-
-# @router.post("/feedback/answer")
-# async def create_test_feedback_answer(
-#         answer_data: FeedbackAnswer,
-#         db: Session = Depends(get_db),
-#         user: User = Depends(get_current_user)
-# ):
-#     if user.teacher:
-#         return create_feedback_answer_db(db=db, answer_data=answer_data)
-#     else:
-#         raise HTTPException(
-#             status_code=401,
-#             detail="Permission denied"
-#         )
-
-
-# @router.get("/feedback/answer/teacher/{teacher_id}")
-# async def get_feedback_answer_by_teacher(
-#         teacher_id: int,
-#         db: Session = Depends(get_db),
-#         user: User = Depends(get_current_user)
-# ):
-#     return select_feedback_answer_db(db=db, teacher_id=teacher_id)
-
-
-# @router.get("/feedback/answer/{feedback_id}")
-# async def get_feedback_answer(
-#         feedback_id: int,
-#         db: Session = Depends(get_db),
-#         user: User = Depends(get_current_user)
-# ):
-#     return select_feedback_answer_db(db=db, test_feedback_id=feedback_id)
-
-
-# @router.post("/student-test/create")
-# async def create_student_test(
-#         student_id: int,
-#         test_id: int,
-#         db: Session = Depends(get_db),
-#         user: User = Depends(get_current_user)
-# ):
-#     pass
-
-
-# @router.get("/student-test/{student_id}")
-# async def check_student_test(
-#         student_id: int,
-#         test_id: int,
-#         db: Session = Depends(get_db),
-#         user: User = Depends(get_current_user)
-# ):
-#     pass
-
-
+        raise HTTPException(status_code=401, detail="Permission denied")

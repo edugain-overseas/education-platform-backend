@@ -1,8 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.models import (Lesson, TestAnswer, TestFeedback, TestFeedbackAnswer, TestLesson, TestMatchingLeft,
-                        TestMatchingRight, TestQuestion, QuestionType)
-from app.schemas.test_lesson_schemas import TestConfigBase, TestConfigUpdate, FeedbackAnswer, TestQuestionFeedback
+from app.models import Lesson, QuestionType, TestAnswer, TestLesson, TestMatchingLeft, TestMatchingRight, TestQuestion
+from app.schemas.test_lesson_schemas import TestConfigBase, TestConfigUpdate
 
 
 def create_test_db(db: Session, test_data: TestConfigBase):
@@ -25,7 +24,9 @@ def select_question_type_id(db: Session, question_type: str):
 def select_test_info_db(db: Session, lesson_id: int):
     lesson_info = db.query(
         Lesson.title.label("lesson_title"),
-        Lesson.description.label("lesson_description")
+        Lesson.description.label("lesson_description"),
+        Lesson.lesson_date.label("lesson_date"),
+        Lesson.lesson_end.label("lesson_end")
     )\
         .filter(Lesson.id == lesson_id)\
         .first()
@@ -40,7 +41,8 @@ def select_test_info_db(db: Session, lesson_id: int):
     test_info = {
         "lessonTitle": lesson_info.lesson_title,
         "lessonDescription": lesson_info.lesson_description,
-        "lessonId": test_lesson.lesson_id,
+        "lessonDate": lesson_info.lesson_date,
+        "lessonEnd": lesson_info.lesson_end,
         "testId": test_lesson.id,
         "isPublished": test_lesson.is_published,
         "setTimer": test_lesson.set_timer,
@@ -67,10 +69,12 @@ def select_test_info_db(db: Session, lesson_id: int):
             answers = db.query(TestAnswer).filter(TestAnswer.question_id == question.id).all()
 
             for answer in answers:
-                question_info["questionAnswers"].append({
-                    "answerId": answer.id,
-                    "answerText": answer.answer_text,
-                })
+                question_info["questionAnswers"].append(
+                    {
+                        "answerId": answer.id,
+                        "answerText": answer.answer_text,
+                    }
+                )
 
         elif question.question_type.type == "multiple_choice":
             answers = db.query(TestAnswer).filter(TestAnswer.question_id == question.id).all()
@@ -80,10 +84,12 @@ def select_test_info_db(db: Session, lesson_id: int):
                 if answer.is_correct:
                     counter += 1
 
-                question_info["questionAnswers"].append({
-                    "answerId": answer.id,
-                    "answerText": answer.answer_text,
-                })
+                question_info["questionAnswers"].append(
+                    {
+                        "answerId": answer.id,
+                        "answerText": answer.answer_text,
+                    }
+                )
 
             question_info["quantityCorrectAnswers"] = counter
 
@@ -100,23 +106,26 @@ def select_test_info_db(db: Session, lesson_id: int):
             answers = db.query(TestAnswer).filter(TestAnswer.question_id == question.id).all()
 
             for answer in answers:
-                question_info["questionAnswers"].append({
-                    "answerId": answer.id,
-                    "answerText": answer.answer_text,
-                    "imagePath": answer.image_path
-                })
+                question_info["questionAnswers"].append(
+                    {
+                        "answerId": answer.id,
+                        "answerText": answer.answer_text,
+                        "imagePath": answer.image_path
+                    }
+                )
 
         else:
             question_info["imagePath"] = question.image_path
             answers = db.query(TestAnswer).filter(TestAnswer.question_id == question.id).all()
             for answer in answers:
-                question_info["questionAnswers"].append({
-                    "answerId": answer.id,
-                    "answerText": answer.answer_text,
-                })
+                question_info["questionAnswers"].append(
+                    {
+                        "answerId": answer.id,
+                        "answerText": answer.answer_text,
+                    }
+                )
 
         test_info["testQuestions"].append(question_info)
-
     return test_info
 
 
@@ -183,17 +192,25 @@ def select_test_question_db(db: Session, question_id: int):
     return db.query(TestQuestion).filter(TestQuestion.id == question_id).first()
 
 
+def delete_test_question_db(db: Session, question: TestQuestion):
+    db.delete(question)
+    db.commit()
+
+
 def update_test_question_db(
         db: Session,
         question: TestQuestion,
         text: str,
         number: int,
+        score: int,
         hided: bool,
         image_path: str = None
 ):
     question.question_text = text
     question.question_number = number
+    question.question_score = score
     question.hided = hided
+
     if image_path:
         question.image_path = image_path
 
@@ -259,6 +276,11 @@ def update_test_answer_db(
     return answer
 
 
+def delete_answer_db(db: Session, answer: TestAnswer):
+    db.delete(answer)
+    db.commit()
+
+
 def create_test_matching_db(db: Session, right_text: str, left_text: str, question_id: int):
     right_option = TestMatchingRight(
         text=right_text,
@@ -282,67 +304,29 @@ def create_test_matching_db(db: Session, right_text: str, left_text: str, questi
     return {"leftOption": left_option, "rightOption": right_option}
 
 
-# def select_test_matching_left_db(db: Session, left_option_id: int):
-#     return db.query(TestMatchingLeft).filter(TestMatchingLeft.id == left_option_id).first()
-#
-#
-# def select_test_matching_right_db(db: Session, right_option_id: int):
-#     return db.query(TestMatchingRight).filter(TestMatchingRight.id == right_option_id).first()
+def select_matching_right_db(db: Session, right_id: int):
+    return db.query(TestMatchingRight).filter(TestMatchingRight.id == right_id).first()
 
 
-# def update_test_matching_left_db(
-#         db: Session,
-#         test_matching_left: TestMatchingLeft,
-#         matching_left_data: TestMatchingLeftUpdate
-# ):
-#     for field, value in matching_left_data:
-#         if value is not None:
-#             setattr(test_matching_left, field, value)
-#
-#     db.commit()
-#     db.refresh(test_matching_left)
-#     return test_matching_left
+def select_matching_left_db(db: Session, left_id: int):
+    return db.query(TestMatchingLeft).filter(TestMatchingLeft.id == left_id).first()
 
 
-# def update_test_matching_right_db(
-#         db: Session,
-#         test_matching_right: TestMatchingRight,
-#         matching_right_data: TestMatchingRightUpdate
-# ):
-#     for field, value in matching_right_data:
-#         if value is not None:
-#             setattr(test_matching_right, field, value)
-#
-#     db.commit()
-#     db.refresh(test_matching_right)
-#     return test_matching_right
+def select_mathing_left_by_right_id_db(db: Session, right_id: int):
+    return db.query(TestMatchingLeft).filter(TestMatchingLeft.right_id == right_id).first()
 
 
-def create_test_feedback_db(db: Session, feedback_data: TestQuestionFeedback):
-    new_feedback = TestFeedback(**feedback_data.dict())
-    db.add(new_feedback)
+def delete_matching_right_db(db: Session, right_option: TestMatchingRight):
+    db.delete(right_option)
     db.commit()
-    db.refresh(new_feedback)
-    return new_feedback
 
 
-def select_test_feedback_db(db: Session, question_id: int = None, student_id: int = None):
-    if student_id is None:
-        return db.query(TestFeedback).filter(TestFeedback.question_id == question_id).all()
-    else:
-        return db.query(TestFeedback).filter(TestFeedback.student_id == student_id).all()
-
-
-def create_feedback_answer_db(db: Session, answer_data: FeedbackAnswer):
-    new_answer = TestFeedbackAnswer(**answer_data.dict())
-    db.add(new_answer)
+def delete_matching_left_db(db: Session, left_option: TestMatchingLeft):
+    db.delete(left_option)
     db.commit()
-    db.refresh(new_answer)
-    return new_answer
 
 
-def select_feedback_answer_db(db: Session, teacher_id: int = None, test_feedback_id: int = None):
-    if test_feedback_id is None:
-        return db.query(TestFeedbackAnswer).filter(TestFeedbackAnswer.teacher_id == teacher_id).all()
-    else:
-        return db.query(TestFeedbackAnswer).filter(TestFeedbackAnswer.test_feedback_id == test_feedback_id).all()
+def set_none_for_left_option_db(db: Session, left_option: TestMatchingLeft):
+    left_option.right_id = None
+    db.commit()
+    db.refresh(left_option)
