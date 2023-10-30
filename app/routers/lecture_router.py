@@ -523,7 +523,7 @@ async def get_lecture_data(
             }
             result["lectureInfo"].append(file_attr)
 
-        elif attr.attr_type in ["file", "picture"]:
+        elif attr.attr_type == "file":
             files_attr = {
                 "attributeId": attr.id,
                 "attributeNumber": attr.attr_number,
@@ -545,6 +545,30 @@ async def get_lecture_data(
                 files_attr["attributeFiles"].append(file_data)
 
             result["lectureInfo"].append(files_attr)
+
+        elif attr.attr_type == "picture":
+            images_attr = {
+                "attributeId": attr.id,
+                "attributeNumber": attr.attr_number,
+                "attributeType": attr.attr_type,
+                "attributeTitle": attr.attr_title,
+                "attributeText": attr.attr_text,
+                "hided": attr.hided,
+                "attributeImages": []
+            }
+
+            for image in attr.lecture_file:
+                image_data = {
+                    "imageId": image.id,
+                    "imageName": image.filename,
+                    "imagePath": image.file_path,
+                    "imageSize": image.file_size,
+                    "imageDescription": image.file_description,
+                    "downloadAllowed": image.download_allowed
+                }
+                images_attr["attributeImages"].append(image_data)
+
+            result["lectureInfo"].append(images_attr)
 
         elif attr.attr_type == "link":
             link_attr = {
