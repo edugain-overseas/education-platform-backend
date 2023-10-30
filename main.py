@@ -18,6 +18,8 @@ from app.routers.subject_router import router as subject_router
 from app.routers.teacher_router import router as teacher_router
 from app.routers.test_lesson_router import router as test_router
 from app.routers.user_router import router as user_router
+from app.routers.student_test_router import router as student_test_router
+
 from app.setting import API_PREFIX
 
 app = FastAPI()
@@ -25,6 +27,7 @@ app.mount('/static', StaticFiles(directory='static'), name='static')
 
 app.include_router(user_router, prefix=API_PREFIX, tags=['User'])
 app.include_router(student_router, prefix=API_PREFIX, tags=['Student'])
+app.include_router(student_test_router, prefix=API_PREFIX, tags=['StudentTest'])
 app.include_router(teacher_router, prefix=API_PREFIX, tags=['Teacher'])
 
 app.include_router(specialization_router, prefix=API_PREFIX, tags=['Specialization'])
