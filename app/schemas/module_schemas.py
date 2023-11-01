@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class ModuleBase(BaseModel):
     number: int
     name: str
-    description: str
+    description: Optional[str] = None
     subject_id: int
 
 

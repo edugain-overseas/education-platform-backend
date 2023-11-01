@@ -38,7 +38,7 @@ async def upload_lecture_file(
 ):
     if user.teacher or user.moder:
         filepath = save_lesson_file(file)
-        return {"filename": file.filename, "filePath": filepath, "fileSize": file.size}
+        return {"fileName": file.filename, "filePath": filepath, "fileSize": file.size}
     else:
         raise HTTPException(status_code=403, detail="Permission denied")
 

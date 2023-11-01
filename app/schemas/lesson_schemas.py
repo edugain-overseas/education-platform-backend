@@ -9,7 +9,7 @@ from app.enums import LessonTypeOption
 class LessonBase(BaseModel):
     number: int
     title: str
-    description: str
+    description: Optional[str] = None
     is_published: Optional[bool] = True
     lesson_date: datetime
     lesson_end: time

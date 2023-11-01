@@ -173,25 +173,6 @@ def get_lecture_text_attribute_db(db: Session, lecture_id: int):
     return result
 
 
-# def get_lecture_file_attribute_db(db: Session, lecture_id: int):
-#     result = db.query(
-#         LectureAttribute.id.label("attributeId"),
-#         LectureAttribute.attr_type.label("attributeType"),
-#         LectureAttribute.attr_number.label("attributeNumber"),
-#         LectureAttribute.attr_title.label("attributeTitle"),
-#         LectureAttribute.attr_text.label("attributeText"),
-#         LectureFile.filename.label("fileName"),
-#         LectureFile.file_size.label("fileSize"),
-#         LectureFile.file_path.label("filePath"),
-#         LectureFile.download_allowed.label("downloadAllowed"),
-#     )\
-#         .join(LectureFile, LectureFile.lecture_attribute_id == LectureAttribute.id) \
-#         .filter(LectureAttribute.lecture_id == lecture_id) \
-#         .all()
-#
-#     return result
-
-
 def get_attribute_db(db: Session, attr_id: int):
     return db.query(LectureAttribute).filter(LectureAttribute.id == attr_id).first()
 
