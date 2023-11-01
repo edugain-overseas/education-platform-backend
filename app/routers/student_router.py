@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.crud.student_crud import get_student_info_db, get_student_schedule_db
+from app.crud.subject_crud import select_subject_by_group_id_db, select_dop_subjects
+from app.crud.lesson_crud import select_lesson_by_subject_db
 from app.crud.user_crud import (delete_student_db, delete_user_db, select_all_students_db, select_student_by_id_db,
                                 select_student_by_user_id_db, select_students_by_course_id_db,
                                 select_students_by_group_id_db, select_students_by_specializations_id_db,
@@ -174,3 +176,34 @@ async def delete_student(
     delete_student_db(db=db, student=student)
     delete_user_db(db=db, user=user_data)
     return {"massage": "Student has been successful deleted"}
+
+
+@router.get("/student/get-register/{student_id}")
+async def get_student_register(
+        student_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    student = select_student_by_id_db(db=db, student_id=student_id)
+    result = []
+    main_subjects = select_subject_by_group_id_db(db=db, group_id=student.group_id)
+    for subject in main_subjects:
+        lessons = select_lesson_by_subject_db(db=db, subject_id=subject.subject_id)
+        subject_register = {
+            "subjectId": subject.subject_id,
+            "subjectName": subject.subject_title,
+            "subjectLessons": lessons
+        }
+        result.append(subject_register)
+
+    dop_subjects = select_dop_subjects(db=db, student_id=student_id)
+    for subject in dop_subjects:
+        lessons = select_lesson_by_subject_db(db=db, subject_id=subject[0])
+        dop_subject_register = {
+            "dopSubjectId": subject[0],
+            "dopSubjectName": subject[1],
+            "dopSubjectLessons": lessons
+        }
+        result.append(dop_subject_register)
+
+    return result

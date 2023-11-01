@@ -82,11 +82,22 @@ def select_subjects_by_course_db(db: Session, course_id: int):
     return db.query(Subject).filter(Subject.course_id == course_id).all()
 
 
+def select_subject_by_group_id_db(db: Session, group_id: int):
+    query = db.query(
+        Subject.id.label("subject_id"),
+        Subject.title.label("subject_title")
+    )\
+        .join(Group, Group.id == Subject.group_id)\
+        .filter(Group.id == group_id)
+    return query.all()
+
+
 def select_subjects_by_group_db(db: Session, group_name: str):
     query = db.query(
         Subject.id,
         Subject.title,
-        Subject.image_path)\
+        Subject.image_path
+    )\
         .join(Group, Group.specialization_id == Subject.specialization_id)\
         .filter(Group.group_name == group_name)
 

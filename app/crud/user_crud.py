@@ -27,7 +27,7 @@ def select_all_students_db(db: Session):
     return db.query(Student).all()
 
 
-def select_student_by_id_db(db: Student, student_id: int):
+def select_student_by_id_db(db: Session, student_id: int):
     return db.query(Student).filter(Student.id == student_id).first()
 
 
@@ -35,11 +35,11 @@ def select_student_by_user_id_db(db: Session, user_id: int):
     return db.query(Student).filter(Student.user_id == user_id).first()
 
 
-def select_students_by_group_id_db(db: Student, group_id: int):
+def select_students_by_group_id_db(db: Session, group_id: int):
     return db.query(Student).filter(Student.group_id == group_id).all()
 
 
-def select_students_by_course_id_db(db: Student, course_id: int):
+def select_students_by_course_id_db(db: Session, course_id: int):
     return db.query(Student).filter(Student.course_id == course_id).all()
 
 
