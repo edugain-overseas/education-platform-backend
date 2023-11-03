@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 from app.enums import (LectureAttributeType, LessonTypeOption, MessageTypeOption, ModuleControlTypeOption,
                        QuestionTypeOption, UserTypeOption)
 
+
 Base = declarative_base()
 
 
@@ -44,6 +45,10 @@ class User(Base):
     subject_answer = relationship('SubjectChatAnswer', back_populates='user')
     subject_recipient = relationship('SubjectRecipient', back_populates='user')
 
+    sent_letters = relationship("StudentTeacherLetter", back_populates="sender")
+    received_letters = relationship("StudentTeacherLetter", back_populates="recipient")
+    labels = relationship('Labels', back_populates='user')
+
 
 class Student(Base):
     __tablename__ = "student"
@@ -72,10 +77,10 @@ class Student(Base):
     course = relationship('Course', back_populates='student')
     group = relationship('Group', back_populates='student')
 
-    lesson_missing = relationship('LessonMissing', back_populates='student')
-    lesson_score = relationship('LessonScore', back_populates='student')
-    lecture_score = relationship('LectureScore', back_populates='student')
+    # lesson_missing = relationship('LessonMissing', back_populates='student')
+    # lesson_score = relationship('LessonScore', back_populates='student')
 
+    student_lecture = relationship('StudentLecture', back_populates='student')
     student_test = relationship('StudentTest', back_populates='student')
     student_test_answer = relationship('StudentTestAnswer', back_populates='student')
     student_test_matching = relationship('StudentTestMatching', back_populates='student')
@@ -89,6 +94,7 @@ class Student(Base):
     student_module_matching = relationship('StudentModuleMatching', back_populates='student')
 
     additional_subject = relationship('Subject', secondary='student_additional_subject', back_populates='students')
+    subject_journal = relationship('SubjectJournal', back_populates='student')
     participant_comment = relationship('ParticipantComment', back_populates='student')
 
 
@@ -196,6 +202,7 @@ class Subject(Base):
     subject_icon = relationship('SubjectIcon', back_populates='subject')
     subject_instruction = relationship('SubjectInstruction', back_populates='subject')
     subject_instruction_category = relationship('SubjectInstructionCategory', back_populates='subject')
+    subject_journal = relationship('SubjectJournal', back_populates='subject')
     participant_comment = relationship('ParticipantComment', back_populates='subject')
 
     @property
@@ -294,6 +301,21 @@ class SubjectInstructionLink(Base):
     subject_instruction = relationship('SubjectInstruction', back_populates='subject_instruction_link')
 
 
+class SubjectJournal(Base):
+    __tablename__ = "subject_journal"
+
+    id = Column(Integer, primary_key=True, index=True)
+    score = Column(Integer)
+    absent = Column(Boolean)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+    lesson_id = Column(Integer, ForeignKey('lesson.id'))
+    student_id = Column(Integer, ForeignKey('student.id'))
+
+    subject = relationship('Subject', back_populates='subject_journal')
+    lesson = relationship('Lesson', back_populates='subject_journal')
+    student = relationship('Student', back_populates='subject_journal')
+
+
 class ParticipantComment(Base):
     __tablename__ = "participant_comment"
 
@@ -362,8 +384,9 @@ class Lesson(Base):
     module = relationship('Module', back_populates='lesson')
     subject = relationship('Subject', back_populates='lesson')
     teacher = relationship('Teacher', back_populates='lesson')
-    lesson_missing = relationship('LessonMissing', back_populates='lesson')
-    lesson_score = relationship('LessonScore', back_populates='lesson')
+
+    # lesson_missing = relationship('LessonMissing', back_populates='lesson')
+    # lesson_score = relationship('LessonScore', back_populates='lesson')
 
     lecture = relationship('Lecture', back_populates='lesson')
     test_lesson = relationship('TestLesson', back_populates='lesson')
@@ -371,33 +394,34 @@ class Lesson(Base):
     video_lecture = relationship('VideoLecture', back_populates='lesson')
     video_seminar = relationship('VideoSeminar', back_populates='lesson')
     module_control = relationship('ModuleControl', back_populates='lesson')
+    subject_journal = relationship('SubjectJournal', back_populates='lesson')
 
 
-class LessonMissing(Base):
-    __tablename__ = "lesson_missing"
+# class LessonMissing(Base):
+#     __tablename__ = "lesson_missing"
+#
+#     id = Column(Integer, primary_key=True, index=True)
+#     missing = Column(Boolean)
+#
+#     student_id = Column(Integer, ForeignKey('student.id'))
+#     lesson_id = Column(Integer, ForeignKey('lesson.id'))
+#
+#     student = relationship('Student', back_populates='lesson_missing')
+#     lesson = relationship('Lesson', back_populates='lesson_missing')
 
-    id = Column(Integer, primary_key=True, index=True)
-    missing = Column(Boolean)
 
-    student_id = Column(Integer, ForeignKey('student.id'))
-    lesson_id = Column(Integer, ForeignKey('lesson.id'))
-
-    student = relationship('Student', back_populates='lesson_missing')
-    lesson = relationship('Lesson', back_populates='lesson_missing')
-
-
-class LessonScore(Base):
-    __tablename__ = "lesson_score"
-
-    id = Column(Integer, primary_key=True, index=True)
-    score = Column(Integer)
-    lesson_type = Column(Enum(LessonTypeOption))
-
-    student_id = Column(Integer, ForeignKey('student.id'))
-    lesson_id = Column(Integer, ForeignKey('lesson.id'))
-
-    student = relationship('Student', back_populates='lesson_score')
-    lesson = relationship('Lesson', back_populates='lesson_score')
+# class LessonScore(Base):
+#     __tablename__ = "lesson_score"
+#
+#     id = Column(Integer, primary_key=True, index=True)
+#     score = Column(Integer)
+#     lesson_type = Column(Enum(LessonTypeOption))
+#
+#     student_id = Column(Integer, ForeignKey('student.id'))
+#     lesson_id = Column(Integer, ForeignKey('lesson.id'))
+#
+#     student = relationship('Student', back_populates='lesson_score')
+#     lesson = relationship('Lesson', back_populates='lesson_score')
 
 
 class Lecture(Base):
@@ -408,7 +432,7 @@ class Lecture(Base):
 
     lesson = relationship('Lesson', uselist=False, back_populates='lecture')
     attributes = relationship('LectureAttribute', back_populates='lecture')
-    lecture_score = relationship('LectureScore', back_populates='lecture')
+    student_lecture = relationship('StudentLecture', back_populates='lecture')
 
 
 class LectureAttribute(Base):
@@ -454,18 +478,18 @@ class LectureLink(Base):
     lecture_attribute = relationship('LectureAttribute', back_populates='lecture_link')
 
 
-class LectureScore(Base):
-    __tablename__ = "lecture_score"
+class StudentLecture(Base):
+    __tablename__ = "student_lecture"
 
     id = Column(Integer, primary_key=True, index=True)
     score = Column(Integer)
-    check = Column(Boolean, default=False, nullable=False)
+    check = Column(Boolean, nullable=False)
 
     lecture_id = Column(Integer, ForeignKey('lecture.id'))
     student_id = Column(Integer, ForeignKey('student.id'))
 
-    lecture = relationship('Lecture', back_populates='lecture_score')
-    student = relationship('Student', back_populates='lecture_score')
+    lecture = relationship('Lecture', back_populates='student_lecture')
+    student = relationship('Student', back_populates='student_lecture')
 
 
 class QuestionType(Base):
@@ -1072,3 +1096,62 @@ class SubjectRecipient(Base):
 
     user = relationship('User', back_populates='subject_recipient')
     subject_chat_message = relationship('SubjectChat', back_populates='subject_recipient')
+
+
+class StudentTeacherLetter(Base):
+    __tablename__ = "student_teacher_letter"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    text = Column(Text)
+    date = Column(DateTime, autoincrement=True, nullable=False)
+    lesson_id = Column(Integer, ForeignKey('lesson.id'))
+    sender_id = Column(Integer, ForeignKey('user.id'))
+    recipient_id = Column(Integer, ForeignKey('user.id'))
+    parent_letter_id = Column(Integer, ForeignKey('student_teacher_letter.id'))
+    viewed = Column(Boolean, default=False)
+    deleted = Column(Boolean, default=False)
+
+    lesson = relationship('Lesson', back_populates='student_teacher_letter')
+    sender = relationship('User', foreign_keys=[sender_id], back_populates="sent_letters")
+    recipient = relationship('User', foreign_keys=[recipient_id], back_populates="received_letters")
+
+    parent_letter = relationship("StudentTeacherLetter", remote_side=[id], back_populates="child_letters")
+    child_letters = relationship("StudentTeacherLetter", back_populates="parent_letter")
+
+    letter_label = relationship('LetterLabels', back_populates='letter')
+    deleted_letter = relationship('DeletedLetters', back_populates='letter')
+
+
+class Labels(Base):
+    __tablename__ = "labels"
+
+    id = Column(Integer, primary_key=True, index=True)
+    is_default = Column(Boolean)
+    label_name = Column(String)
+    label_svg_path = Column(String)
+    user_id = Column(Integer, ForeignKey('user.id'))
+
+    user = relationship('User', back_populates='labels')
+    letter_label = relationship('LetterLabels', back_populates='label')
+
+
+class LetterLabels(Base):
+    __tablename__ = "letter_labels"
+
+    id = Column(Integer, primary_key=True, index=True)
+    letter_id = Column(Integer, ForeignKey('student_teacher_letter.id'))
+    label_id = Column(Integer, ForeignKey('labels.id'))
+
+    letter = relationship('StudentTeacherLetter', back_populates='letter_label')
+    label = relationship('Labels', back_populates='letter_label')
+
+
+class DeletedLetters(Base):
+    __tablename__ = "deleted_letter"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date)
+    letter_id = Column(Integer, ForeignKey('student_teacher_letter.id'))
+
+    letter = relationship('StudentTeacherLetter', back_populates='deleted_letter')
