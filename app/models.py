@@ -18,6 +18,31 @@ class UserType(Base):
     user = relationship('User', back_populates='user_type')
 
 
+class StudentTeacherLetter(Base):
+    __tablename__ = "student_teacher_letter"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    text = Column(Text)
+    date = Column(DateTime, autoincrement=True, nullable=False)
+    lesson_id = Column(Integer, ForeignKey('lesson.id'))
+    sender_id = Column(Integer, ForeignKey('user.id'))
+    recipient_id = Column(Integer, ForeignKey('user.id'))
+    parent_letter_id = Column(Integer, ForeignKey('student_teacher_letter.id'))
+    viewed = Column(Boolean, default=False)
+    deleted = Column(Boolean, default=False)
+
+    lesson = relationship('Lesson', back_populates='student_teacher_letter')
+    sender = relationship('User', foreign_keys=[sender_id], back_populates="sent_letters")
+    recipient = relationship('User', foreign_keys=[recipient_id], back_populates="received_letters")
+
+    parent_letter = relationship("StudentTeacherLetter", remote_side=[id], back_populates="child_letters")
+    child_letters = relationship("StudentTeacherLetter", back_populates="parent_letter")
+
+    letter_label = relationship('LetterLabels', back_populates='letter')
+    deleted_letter = relationship('DeletedLetters', back_populates='letter')
+
+
 class User(Base):
     __tablename__ = "user"
 
@@ -45,8 +70,12 @@ class User(Base):
     subject_answer = relationship('SubjectChatAnswer', back_populates='user')
     subject_recipient = relationship('SubjectRecipient', back_populates='user')
 
-    sent_letters = relationship("StudentTeacherLetter", back_populates="sender")
-    received_letters = relationship("StudentTeacherLetter", back_populates="recipient")
+    sent_letters = relationship("StudentTeacherLetter",
+                                foreign_keys=[StudentTeacherLetter.sender_id],
+                                back_populates="sender")
+    received_letters = relationship("StudentTeacherLetter",
+                                    foreign_keys=[StudentTeacherLetter.recipient_id],
+                                    back_populates="recipient")
     labels = relationship('Labels', back_populates='user')
 
 
@@ -76,9 +105,6 @@ class Student(Base):
     specialization = relationship('Specialization', back_populates='student')
     course = relationship('Course', back_populates='student')
     group = relationship('Group', back_populates='student')
-
-    # lesson_missing = relationship('LessonMissing', back_populates='student')
-    # lesson_score = relationship('LessonScore', back_populates='student')
 
     student_lecture = relationship('StudentLecture', back_populates='student')
     student_test = relationship('StudentTest', back_populates='student')
@@ -385,43 +411,15 @@ class Lesson(Base):
     subject = relationship('Subject', back_populates='lesson')
     teacher = relationship('Teacher', back_populates='lesson')
 
-    # lesson_missing = relationship('LessonMissing', back_populates='lesson')
-    # lesson_score = relationship('LessonScore', back_populates='lesson')
-
     lecture = relationship('Lecture', back_populates='lesson')
     test_lesson = relationship('TestLesson', back_populates='lesson')
     seminar = relationship('Seminar', back_populates='lesson')
     video_lecture = relationship('VideoLecture', back_populates='lesson')
     video_seminar = relationship('VideoSeminar', back_populates='lesson')
     module_control = relationship('ModuleControl', back_populates='lesson')
+
     subject_journal = relationship('SubjectJournal', back_populates='lesson')
-
-
-# class LessonMissing(Base):
-#     __tablename__ = "lesson_missing"
-#
-#     id = Column(Integer, primary_key=True, index=True)
-#     missing = Column(Boolean)
-#
-#     student_id = Column(Integer, ForeignKey('student.id'))
-#     lesson_id = Column(Integer, ForeignKey('lesson.id'))
-#
-#     student = relationship('Student', back_populates='lesson_missing')
-#     lesson = relationship('Lesson', back_populates='lesson_missing')
-
-
-# class LessonScore(Base):
-#     __tablename__ = "lesson_score"
-#
-#     id = Column(Integer, primary_key=True, index=True)
-#     score = Column(Integer)
-#     lesson_type = Column(Enum(LessonTypeOption))
-#
-#     student_id = Column(Integer, ForeignKey('student.id'))
-#     lesson_id = Column(Integer, ForeignKey('lesson.id'))
-#
-#     student = relationship('Student', back_populates='lesson_score')
-#     lesson = relationship('Lesson', back_populates='lesson_score')
+    student_teacher_letter = relationship('StudentTeacherLetter', back_populates='lesson')
 
 
 class Lecture(Base):
@@ -1096,31 +1094,6 @@ class SubjectRecipient(Base):
 
     user = relationship('User', back_populates='subject_recipient')
     subject_chat_message = relationship('SubjectChat', back_populates='subject_recipient')
-
-
-class StudentTeacherLetter(Base):
-    __tablename__ = "student_teacher_letter"
-
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    text = Column(Text)
-    date = Column(DateTime, autoincrement=True, nullable=False)
-    lesson_id = Column(Integer, ForeignKey('lesson.id'))
-    sender_id = Column(Integer, ForeignKey('user.id'))
-    recipient_id = Column(Integer, ForeignKey('user.id'))
-    parent_letter_id = Column(Integer, ForeignKey('student_teacher_letter.id'))
-    viewed = Column(Boolean, default=False)
-    deleted = Column(Boolean, default=False)
-
-    lesson = relationship('Lesson', back_populates='student_teacher_letter')
-    sender = relationship('User', foreign_keys=[sender_id], back_populates="sent_letters")
-    recipient = relationship('User', foreign_keys=[recipient_id], back_populates="received_letters")
-
-    parent_letter = relationship("StudentTeacherLetter", remote_side=[id], back_populates="child_letters")
-    child_letters = relationship("StudentTeacherLetter", back_populates="parent_letter")
-
-    letter_label = relationship('LetterLabels', back_populates='letter')
-    deleted_letter = relationship('DeletedLetters', back_populates='letter')
 
 
 class Labels(Base):
