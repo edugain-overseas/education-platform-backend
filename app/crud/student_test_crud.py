@@ -31,6 +31,13 @@ def update_student_test_score_db(db: Session, student_test: StudentTest, score: 
     return student_test
 
 
+def update_student_attempt_db(db: Session, student_test: StudentTest):
+    student_test.number_attempt += 1
+    db.commit()
+    db.refresh(student_test)
+    return student_test
+
+
 def select_correct_answer_db(db: Session, question_id: int):
     correct_answer_id = db.query(TestAnswer.id.label("id")).filter(
         TestAnswer.is_correct == 1,
