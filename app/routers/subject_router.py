@@ -479,7 +479,7 @@ async def delete_subject_instruction_category(
 
 @router.post("/subject/instruction/file")
 async def upload_subject_instruction_file(
-        files: Optional[list[UploadFile]] = File(None),
+        files: list[UploadFile] = File(None),
         user: User = Depends(get_current_user)
 ):
     if user.teacher or user.moder:
@@ -491,7 +491,8 @@ async def upload_subject_instruction_file(
             file_info_dict = {
                 "filePath": file_path,
                 "fileName": file.filename,
-                "fileSize": file.size
+                "fileSize": file.size,
+                "fileType": file.filename.split(".")[-1]
             }
 
             result.append(file_info_dict)
