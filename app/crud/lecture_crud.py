@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.enums import LectureAttributeType
-from app.models import Lecture, LectureAttribute, LectureFile, LectureLink
+from app.models import Lecture, LectureAttribute, LectureFile, LectureLink, StudentLecture
 
 
 def create_lecture_db(db: Session, lesson_id: int) -> object:
@@ -183,3 +183,15 @@ def get_attribute_file_db(db: Session, file_id: int):
 
 def get_attribute_link_db(db: Session, link_id: int):
     return db.query(LectureLink).filter(LectureLink.id == link_id).first()
+
+
+def check_lecture_db(db: Session, student_id: int, lecture_id: int):
+    new_row = StudentLecture(
+        check=True,
+        student_id=student_id,
+        lecture_id=lecture_id
+    )
+    db.add(new_row)
+    db.commit()
+    db.refresh(new_row)
+    return new_row

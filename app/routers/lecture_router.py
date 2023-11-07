@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.crud.lecture_crud import (create_attribute_base_db, create_attribute_file_db, create_attribute_link_db,
-                                   create_lecture_db, delete_attribute_db, delete_attribute_file_db,
-                                   delete_attribute_link_db, get_attribute_db, get_attribute_file_db,
-                                   get_attribute_link_db, get_lecture_db, update_attribute_db,
+from app.crud.lecture_crud import (check_lecture_db, create_attribute_base_db, create_attribute_file_db,
+                                   create_attribute_link_db, create_lecture_db, delete_attribute_db,
+                                   delete_attribute_file_db, delete_attribute_link_db, get_attribute_db,
+                                   get_attribute_file_db, get_attribute_link_db, get_lecture_db, update_attribute_db,
                                    create_attribute_file_with_description_db)
 from app.crud.lesson_crud import get_lesson_info_db
 from app.models import User
@@ -630,4 +630,14 @@ async def get_lecture_data(
     return result
 
 
-
+@router.post("/confirm")
+async def config_lecture(
+        lecture_id: int,
+        student_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.student:
+        check_lecture_db(db=db, lecture_id=lecture_id, student_id=student_id)
+        return {"message": "Lecture have been viewed"}
+    raise HTTPException(status_code=401, detail="Permission denied")
