@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models import (Group, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon, SubjectInstruction,
                         SubjectInstructionCategory, SubjectInstructionFiles, SubjectInstructionLink, SubjectItem,
-                        SubjectTeacherAssociation, Teacher, User)
+                        SubjectTeacherAssociation, Teacher, User, SubjectJournal, Lesson, TestLesson)
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionAttachFile, SubjectInstructionAttachLink,
                                          SubjectInstructionCategoryCreate, SubjectInstructionCategoryUpdate,
                                          SubjectInstructionCreate, SubjectInstructionUpdate, SubjectUpdate)
@@ -483,3 +483,46 @@ def delete_subject_instruction_link_db(db: Session, link_id: int):
     instruction_link = db.query(SubjectInstructionLink).filter(SubjectInstructionLink.id == link_id).first()
     db.delete(instruction_link)
     db.commit()
+
+
+def select_lesson_id_and_subject_id_by_test_id_db(db: Session, test_id: int):
+    result = db.query(
+        Lesson.subject_id.label("subject_id"),
+        Lesson.id.label("lesson_id")
+    )\
+        .select_from(TestLesson)\
+        .join(Lesson, Lesson.id == TestLesson.lesson_id)\
+        .filter(TestLesson.id == test_id)\
+        .first()
+    return result
+
+
+def filling_journal(db: Session, score: int, subject_id: int, lesson_id: int, student_id: int):
+    new_row = SubjectJournal(
+        score=score,
+        subject_id=subject_id,
+        lesson_id=lesson_id,
+        student_id=student_id
+    )
+    db.add(new_row)
+    db.commit()
+    db.refresh(new_row)
+    return new_row
+
+
+def select_journal_row(db: Session, lesson_id: int, student_id: int, subject_id: int):
+    result = db.query(
+        SubjectJournal
+    ).filter(
+        SubjectJournal.lesson_id == lesson_id,
+        SubjectJournal.subject_id == subject_id,
+        SubjectJournal.student_id == student_id
+    ).first()
+    return result
+
+
+def update_score_to_journal(db: Session, journal_row: SubjectJournal, score: int):
+    journal_row.score = score
+    db.commit()
+    db.refresh(journal_row)
+    return journal_row

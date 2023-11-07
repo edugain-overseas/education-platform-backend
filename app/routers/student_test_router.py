@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.models import User
@@ -8,13 +8,14 @@ from app.crud.student_test_crud import (create_student_test_db, update_student_t
 from app.crud.test_lesson_crud import select_test_question_db
 from app.utils.token import get_current_user
 from app.schemas.student_test_schemas import StudentTest
-from app.utils.student_test import check_default_test, check_multiple_test, check_matching_test
+from app.utils.student_test import check_default_test, check_multiple_test, check_matching_test, write_score_to_journal
 
 router = APIRouter()
 
 
 @router.post("/student-test/create")
 async def create_student_test(
+        task: BackgroundTasks,
         data: StudentTest,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
@@ -61,5 +62,7 @@ async def create_student_test(
 
     if total_score > student_test.score:
         update_student_test_score_db(db=db, student_test=student_test, score=total_score)
-
+        task.add_task(write_score_to_journal, data.studentId, total_score, data.testId)
+    else:
+        task.add_task(write_score_to_journal, data.studentId, student_test.score, data.testId)
     return {"message": f"Оценка за тест {total_score} баллов"}
