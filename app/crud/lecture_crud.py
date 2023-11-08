@@ -195,3 +195,15 @@ def check_lecture_db(db: Session, student_id: int, lecture_id: int):
     db.commit()
     db.refresh(new_row)
     return new_row
+
+
+def select_student_lecture(db: Session, student_id: int, lecture_id: int):
+    result = db.query(
+        StudentLecture.id.label("id"),
+        StudentLecture.check.label("check")
+    )\
+        .filter(
+        StudentLecture.student_id == student_id,
+        StudentLecture.lecture_id == lecture_id)\
+        .first()
+    return result

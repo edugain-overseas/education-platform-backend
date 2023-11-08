@@ -31,6 +31,8 @@ from app.utils.save_images import (delete_file, save_subject_avatar, save_subjec
                                    save_subject_logo, save_subject_program)
 from app.utils.subject_utils import set_subjects_lessons_structure
 from app.utils.token import get_current_user
+from app.utils.check_lecture import checking_lecture
+
 
 router = APIRouter()
 
@@ -243,22 +245,29 @@ async def get_subject_tapes(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-
     subject_teachers = select_teachers_for_subject_db(db=db, subject_id=subject_id)
     next_lesson_date = select_three_next_lesson_db(db=db, subject_id=subject_id)
     subject_data = get_lessons_by_subject_id_db(db=db, subject_id=subject_id)
     subjects_lessons = set_subjects_lessons_structure(subject_data=subject_data)
-    # subjects_lessons = set_subject_structure(subject_data=subject_data)
     exam_date = select_subject_exam_date(db=db, subject_id=subject_id)
 
-    response_data = {
-        "subject_teachers": subject_teachers,
-        "subject_exam_date": exam_date,
-        "next_lesson_date": next_lesson_date,
-        "subjects_lessons": subjects_lessons,
-    }
-
-    return response_data
+    if user.student:
+        subjects_program = checking_lecture(db=db, student_id=user.student[0].id, subject_lessons=subjects_lessons)
+        response_data = {
+            "subject_teachers": subject_teachers,
+            "subject_exam_date": exam_date,
+            "next_lesson_date": next_lesson_date,
+            "subjects_lessons": subjects_program,
+        }
+        return response_data
+    else:
+        response_data = {
+            "subject_teachers": subject_teachers,
+            "subject_exam_date": exam_date,
+            "next_lesson_date": next_lesson_date,
+            "subjects_lessons": subjects_lessons,
+        }
+        return response_data
 
 
 @router.post("/add-dop-subject/{subject_id}/{student_id}")
