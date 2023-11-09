@@ -347,80 +347,49 @@ def select_subject_instructions_db(subject_id: int, db: Session):
             "instructions": []
         }
 
-        instructions = (
-            db.query(
-                SubjectInstruction.id,
-                SubjectInstruction.number,
-                SubjectInstruction.title,
-                SubjectInstruction.subtitle,
-                SubjectInstruction.text,
-                SubjectInstruction.is_view,
-                func.group_concat(SubjectInstructionFiles.file_path).label("filesPath"),
-                func.group_concat(SubjectInstructionFiles.file_type).label("filesType"),
-                func.group_concat(SubjectInstructionFiles.filename).label("filesName"),
-                func.group_concat(SubjectInstructionFiles.file_size).label("filesSize"),
-                func.group_concat(SubjectInstructionFiles.number).label("numbers"),
-                func.group_concat(SubjectInstructionLink.link).label("links"),
-                func.group_concat(SubjectInstructionLink.number).label("link_numbers")
-            )
-            .outerjoin(
-                SubjectInstructionFiles,
-                SubjectInstruction.id == SubjectInstructionFiles.subject_instruction_id
-            )
-            .outerjoin(
-                SubjectInstructionLink,
-                SubjectInstruction.id == SubjectInstructionLink.subject_instruction_id
-            )
-            .filter(SubjectInstruction.subject_category_id == category.id)
-            .group_by(
-                SubjectInstruction.id,
-                SubjectInstruction.number,
-                SubjectInstruction.title,
-                SubjectInstruction.subtitle,
-                SubjectInstruction.text,
-                SubjectInstruction.is_view
-            )
+        instructions = db.query(
+            SubjectInstruction
+        )\
+            .filter(SubjectInstruction.subject_category_id == category.id)\
             .all()
-        )
 
-        for row in instructions:
+        for instruction in instructions:
             instruction_dict = {
-                "instructionId": row.id,
-                "number": row.number,
-                "title": row.title,
-                "subTitle": row.subtitle,
-                "text": row.text,
-                "isView": row.is_view,
-                "files": [
-                    {
-                        "filePath": filepath,
-                        "fileType": filetype,
-                        "fileName": filename,
-                        "fileSize": filesize,
-                        "number": number
-                    } for filepath, filetype, filename, filesize, number in zip(
-                        row.filesPath.split(','),
-                        row.filesType.split(','),
-                        row.filesName.split(','),
-                        row.filesSize.split(','),
-                        row.numbers.split(','),
-                    )
-                ] if row.filesPath else [],
-                "links": [
-                    {
-                        "link": link,
-                        "number": number
-                    } for link, number in zip(
-                        row.links.split(','),
-                        row.link_numbers.split(',')
-                    )
-                ] if row.links else []
+                "instructionId": instruction.id,
+                "number": instruction.number,
+                "title": instruction.title,
+                "subTitle": instruction.subtitle,
+                "text": instruction.text,
+                "isView": instruction.is_view,
+                "files": [],
+                "links": []
             }
 
+            if len(instruction.subject_instruction_files) > 0:
+                for file in instruction.subject_instruction_files:
+                    file_dict = {
+                        "fileId": file.id,
+                        "filePath": file.file_path,
+                        "fileType": file.file_type,
+                        "fileName": file.filename,
+                        "fileSize": file.file_size,
+                        "number": file.number
+                    }
+
+                    instruction_dict["files"].append(file_dict)
+
+            if len(instruction.subject_instruction_link) > 0:
+                for link in instruction.subject_instruction_link:
+                    link_dict = {
+                        "linkId": link.id,
+                        "link": link.link,
+                        "number": link.number
+                    }
+
+                    instruction_dict["links"].append(link_dict)
+
             subject_instructions["instructions"].append(instruction_dict)
-
         result.append(subject_instructions)
-
     return result
 
 
