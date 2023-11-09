@@ -509,7 +509,7 @@ async def upload_subject_instruction_file(
         raise HTTPException(status_code=403, detail="Permission denied")
 
 
-@router.delete("/subject/instruction/file/")
+@router.delete("/subject/instruction/file")
 async def delete_subject_instruction_file(
         file_id: int,
         db: Session = Depends(get_db),
