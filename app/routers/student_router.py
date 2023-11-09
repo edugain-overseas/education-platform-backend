@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.crud.student_crud import get_student_info_db, get_student_schedule_db
-from app.crud.subject_crud import select_subject_by_group_id_db, select_dop_subjects
 from app.crud.lesson_crud import select_lesson_by_subject_db
+from app.crud.student_crud import get_student_info_db, get_student_schedule_db
+from app.crud.subject_crud import select_dop_subjects, select_subject_by_group_id_db
 from app.crud.user_crud import (delete_student_db, delete_user_db, select_all_students_db, select_student_by_id_db,
                                 select_student_by_user_id_db, select_students_by_course_id_db,
                                 select_students_by_group_id_db, select_students_by_specializations_id_db,

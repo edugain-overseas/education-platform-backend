@@ -18,7 +18,6 @@ from app.session import get_db
 from app.utils.save_images import delete_file, save_lesson_file
 from app.utils.token import get_current_user
 
-
 router = APIRouter()
 
 

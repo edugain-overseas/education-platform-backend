@@ -27,12 +27,11 @@ from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionAttach
                                          SubjectInstructionCategoryCreate, SubjectInstructionCategoryUpdate,
                                          SubjectInstructionCreate, SubjectInstructionUpdate, SubjectUpdate)
 from app.session import get_db
+from app.utils.check_lecture import checking_lecture
 from app.utils.save_images import (delete_file, save_subject_avatar, save_subject_icon, save_subject_instructions,
                                    save_subject_logo, save_subject_program)
 from app.utils.subject_utils import set_subjects_lessons_structure
 from app.utils.token import get_current_user
-from app.utils.check_lecture import checking_lecture
-
 
 router = APIRouter()
 

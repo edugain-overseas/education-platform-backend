@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.crud.lecture_crud import (check_lecture_db, create_attribute_base_db, create_attribute_file_db,
-                                   create_attribute_link_db, create_lecture_db, delete_attribute_db,
-                                   delete_attribute_file_db, delete_attribute_link_db, get_attribute_db,
-                                   get_attribute_file_db, get_attribute_link_db, get_lecture_db, update_attribute_db,
-                                   create_attribute_file_with_description_db)
+                                   create_attribute_file_with_description_db, create_attribute_link_db,
+                                   create_lecture_db, delete_attribute_db, delete_attribute_file_db,
+                                   delete_attribute_link_db, get_attribute_db, get_attribute_file_db,
+                                   get_attribute_link_db, get_lecture_db, update_attribute_db)
 from app.crud.lesson_crud import get_lesson_info_db
 from app.models import User
 from app.schemas.lecture_schemas import (AttributeBase, AttributeFile, AttributeFiles, AttributeHomeWork,
                                          AttributeImages, AttributeLinks, UpdateAttributeBase, UpdateAttributeFile,
-                                         UpdateAttributeFiles, UpdateAttributeHomeWork, UpdateAttributeLinks,
-                                         UpdateAttributeImages)
+                                         UpdateAttributeFiles, UpdateAttributeHomeWork, UpdateAttributeImages,
+                                         UpdateAttributeLinks)
 from app.session import get_db
 from app.utils.save_images import delete_file, save_lesson_file
 from app.utils.token import get_current_user

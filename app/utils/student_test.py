@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
 
-from app.models import TestQuestion
-from app.crud.student_test_crud import (select_correct_answer_db, select_count_correct_answers_db,
-                                        select_correct_answers_db, select_correct_right_option_db,
-                                        create_student_test_matching_db, create_student_test_answer_db)
-from app.crud.subject_crud import (select_lesson_id_and_subject_id_by_test_id_db, filling_journal, select_journal_row,
+from app.crud.student_test_crud import (create_student_test_answer_db, create_student_test_matching_db,
+                                        select_correct_answer_db, select_correct_answers_db,
+                                        select_correct_right_option_db, select_count_correct_answers_db)
+from app.crud.subject_crud import (filling_journal, select_journal_row, select_lesson_id_and_subject_id_by_test_id_db,
                                    update_score_to_journal)
+from app.models import TestQuestion
 from app.schemas.student_test_schemas import MatchingField
 from app.session import SessionLocal
 

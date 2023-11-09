@@ -2,7 +2,7 @@ from typing import Dict, List
 
 from sqlalchemy.orm import Session
 
-from app.crud.lecture_crud import select_student_lecture, get_lecture_db
+from app.crud.lecture_crud import get_lecture_db, select_student_lecture
 
 
 def checking_lecture(db: Session, student_id: int, subject_lessons: List[Dict]) -> List[Dict]:

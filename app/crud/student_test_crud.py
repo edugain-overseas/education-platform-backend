@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import (StudentTest, StudentTestAnswer, StudentTestMatching,
-                        TestQuestion, TestAnswer, TestMatchingLeft, TestMatchingRight)
+from app.models import StudentTest, StudentTestAnswer, StudentTestMatching, TestAnswer, TestMatchingLeft
 
 
 def create_student_test_db(db: Session, test_id: int, student_id: int):

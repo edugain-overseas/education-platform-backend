@@ -1,9 +1,9 @@
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.models import (Group, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon, SubjectInstruction,
-                        SubjectInstructionCategory, SubjectInstructionFiles, SubjectInstructionLink, SubjectItem,
-                        SubjectTeacherAssociation, Teacher, User, SubjectJournal, Lesson, TestLesson)
+from app.models import (Group, Lesson, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon,
+                        SubjectInstruction, SubjectInstructionCategory, SubjectInstructionFiles, SubjectInstructionLink,
+                        SubjectItem, SubjectJournal, SubjectTeacherAssociation, Teacher, TestLesson, User)
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionAttachFile, SubjectInstructionAttachLink,
                                          SubjectInstructionCategoryCreate, SubjectInstructionCategoryUpdate,
                                          SubjectInstructionCreate, SubjectInstructionUpdate, SubjectUpdate)

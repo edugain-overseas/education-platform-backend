@@ -5,7 +5,6 @@ from sqlalchemy.orm import relationship
 from app.enums import (LectureAttributeType, LessonTypeOption, MessageTypeOption, ModuleControlTypeOption,
                        QuestionTypeOption, UserTypeOption)
 
-
 Base = declarative_base()
 
 

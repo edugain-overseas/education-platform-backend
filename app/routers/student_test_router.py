@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 
-from app.models import User
-from app.session import get_db
-from app.crud.student_test_crud import (create_student_test_db, update_student_test_score_db,
-                                        update_student_attempt_db, select_student_test_db)
+from app.crud.student_test_crud import (create_student_test_db, select_student_test_db, update_student_attempt_db,
+                                        update_student_test_score_db)
 from app.crud.test_lesson_crud import select_test_question_db
-from app.utils.token import get_current_user
+from app.models import User
 from app.schemas.student_test_schemas import StudentTest
-from app.utils.student_test import check_default_test, check_multiple_test, check_matching_test, write_score_to_journal
+from app.session import get_db
+from app.utils.student_test import check_default_test, check_matching_test, check_multiple_test, write_score_to_journal
+from app.utils.token import get_current_user
 
 router = APIRouter()
 
