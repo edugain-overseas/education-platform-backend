@@ -21,7 +21,8 @@ from app.crud.subject_crud import (create_new_subject_db, create_or_update_parti
                                    set_teacher_for_subject_db, sign_student_for_addition_subject_db,
                                    update_subject_image_path_db, update_subject_info_db,
                                    update_subject_instruction_category_db, update_subject_instruction_db,
-                                   update_subject_item_text_db, update_subject_logo_path_db)
+                                   update_subject_item_text_db, update_subject_logo_path_db,
+                                   select_subject_instruction_file_db)
 from app.models import User
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionAttachFile, SubjectInstructionAttachLink,
                                          SubjectInstructionCategoryCreate, SubjectInstructionCategoryUpdate,
@@ -495,7 +496,6 @@ async def upload_subject_instruction_file(
 
         for file in files:
             file_path = save_subject_instructions(file=file)
-
             file_info_dict = {
                 "filePath": file_path,
                 "fileName": file.filename,
@@ -504,7 +504,6 @@ async def upload_subject_instruction_file(
             }
 
             result.append(file_info_dict)
-
         return result
     else:
         raise HTTPException(status_code=403, detail="Permission denied")
@@ -512,13 +511,14 @@ async def upload_subject_instruction_file(
 
 @router.delete("/subject/instruction/file/")
 async def delete_subject_instruction_file(
-        file_path: str,
+        file_id: int,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
     if user.teacher or user.moder:
-        delete_subject_instruction_file_db(db=db, file_path=file_path)
-        delete_file(file_path=file_path)
+        instruction_file = select_subject_instruction_file_db(db=db, file_id=file_id)
+        delete_file(file_path=instruction_file.file_path)
+        delete_subject_instruction_file_db(db=db, file_path=instruction_file.file_path)
         return {"message": "File have been deleted"}
     else:
         raise HTTPException(status_code=403, detail="Permission denied")
@@ -542,12 +542,21 @@ async def attach_link_for_instruction(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    result = []
-    for link_data in links_data:
-        new_link = create_subject_instruction_link_db(db=db, link_data=link_data)
-        result.append(new_link)
-
-    return result
+    if user.teacher or user.moder:
+        result = []
+        for link_data in links_data:
+            new_link = create_subject_instruction_link_db(db=db, link_data=link_data)
+            result.append(
+                {
+                    "number": new_link.number,
+                    "id": new_link.id,
+                    "link": new_link.link,
+                    "subject_instruction_id": new_link.subject_instruction_id
+                }
+            )
+        return result
+    else:
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/subject/instruction/link")

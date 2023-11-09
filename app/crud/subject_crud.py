@@ -316,9 +316,26 @@ def select_subject_instruction_db(instruction_id: int, db: Session):
     return instruction
 
 
+def select_subject_instruction_file_db(db: Session, file_id: int):
+    instruction_file = db.query(
+        SubjectInstructionFiles
+    )\
+        .filter(
+        SubjectInstructionFiles.id == file_id
+    )\
+        .first()
+    return instruction_file
+
+
 def delete_subject_instruction_file_db(db: Session, file_path: str):
-    instruction = db.query(SubjectInstructionFiles).filter(SubjectInstructionFiles.file == file_path).first()
-    db.delete(instruction)
+    instruction_file = db.query(
+        SubjectInstructionFiles
+    )\
+        .filter(
+        SubjectInstructionFiles.file_path == file_path
+    )\
+        .first()
+    db.delete(instruction_file)
     db.commit()
 
 

@@ -59,7 +59,8 @@ def save_subject_logo(photo: UploadFile, subject_title) -> str:
 
 def save_lesson_file(file: UploadFile) -> str:
     folder = LESSON_FILE_FOLDER + datetime.now().strftime("%d-%m-%Y")
-    file_path = os.path.join(folder, file.filename)
+    filename = generate_unique_filename(file.filename)
+    file_path = os.path.join(folder, filename)
     os.makedirs(folder, exist_ok=True)
 
     with open(file_path, "wb") as f:
@@ -111,7 +112,8 @@ def save_subject_icon(file: UploadFile) -> str:
 
 
 def save_subject_instructions(file: UploadFile) -> str:
-    file_path = os.path.join(SUBJECT_INSTRUCTION_FOLDER, file.filename)
+    filename = generate_unique_filename(file.filename)
+    file_path = os.path.join(SUBJECT_INSTRUCTION_FOLDER, filename)
     os.makedirs(SUBJECT_INSTRUCTION_FOLDER, exist_ok=True)
 
     with open(file_path, "wb") as f:
@@ -129,3 +131,10 @@ def delete_file(file_path: str):
             return {"message": f"File {file_path} not found."}
     except Exception as e:
         return {"message": f"Error while deleting file: {str(e)}"}
+
+
+def generate_unique_filename(original_filename: str):
+    curr_time = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    filename, file_extension = original_filename.rsplit('.', 1)
+    new_filename = f"{filename}-{curr_time}.{file_extension}"
+    return new_filename
