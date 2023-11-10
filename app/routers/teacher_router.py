@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 
-from app.crud.teacher_crud import (get_teacher_by_user_id_db, get_teacher_info_db, get_teacher_lessons_db,
-                                   get_teacher_subjects_db, update_teacher_image_db)
+from app.crud.teacher_crud import (create_teacher_template_db, get_teacher_by_user_id_db, get_teacher_info_db,
+                                   get_teacher_lessons_db, get_teacher_subjects_db, update_teacher_image_db,
+                                   select_teacher_templates_db, select_template_db)
 from app.models import User
 from app.session import get_db
+from app.schemas.teacher_schemas import TeacherTemplateSchemas
 from app.utils.save_images import save_teacher_avatar
 from app.utils.token import get_current_user
 
@@ -68,3 +70,40 @@ async def update_teacher_image(
         "message": "Avatar updated successfully",
         "photo_path": image_path
     }
+
+
+@router.post("/create/template")
+async def create_lesson_template(
+        template: TeacherTemplateSchemas,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher:
+        new_template = create_teacher_template_db(db=db, template=template)
+        return new_template
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.get("/templates")
+async def get_teacher_templates(
+        teacher_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher:
+        return select_teacher_templates_db(db=db, teacher_id=teacher_id)
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.get("/template/{template_id}")
+async def get_template_by_id(
+        template_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher:
+        return select_template_db(db=db, template_id=template_id)
+    else:
+        raise HTTPException(status_code=401, detail="Permission denied")

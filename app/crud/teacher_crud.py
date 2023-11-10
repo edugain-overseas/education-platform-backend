@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.models import Group, Lesson, Subject, SubjectTeacherAssociation, Teacher
+from app.models import Group, Lesson, Subject, SubjectTeacherAssociation, Teacher, TeacherTemplate
+from app.schemas.teacher_schemas import TeacherTemplateSchemas
 
 
 def get_teacher_info_db(db: Session, user_id: int):
@@ -82,3 +83,19 @@ def update_teacher_image_db(db: Session, teacher: Teacher, image_path: str):
     db.commit()
     db.refresh(teacher)
     return teacher
+
+
+def create_teacher_template_db(db: Session, template: TeacherTemplateSchemas):
+    new_template = TeacherTemplate(**template.dict())
+    db.add(new_template)
+    db.commit()
+    db.refresh(new_template)
+    return new_template
+
+
+def select_teacher_templates_db(db: Session, teacher_id: int):
+    return db.query(TeacherTemplate).filter(TeacherTemplate.teacher_id == teacher_id).all()
+
+
+def select_template_db(db: Session, template_id: int):
+    return db.query(TeacherTemplate).filter(TeacherTemplate.id == template_id).first()
