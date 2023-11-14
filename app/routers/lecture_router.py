@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session
 
 from app.crud.lecture_crud import (check_lecture_db, create_attribute_base_db, create_attribute_file_db,
                                    create_attribute_file_with_description_db, create_attribute_link_db,
                                    create_lecture_db, delete_attribute_db, delete_attribute_file_db,
                                    delete_attribute_link_db, get_attribute_db, get_attribute_file_db,
-                                   get_attribute_link_db, get_lecture_db, update_attribute_db)
+                                   get_attribute_file_by_path_db, get_attribute_link_db, get_lecture_db,
+                                   update_attribute_db)
 from app.crud.lesson_crud import get_lesson_info_db
 from app.models import User
 from app.schemas.lecture_schemas import (AttributeBase, AttributeFile, AttributeFiles, AttributeHomeWork,
@@ -68,6 +70,21 @@ async def delete_attribute(
 
     else:
         raise HTTPException(status_code=401, detail="Permission denied")
+
+
+@router.delete("/lecture/delete/section-file")
+async def delete_attribute_file(
+        file_path: str,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder:
+        file = get_attribute_file_by_path_db(db=db, file_path=file_path)
+        delete_file(file.file_path)
+        delete_attribute_file_db(db=db, file=file)
+        return {"message": "File have been deleted"}
+    else:
+        HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/lecture/create/text")
@@ -232,7 +249,6 @@ async def update_files_attribute(
 
         for att_file in attribute.lecture_file:
             file = get_attribute_file_db(db=db, file_id=att_file.id)
-            delete_file(att_file.file_path)
             delete_attribute_file_db(db=db, file=file)
 
         for file in item.attributeFiles:
@@ -303,7 +319,6 @@ async def update_images_attribute(
 
         for att_file in attribute.lecture_file:
             file = get_attribute_file_db(db=db, file_id=att_file.id)
-            delete_file(att_file.file_path)
             delete_attribute_file_db(db=db, file=file)
 
         for image in item.attributeImages:
@@ -454,7 +469,6 @@ async def update_homework_attribute(
         if item.attributeFiles:
             for attr_file in attribute.lecture_file:
                 file = get_attribute_file_db(db=db, file_id=attr_file.id)
-                delete_file(attr_file.file_path)
                 delete_attribute_file_db(db=db, file=file)
 
             for new_file in item.attributeFiles:
@@ -473,6 +487,7 @@ async def update_homework_attribute(
 
 
 @router.get("/lecture/{lesson_id}")
+@cache(expire=3600)
 async def get_lecture_data(
         lesson_id: int,
         db: Session = Depends(get_db),
@@ -624,11 +639,8 @@ async def get_lecture_data(
                         "link": link.link,
                         "anchor": link.anchor
                     }
-
                     homework_attr["attributeLinks"].append(link_data)
-
             result["lectureInfo"].append(homework_attr)
-
     return result
 
 

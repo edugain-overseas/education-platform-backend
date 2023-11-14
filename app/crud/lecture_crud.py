@@ -128,6 +128,10 @@ def update_attribute_file_db(
     db.refresh(file)
 
 
+def get_attribute_file_by_path_db(db: Session, file_path: str):
+    return db.query(LectureFile).filter(LectureFile.file_path == file_path).first()
+
+
 def delete_attribute_file_db(db: Session, file: LectureFile):
     db.delete(file)
     db.commit()
