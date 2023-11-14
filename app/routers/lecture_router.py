@@ -15,6 +15,8 @@ from app.schemas.lecture_schemas import (AttributeBase, AttributeFile, Attribute
 from app.session import get_db
 from app.utils.save_images import delete_file, save_lesson_file
 from app.utils.token import get_current_user
+from app.celery import confirm_lecture_in_journal
+
 
 router = APIRouter()
 
@@ -639,5 +641,6 @@ async def config_lecture(
 ):
     if user.student:
         check_lecture_db(db=db, lecture_id=lecture_id, student_id=student_id)
+        confirm_lecture_in_journal.delay(student_id=student_id, lecture_id=lecture_id)
         return {"message": "Lecture have been viewed"}
     raise HTTPException(status_code=401, detail="Permission denied")

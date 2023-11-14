@@ -1,7 +1,7 @@
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.models import (Group, Lesson, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon,
+from app.models import (Group, Lesson, Lecture, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon,
                         SubjectInstruction, SubjectInstructionCategory, SubjectInstructionFiles, SubjectInstructionLink,
                         SubjectItem, SubjectJournal, SubjectTeacherAssociation, Teacher, TestLesson, User)
 from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionAttachFile, SubjectInstructionAttachLink,
@@ -483,9 +483,29 @@ def select_lesson_id_and_subject_id_by_test_id_db(db: Session, test_id: int):
     return result
 
 
-def filling_journal(db: Session, score: int, subject_id: int, lesson_id: int, student_id: int):
+def select_lesson_id_and_subject_id_by_lecture_id_db(db: Session, lecture_id: int):
+    result = db.query(
+        Lesson.subject_id.label("subject_id"),
+        Lesson.id.label("lesson_id")
+    )\
+        .select_from(Lecture)\
+        .join(Lesson, Lesson.id == Lecture.lesson_id)\
+        .filter(Lecture.id == lecture_id)\
+        .first()
+    return result
+
+
+def filling_journal(
+        db: Session,
+        subject_id: int,
+        lesson_id: int,
+        student_id: int,
+        score: int = None,
+        absent: int = None
+):
     new_row = SubjectJournal(
         score=score,
+        absent=absent,
         subject_id=subject_id,
         lesson_id=lesson_id,
         student_id=student_id

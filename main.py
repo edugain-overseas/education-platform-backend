@@ -1,10 +1,12 @@
 import random
 
 import uvicorn
+from redis import asyncio as aioredis
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
 
 from app.routers.group_chat_router import router as group_chat_router
 from app.routers.group_router import router as group_router
@@ -206,6 +208,11 @@ async def connect_to_room(
     finally:
         await websocket.close()
 
+
+# @app.on_event("startup")
+# async def startup_event():
+#     redis = aioredis.from_url("redis://localhost:6379", encoding="utf8", decode_responses=True)
+#
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
