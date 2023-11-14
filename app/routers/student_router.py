@@ -40,7 +40,6 @@ async def get_student_info(
     ]
 
     user_info = zip(field_list, user_info_list[0])
-
     return user_info
 
 
