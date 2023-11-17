@@ -5,11 +5,7 @@ from app.schemas.group_schemas import GroupCreate, GroupUpdate
 
 
 def create_group_db(db: Session, group_data: GroupCreate):
-    new_group = Group(
-        group_name=group_data.group_name,
-        curator_id=group_data.curator_id,
-        specialization_id=group_data.specialization_id
-    )
+    new_group = Group(**group_data.dict())
     db.add(new_group)
     db.commit()
     db.refresh(new_group)

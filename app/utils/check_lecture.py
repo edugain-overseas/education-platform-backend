@@ -22,4 +22,3 @@ def checking_lecture(db: Session, student_id: int, subject_lessons: List[Dict]) 
                         lesson_item["viewed"] = False
 
     return subject_lessons
-

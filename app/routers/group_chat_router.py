@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi.websockets import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocket
 from sqlalchemy.orm import Session
 
 from app.crud.group_chat_crud import (get_last_answer_db, get_last_message_db, select_message_by_id_db,
@@ -24,7 +24,8 @@ class ConnectionManager:
     def __init__(self):
         self.connections = {}
 
-    def create_connection(self, websocket: WebSocket, user: User):
+    @staticmethod
+    def create_connection(websocket: WebSocket, user: User):
         connection = {
             "websocket": websocket,
             "user": user.id,
@@ -36,24 +37,23 @@ class ConnectionManager:
         if group_name not in self.connections:
             self.connections[group_name] = []
         self.connections[group_name].append(connection)
-        await self.total_active_users(group_name=group_name)
+        await self.send_total_active_users(group_name=group_name)
 
     async def remove_connection(self, group_name: str, connection):
         if group_name in self.connections:
             self.connections[group_name].remove(connection)
-            await self.total_active_users(group_name=group_name)
+            await self.send_total_active_users(group_name=group_name)
 
-    async def total_active_users(self, group_name: str):
-        total_active = len(self.connections[group_name])
-        connections = self.connections[group_name]
-        active_users = []
+    async def check_user_connection(self, group_name: str, user_id: int):
+        if group_name in self.connections:
+            for connection in self.connections[group_name]:
+                if connection["user"] == user_id:
+                    await connection["websocket"].close()
 
-        for connection in connections:
-            active_users.append(connection['user'])
-
+    async def send_total_active_users(self, group_name: str):
         total_json = {
-            "totalActive": total_active,
-            "idsActiveUsers": active_users
+            "totalActive": len(self.connections[group_name]),
+            "idsActiveUsers": [connection["user"] for connection in self.connections[group_name]]
         }
         await self.send_message_to_group(group_name=group_name, message=total_json)
 
@@ -95,12 +95,12 @@ async def group_chat_socket(
 ):
     user = get_current_user(db=db, token=token)
     group_id = select_group_by_name_db(db=db, group_name=group_name)[0]
+    await manager.check_user_connection(group_name=group_name, user_id=user.id)
 
     try:
         await websocket.accept()
         connection = manager.create_connection(websocket, user)
         await manager.add_connection(group_name, connection)
-        print(manager.connections)
         await manager.send_first_message(db=db, websocket=websocket, group_id=group_id, user=user)
 
         while True:
@@ -131,7 +131,6 @@ async def group_chat_socket(
                 save_answer_data_to_db(db=db, data=data)
                 answer_obj = get_last_answer_db(db=db, sender_id=data.get("senderId"))
                 answer_to_send = set_last_answer_dict(answer_obj)
-
                 message_obj = select_message_by_id_db(db=db, message_id=data.get("messageId"))
 
                 if message_obj.message_type == "alone":
@@ -252,12 +251,13 @@ async def group_chat_socket(
                         message=result_after_update["answerData"]
                     )
 
-    except WebSocketDisconnect:
-        await manager.remove_connection(group_name=group_name, connection=connection)
-        print(manager.connections)
+    # except WebSocketDisconnect:
+    #     await manager.remove_connection(group_name=group_name, connection=connection)
+    #     print(manager.connections)
 
-    except Exception as e:
-        print(f'Exception – {e}')
+    except Exception:
+        manager.connections[group_name].remove(connection)
+        await manager.send_total_active_users(group_name=group_name)
 
 
 @router.post("/group-chat/attachment-file")
@@ -272,7 +272,7 @@ async def attach_file_to_chat(
             "fileName": file.filename,
             "fileSize": file.size
         }
-    return HTTPException(status_code="403", detail="Teacher can't use group chat")
+    return HTTPException(status_code=403, detail="Teacher can't use group chat")
 
 
 @router.delete("/group-chat/delete-file")
@@ -282,7 +282,7 @@ async def delete_file_from_chat(
 ):
     if user.student or user.curator or user.moder:
         return delete_file(file_path=file_path)
-    return HTTPException(status_code="403", detail="Teacher can't use group chat")
+    return HTTPException(status_code=403, detail="Teacher can't use group chat")
 
 
 @router.post("/read-message/{message_id}")

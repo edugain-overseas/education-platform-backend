@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.crud.teacher_crud import (create_teacher_template_db, get_teacher_by_user_id_db, get_teacher_info_db,
-                                   get_teacher_lessons_db, get_teacher_subjects_db, update_teacher_image_db,
-                                   select_teacher_templates_db, select_template_db)
+                                   get_teacher_lessons_db, get_teacher_subjects_db, select_teacher_templates_db,
+                                   select_template_db, update_teacher_image_db)
 from app.models import User
-from app.session import get_db
 from app.schemas.teacher_schemas import TeacherTemplateSchemas
+from app.session import get_db
 from app.utils.save_images import save_teacher_avatar
 from app.utils.token import get_current_user
 
@@ -82,7 +82,7 @@ async def create_lesson_template(
         new_template = create_teacher_template_db(db=db, template=template)
         return new_template
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.get("/templates")
@@ -94,7 +94,7 @@ async def get_teacher_templates(
     if user.teacher:
         return select_teacher_templates_db(db=db, teacher_id=teacher_id)
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.get("/template/{template_id}")
@@ -106,4 +106,4 @@ async def get_template_by_id(
     if user.teacher:
         return select_template_db(db=db, template_id=template_id)
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")

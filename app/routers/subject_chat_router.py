@@ -17,7 +17,7 @@ from app.utils.count_users import select_users_in_subject, set_keyword_for_users
 from app.utils.save_images import delete_file, save_subject_chat_file
 from app.utils.subject_chat import (set_subject_chat_last_answer_dict, set_subject_chat_last_message_dict,
                                     set_subject_chat_last_messages_dict)
-from app.utils.token import get_current_user, get_user_by_token
+from app.utils.token import get_current_user
 
 router = APIRouter()
 
@@ -236,7 +236,7 @@ async def attach_file_to_chat(
             "fileName": file.filename,
             "fileSize": file.size
         }
-    return HTTPException(status_code="403", detail="Curator can't use group chat")
+    return HTTPException(status_code=403, detail="Curator can't use group chat")
 
 
 @router.delete("/subject_chat/delete-file")
@@ -246,7 +246,7 @@ async def delete_file_from_chat(
 ):
     if user.student or user.teacher or user.moder:
         return delete_file(file_path=file_path)
-    return HTTPException(status_code="403", detail="Curator can't use group chat")
+    return HTTPException(status_code=403, detail="Curator can't use group chat")
 
 
 @router.post("/subject_chat/read_message/{message_id}")

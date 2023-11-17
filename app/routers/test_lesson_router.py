@@ -3,18 +3,18 @@ from typing import List
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.crud.lesson_crud import get_lesson_info_db
 from app.crud.test_lesson_crud import (create_test_answer_db, create_test_answer_with_photo_db, create_test_db,
                                        create_test_matching_db, create_test_question_db,
                                        create_test_question_with_photo_db, delete_answer_db, delete_matching_left_db,
                                        delete_matching_right_db, delete_test_question_db, select_matching_left_db,
                                        select_matching_right_db, select_mathing_left_by_right_id_db,
-                                       select_question_type_id, select_test_answer_db, select_test_db,
-                                       select_test_info_db, select_test_question_db, set_none_for_left_option_db,
-                                       update_test_db, update_test_question_db)
+                                       select_question_type_id, select_test_answer_db, select_test_by_lesson_id_db,
+                                       select_test_db, select_test_info_db, select_test_question_db,
+                                       set_none_for_left_option_db, update_test_db, update_test_question_db)
 from app.models import User
 from app.schemas.test_lesson_schemas import QuestionBase, TestConfigBase, TestConfigUpdate
 from app.session import get_db
+from app.utils.lesson_utils import get_lesson_base_info, set_test_info
 from app.utils.save_images import delete_file, save_lesson_file
 from app.utils.token import get_current_user
 
@@ -30,7 +30,7 @@ async def create_test_config(
     if user.moder or user.teacher:
         return create_test_db(db=db, test_data=test_data)
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.put("/test/")
@@ -44,7 +44,7 @@ async def update_test_config(
         test = select_test_db(db=db, test_id=test_id)
         return update_test_db(db=db, test=test, test_data=test_data)
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/test/create-data/{test_id}")
@@ -201,7 +201,7 @@ async def update_question(
                 )
         return {"message": "Question data have been updated"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/test/delete-question")
@@ -218,23 +218,27 @@ async def delete_question(
             for right in question.matching_right:
                 delete_matching_right_db(db=db, right_option=right)
             delete_test_question_db(db=db, question=question)
+
         elif question.question_type == "question_with_photo":
             delete_file(question.image_path)
             for answer in question.test_answer:
                 delete_answer_db(db=db, answer=answer)
             delete_test_question_db(db=db, question=question)
+
         elif question.question_type == "answer_with_photo":
             for answer in question.test_answer:
                 delete_file(answer.image_path)
                 delete_answer_db(db=db, answer=answer)
             delete_test_question_db(db=db, question=question)
+
         else:
             for answer in question.test_answer:
                 delete_answer_db(db=db, answer=answer)
             delete_test_question_db(db=db, question=question)
+
         return {"message": "Question have been deleted"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/test/delete-answer")
@@ -250,7 +254,7 @@ async def delete_answer(
         delete_answer_db(db=db, answer=answer)
         return {"message": "Answer have been deleted"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/test/delete-matching-left")
@@ -264,7 +268,7 @@ async def delete_matching_left(
         delete_matching_left_db(db=db, left_option=left_option)
         return {"message": "Left option have been deleted"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/test/delete/matching-right")
@@ -280,7 +284,7 @@ async def delete_matching_right(
         delete_matching_right_db(db=db, right_option=right_option)
         return {"message": "Right option have been deleted"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.get("/test/{lesson_id}")
@@ -289,21 +293,15 @@ async def get_test_info(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    lesson_base = get_lesson_info_db(db=db, lesson_id=lesson_id)
+    lesson_base = get_lesson_base_info(db=db, lesson_id=lesson_id)
+    test_lesson = select_test_by_lesson_id_db(db=db, lesson_id=lesson_id)
 
-    result = {
-        "lessonTitle": lesson_base.lessonTitle,
-        "lessonDescription": lesson_base.lessonDescription,
-        "lessonDate": lesson_base.lessonDate,
-        "lessonEnd": lesson_base.lessonEnd,
-    }
-
-    test_info = select_test_info_db(db=db, lesson_id=lesson_id)
-
-    if test_info is None:
-        return result
-
-    return test_info
+    if test_lesson is None:
+        return lesson_base
+    else:
+        test_info = set_test_info(lesson_base=lesson_base, test_lesson=test_lesson)
+        test_info["testQuestions"] = select_test_info_db(db=db, test_id=test_lesson.id)
+        return test_info
 
 
 @router.post("/test/upload/image")
@@ -315,4 +313,4 @@ async def upload_test_image(
         file_path = save_lesson_file(file=file)
         return {"filePath": file_path}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")

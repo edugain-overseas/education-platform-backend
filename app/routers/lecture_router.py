@@ -1,24 +1,21 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session
 
+from app.celery import confirm_lecture_in_journal
 from app.crud.lecture_crud import (check_lecture_db, create_attribute_base_db, create_attribute_file_db,
                                    create_attribute_file_with_description_db, create_attribute_link_db,
                                    create_lecture_db, delete_attribute_db, delete_attribute_file_db,
-                                   delete_attribute_link_db, get_attribute_db, get_attribute_file_db,
-                                   get_attribute_file_by_path_db, get_attribute_link_db, get_lecture_db,
-                                   update_attribute_db)
-from app.crud.lesson_crud import get_lesson_info_db
+                                   delete_attribute_link_db, get_attribute_db, get_attribute_file_by_path_db,
+                                   get_attribute_file_db, get_attribute_link_db, get_lecture_db, update_attribute_db)
 from app.models import User
 from app.schemas.lecture_schemas import (AttributeBase, AttributeFile, AttributeFiles, AttributeHomeWork,
                                          AttributeImages, AttributeLinks, UpdateAttributeBase, UpdateAttributeFile,
                                          UpdateAttributeFiles, UpdateAttributeHomeWork, UpdateAttributeImages,
                                          UpdateAttributeLinks)
 from app.session import get_db
+from app.utils.lesson_utils import get_lecture_attributes_info, get_lesson_base_info
 from app.utils.save_images import delete_file, save_lesson_file
 from app.utils.token import get_current_user
-from app.celery import confirm_lecture_in_journal
-
 
 router = APIRouter()
 
@@ -69,7 +66,7 @@ async def delete_attribute(
         return {"message": "Section have been deleted"}
 
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/lecture/delete/section-file")
@@ -106,7 +103,7 @@ async def create_text_attribute(
         )
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.put("/lecture/update/text")
@@ -157,7 +154,7 @@ async def create_file_attribute(
         )
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.put("/lecture/update/file")
@@ -193,7 +190,7 @@ async def update_file_attribute(
 
         return {"message": "Attribute have been updated"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/lecture/create/files")
@@ -226,7 +223,7 @@ async def create_files_attribute(
 
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.put("/lecture/update/files")
@@ -263,7 +260,7 @@ async def update_files_attribute(
 
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/lecture/create/images")
@@ -296,7 +293,7 @@ async def create_images_attribute(
             )
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.put("/lecture/update/images")
@@ -333,7 +330,7 @@ async def update_images_attribute(
             )
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/lecture/create/link")
@@ -359,7 +356,7 @@ async def create_link_attribute(
 
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.put("/lecture/update/link")
@@ -389,7 +386,7 @@ async def update_link_attribute(
 
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/lecture/create/homework")
@@ -432,7 +429,7 @@ async def create_homework_attribute(
 
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.put("/lecture/update/homework")
@@ -483,165 +480,22 @@ async def update_homework_attribute(
 
         return {"message": "Attribute have been saved"}
     else:
-        raise HTTPException(status_code=401, detail="Permission denied")
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.get("/lecture/{lesson_id}")
-@cache(expire=3600)
 async def get_lecture_data(
         lesson_id: int,
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    lesson_base = get_lesson_info_db(db=db, lesson_id=lesson_id)
-
-    result = {
-        "lessonTitle": lesson_base.lessonTitle,
-        "lessonDescription": lesson_base.lessonDescription,
-        "lessonDate": lesson_base.lessonDate,
-        "lessonEnd": lesson_base.lessonEnd,
-        "lectureId": None,
-        "lectureInfo": []
-    }
-
+    base_info = get_lesson_base_info(db=db, lesson_id=lesson_id)
     lecture = get_lecture_db(db=db, lesson_id=lesson_id)
-    if lecture is None:
-        return result
 
-    result["lectureId"] = lecture.id
-
-    lecture_attributes = lecture.attributes
-
-    for attr in lecture_attributes:
-        if attr.attr_type == "text":
-            text_attr = {
-                "attributeId": attr.id,
-                "attributeNumber": attr.attr_number,
-                "attributeType": attr.attr_type,
-                "attributeTitle": attr.attr_title,
-                "attributeText": attr.attr_text,
-                "hided": attr.hided
-            }
-            result["lectureInfo"].append(text_attr)
-
-        elif attr.attr_type in ["present", "audio", "video"]:
-            file_attr = {
-                "attributeId": attr.id,
-                "attributeNumber": attr.attr_number,
-                "attributeType": attr.attr_type,
-                "attributeTitle": attr.attr_title,
-                "attributeText": attr.attr_text,
-                "hided": attr.hided,
-                "fileId": attr.lecture_file[0].id,
-                "fileName": attr.lecture_file[0].filename,
-                "filePath": attr.lecture_file[0].file_path,
-                "fileSize": attr.lecture_file[0].file_size,
-                "downloadAllowed": attr.lecture_file[0].download_allowed
-            }
-            result["lectureInfo"].append(file_attr)
-
-        elif attr.attr_type == "file":
-            files_attr = {
-                "attributeId": attr.id,
-                "attributeNumber": attr.attr_number,
-                "attributeType": attr.attr_type,
-                "attributeTitle": attr.attr_title,
-                "attributeText": attr.attr_text,
-                "hided": attr.hided,
-                "attributeFiles": []
-            }
-
-            for file in attr.lecture_file:
-                file_data = {
-                    "fileId": file.id,
-                    "fileName": file.filename,
-                    "filePath": file.file_path,
-                    "fileSize": file.file_size,
-                    "downloadAllowed": file.download_allowed
-                }
-                files_attr["attributeFiles"].append(file_data)
-
-            result["lectureInfo"].append(files_attr)
-
-        elif attr.attr_type == "picture":
-            images_attr = {
-                "attributeId": attr.id,
-                "attributeNumber": attr.attr_number,
-                "attributeType": attr.attr_type,
-                "attributeTitle": attr.attr_title,
-                "attributeText": attr.attr_text,
-                "hided": attr.hided,
-                "attributeImages": []
-            }
-
-            for image in attr.lecture_file:
-                image_data = {
-                    "imageId": image.id,
-                    "imageName": image.filename,
-                    "imagePath": image.file_path,
-                    "imageSize": image.file_size,
-                    "imageDescription": image.file_description,
-                    "downloadAllowed": image.download_allowed
-                }
-                images_attr["attributeImages"].append(image_data)
-
-            result["lectureInfo"].append(images_attr)
-
-        elif attr.attr_type == "link":
-            link_attr = {
-                "attributeId": attr.id,
-                "attributeNumber": attr.attr_number,
-                "attributeType": attr.attr_type,
-                "attributeTitle": attr.attr_title,
-                "attributeText": attr.attr_text,
-                "hided": attr.hided,
-                "attributeLinks": []
-            }
-
-            for link in attr.lecture_link:
-                link_data = {
-                    "linkId": link.id,
-                    "link": link.link,
-                    "anchor": link.anchor
-                }
-                link_attr["attributeLinks"].append(link_data)
-
-            result["lectureInfo"].append(link_attr)
-
-        else:
-            homework_attr = {
-                "attributeId": attr.id,
-                "attributeNumber": attr.attr_number,
-                "attributeType": attr.attr_type,
-                "attributeTitle": attr.attr_title,
-                "attributeText": attr.attr_text,
-                "hided": attr.hided,
-                "attributeFiles": [],
-                "attributeLinks": []
-            }
-
-            if len(attr.lecture_file) >= 1:
-                for file in attr.lecture_file:
-                    file_data = {
-                        "fileId": file.id,
-                        "fileName": file.filename,
-                        "filePath": file.file_path,
-                        "fileSize": file.file_size,
-                        "downloadAllowed": file.download_allowed
-                    }
-
-                    homework_attr["attributeFiles"].append(file_data)
-
-            if len(attr.lecture_link) >= 1:
-                for link in attr.lecture_link:
-                    link_data = {
-                        "linkId": link.id,
-                        "link": link.link,
-                        "anchor": link.anchor
-                    }
-                    homework_attr["attributeLinks"].append(link_data)
-            result["lectureInfo"].append(homework_attr)
-    return result
+    if lecture is not None:
+        return get_lecture_attributes_info(base_info=base_info, lecture=lecture)
+    else:
+        return base_info
 
 
 @router.post("/confirm")
@@ -655,4 +509,5 @@ async def config_lecture(
         check_lecture_db(db=db, lecture_id=lecture_id, student_id=student_id)
         confirm_lecture_in_journal.delay(student_id=student_id, lecture_id=lecture_id)
         return {"message": "Lecture have been viewed"}
-    raise HTTPException(status_code=401, detail="Permission denied")
+    else:
+        raise HTTPException(status_code=403, detail="Permission denied")

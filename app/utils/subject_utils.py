@@ -1,4 +1,10 @@
-def set_subjects_lessons_structure(subject_data):
+from typing import Dict, List
+
+from app.crud.subject_crud import select_dop_subjects
+from app.session import SessionLocal
+
+
+def set_subjects_lessons_structure(subject_data) -> List[Dict]:
     modules = {}
 
     for item in subject_data:
@@ -25,3 +31,17 @@ def set_subjects_lessons_structure(subject_data):
 
     modules_list = list(modules.values())
     return modules_list
+
+
+def get_additional_subjects_for_student(student_id: int) -> List[Dict]:
+    db = SessionLocal()
+
+    subjects = select_dop_subjects(db=db, student_id=student_id)
+    fields = ["id", "title", "image_path"]
+    result = []
+
+    for subject in subjects:
+        result.append(dict(zip(fields, subject)))
+
+    db.close()
+    return result

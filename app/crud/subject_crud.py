@@ -1,13 +1,9 @@
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models import (Group, Lesson, Lecture, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon,
-                        SubjectInstruction, SubjectInstructionCategory, SubjectInstructionFiles, SubjectInstructionLink,
+from app.models import (Group, Lecture, Lesson, ParticipantComment, StudentAdditionalSubject, Subject, SubjectIcon,
                         SubjectItem, SubjectJournal, SubjectTeacherAssociation, Teacher, TestLesson, User)
-from app.schemas.subject_schemas import (SubjectCreate, SubjectInstructionAttachFile, SubjectInstructionAttachLink,
-                                         SubjectInstructionCategoryCreate, SubjectInstructionCategoryUpdate,
-                                         SubjectInstructionCreate, SubjectInstructionUpdate, SubjectUpdate)
-from app.utils.save_images import delete_file
+from app.schemas.subject_schemas import SubjectCreate, SubjectUpdate
 
 
 def create_new_subject_db(db: Session, subject: SubjectCreate):
@@ -20,8 +16,6 @@ def create_new_subject_db(db: Session, subject: SubjectCreate):
         course_id=subject.course_id,
         group_id=subject.group_id,
         description=subject.description,
-        # image_path=None,
-        # logo_path=None,
         is_published=is_published,
         quantity_lecture=subject.quantity_lecture,
         quantity_seminar=subject.quantity_seminar,
@@ -193,7 +187,8 @@ def select_dop_subjects(db: Session, student_id: int):
     subjects = db.query(
         Subject.id,
         Subject.title,
-        Subject.image_path)\
+        Subject.image_path
+    )\
         .join(StudentAdditionalSubject, StudentAdditionalSubject.subject_id == Subject.id)\
         .filter(StudentAdditionalSubject.student_id == student_id)\
         .all()
@@ -202,8 +197,8 @@ def select_dop_subjects(db: Session, student_id: int):
 
 
 def select_subject_exam_date(db: Session, subject_id: int):
-    exam_date = db.query(Subject.exam_date).filter(Subject.id == subject_id).first()
-    return exam_date[0].strftime('%Y-%m-%d')
+    exam_date = db.query(Subject.exam_date).filter(Subject.id == subject_id).scalar()
+    return exam_date.strftime('%Y-%m-%d')
 
 
 def select_subject_item_db(db: Session, subject_id: int):
@@ -256,219 +251,6 @@ def create_or_update_participant_comment_db(
         db.commit()
         db.refresh(new_comment)
         return new_comment
-
-
-def create_subject_instruction_category_db(
-        db: Session,
-        subject_category: SubjectInstructionCategoryCreate
-):
-    new_category = SubjectInstructionCategory(**subject_category.dict())
-    db.add(new_category)
-    db.commit()
-    db.refresh(new_category)
-    return new_category
-
-
-def select_subject_instruction_category_db(db: Session, instruction_category_id: int):
-    return db.query(
-        SubjectInstructionCategory
-    ).filter(SubjectInstructionCategory.id == instruction_category_id).first()
-
-
-def update_subject_instruction_category_db(
-        db: Session,
-        instruction_category: SubjectInstructionCategory,
-        instruction_category_data: SubjectInstructionCategoryUpdate
-):
-    for field, value in instruction_category_data:
-        if value is not None:
-            setattr(instruction_category, field, value)
-
-    db.commit()
-    db.refresh(instruction_category)
-    return instruction_category
-
-
-def create_subject_instruction_db(
-        db: Session,
-        instruction_data: SubjectInstructionCreate
-):
-    new_instruction = SubjectInstruction(**instruction_data.dict())
-    db.add(new_instruction)
-    db.commit()
-    db.refresh(new_instruction)
-    return new_instruction
-
-
-def create_subject_instruction_file_db(
-        db: Session,
-        file_data: SubjectInstructionAttachFile
-):
-    new_instruction_file = SubjectInstructionFiles(**file_data.dict())
-    db.add(new_instruction_file)
-    db.commit()
-    db.refresh(new_instruction_file)
-    return new_instruction_file
-
-
-def select_subject_instruction_db(instruction_id: int, db: Session):
-    instruction = db.query(SubjectInstruction).filter(SubjectInstruction.id == instruction_id).first()
-    return instruction
-
-
-def select_subject_instruction_file_db(db: Session, file_id: int):
-    instruction_file = db.query(
-        SubjectInstructionFiles
-    )\
-        .filter(
-        SubjectInstructionFiles.id == file_id
-    )\
-        .first()
-    return instruction_file
-
-
-def delete_subject_instruction_file_db(db: Session, file_path: str):
-    instruction_file = db.query(
-        SubjectInstructionFiles
-    )\
-        .filter(
-        SubjectInstructionFiles.file_path == file_path
-    )\
-        .first()
-    db.delete(instruction_file)
-    db.commit()
-
-
-def select_subject_instructions_db(subject_id: int, db: Session):
-
-    instruction_categories = (
-        db.query(
-            SubjectInstructionCategory.id,
-            SubjectInstructionCategory.category_name,
-            SubjectInstructionCategory.is_view,
-            SubjectInstructionCategory.number
-        )
-        .filter(SubjectInstructionCategory.subject_id == subject_id)
-        .all()
-    )
-
-    result = []
-
-    for category in instruction_categories:
-        subject_instructions = {
-            "courseNumber": 1,
-            "category": category.category_name,
-            "categoryId": category.id,
-            "categoryNumber": category.number,
-            "categoryIsView": category.is_view,
-            "instructions": []
-        }
-
-        instructions = db.query(
-            SubjectInstruction
-        )\
-            .filter(SubjectInstruction.subject_category_id == category.id)\
-            .all()
-
-        for instruction in instructions:
-            instruction_dict = {
-                "instructionId": instruction.id,
-                "number": instruction.number,
-                "title": instruction.title,
-                "subTitle": instruction.subtitle,
-                "text": instruction.text,
-                "isView": instruction.is_view,
-                "files": [],
-                "links": []
-            }
-
-            if len(instruction.subject_instruction_files) > 0:
-                for file in instruction.subject_instruction_files:
-                    file_dict = {
-                        "fileId": file.id,
-                        "filePath": file.file_path,
-                        "fileType": file.file_type,
-                        "fileName": file.filename,
-                        "fileSize": file.file_size,
-                        "number": file.number
-                    }
-
-                    instruction_dict["files"].append(file_dict)
-
-            if len(instruction.subject_instruction_link) > 0:
-                for link in instruction.subject_instruction_link:
-                    link_dict = {
-                        "linkId": link.id,
-                        "link": link.link,
-                        "number": link.number
-                    }
-
-                    instruction_dict["links"].append(link_dict)
-
-            subject_instructions["instructions"].append(instruction_dict)
-        result.append(subject_instructions)
-    return result
-
-
-def update_subject_instruction_db(
-        db: Session,
-        instruction: SubjectInstruction,
-        instruction_data: SubjectInstructionUpdate
-):
-    for field, value in instruction_data:
-        if value is not None:
-            setattr(instruction, field, value)
-
-    db.commit()
-    db.refresh(instruction)
-    return instruction
-
-
-def delete_subject_instruction_db(db: Session, instruction: SubjectInstruction):
-
-    instruction_files = db.query(
-        SubjectInstructionFiles
-    ).filter(
-        SubjectInstructionFiles.subject_instruction_id == instruction.id
-    ).all()
-
-    if instruction_files is not None:
-        for file in instruction_files:
-            delete_file(file_path=file.file)
-            db.delete(file)
-            db.commit()
-
-    db.delete(instruction)
-    db.commit()
-
-
-def delete_subject_instruction_category_db(db: Session, instruction_category: SubjectInstructionCategory):
-
-    instructions = db.query(
-        SubjectInstruction
-    ).filter(
-        SubjectInstruction.subject_category_id == instruction_category.id
-    ).all()
-
-    for instruction in instructions:
-        delete_subject_instruction_db(db=db, instruction=instruction)
-
-    db.delete(instruction_category)
-    db.commit()
-
-
-def create_subject_instruction_link_db(db: Session, link_data: SubjectInstructionAttachLink):
-    new_link = SubjectInstructionLink(**link_data.dict())
-    db.add(new_link)
-    db.commit()
-    db.refresh(new_link)
-    return new_link
-
-
-def delete_subject_instruction_link_db(db: Session, link_id: int):
-    instruction_link = db.query(SubjectInstructionLink).filter(SubjectInstructionLink.id == link_id).first()
-    db.delete(instruction_link)
-    db.commit()
 
 
 def select_lesson_id_and_subject_id_by_test_id_db(db: Session, test_id: int):

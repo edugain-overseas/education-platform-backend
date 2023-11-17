@@ -108,4 +108,3 @@ async def delete_specialization(
             status_code=403,
             detail="Only moderators and teachers can view specialization"
         )
-

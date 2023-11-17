@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 
-from app.models import Lesson, QuestionType, TestAnswer, TestLesson, TestMatchingLeft, TestMatchingRight, TestQuestion
+from app.models import QuestionType, TestAnswer, TestLesson, TestMatchingLeft, TestMatchingRight, TestQuestion
 from app.schemas.test_lesson_schemas import TestConfigBase, TestConfigUpdate
+from app.utils.lesson_utils import set_test_answer_info, set_test_question_info
 
 
 def create_test_db(db: Session, test_data: TestConfigBase):
@@ -16,117 +17,78 @@ def select_test_db(db: Session, test_id: int):
     return db.query(TestLesson).filter(TestLesson.id == test_id).first()
 
 
+def select_test_by_lesson_id_db(db: Session, lesson_id: int):
+    return db.query(TestLesson).filter(TestLesson.lesson_id == lesson_id).first()
+
+
 def select_question_type_id(db: Session, question_type: str):
     question_type = db.query(QuestionType.id.label("id")).filter(QuestionType.type == question_type).first()
     return question_type.id
 
 
-def select_test_info_db(db: Session, lesson_id: int):
-    lesson_info = db.query(
-        Lesson.title.label("lesson_title"),
-        Lesson.description.label("lesson_description"),
-        Lesson.lesson_date.label("lesson_date"),
-        Lesson.lesson_end.label("lesson_end")
-    )\
-        .filter(Lesson.id == lesson_id)\
-        .first()
+def select_answers_db(db: Session, question_id: int):
+    return db.query(TestAnswer).filter(TestAnswer.question_id == question_id).all()
 
-    test_lesson = db.query(TestLesson).filter(TestLesson.lesson_id == lesson_id).first()
 
-    if not test_lesson:
-        return None
+def select_test_info_db(db: Session, test_id: int):
+    test_questions = db.query(TestQuestion).filter(TestQuestion.test_lesson_id == test_id).all()
+    result = []
 
-    test_questions = db.query(TestQuestion).filter(TestQuestion.test_lesson_id == test_lesson.id).all()
-
-    test_info = {
-        "lessonTitle": lesson_info.lesson_title,
-        "lessonDescription": lesson_info.lesson_description,
-        "lessonDate": lesson_info.lesson_date,
-        "lessonEnd": lesson_info.lesson_end,
-        "testId": test_lesson.id,
-        "isPublished": test_lesson.is_published,
-        "setTimer": test_lesson.set_timer,
-        "timer": test_lesson.timer,
-        "attempts": test_lesson.attempts,
-        "showAnswer": test_lesson.show_answer,
-        "minScore": test_lesson.min_score,
-        "shuffleAnswer": test_lesson.shuffle_answer,
-        "deadline": str(test_lesson.deadline),
-        "testQuestions": []
-    }
+    if test_questions is None:
+        return result
 
     for question in test_questions:
-        question_info = {
-            "questionId": question.id,
-            "questionType": question.question_type.type,
-            "questionText": question.question_text,
-            "questionScore": question.question_score,
-            "questionNumber": question.question_number,
-            "questionAnswers": []
-        }
+        question_info = set_test_question_info(question=question)
 
         if question.question_type.type in ["test", "boolean"]:
-            answers = db.query(TestAnswer).filter(TestAnswer.question_id == question.id).all()
+            answers = select_answers_db(db=db, question_id=question.id)
 
             for answer in answers:
-                question_info["questionAnswers"].append(
-                    {
-                        "answerId": answer.id,
-                        "answerText": answer.answer_text,
-                    }
-                )
+                answer_info = set_test_answer_info(answer)
+                question_info["questionAnswers"].append(answer_info)
 
         elif question.question_type.type == "multiple_choice":
-            answers = db.query(TestAnswer).filter(TestAnswer.question_id == question.id).all()
+            answers = select_answers_db(db=db, question_id=question.id)
             counter = 0
 
             for answer in answers:
                 if answer.is_correct:
                     counter += 1
-
-                question_info["questionAnswers"].append(
-                    {
-                        "answerId": answer.id,
-                        "answerText": answer.answer_text,
-                    }
-                )
-
+                answer_info = set_test_answer_info(answer)
+                question_info["questionAnswers"].append(answer_info)
             question_info["quantityCorrectAnswers"] = counter
 
         elif question.question_type.type == "matching":
             left_options = db.query(TestMatchingLeft).filter(TestMatchingLeft.question_id == question.id).all()
             right_options = db.query(TestMatchingRight).filter(TestMatchingRight.question_id == question.id).all()
-
             question_info["questionAnswers"] = {
-                "left": [{"value": left_option.text, "id": left_option.id} for left_option in left_options],
-                "right": [{"value": right_option.text, "id": right_option.id} for right_option in right_options]
+                "left": [
+                    {"value": left_option.text,
+                     "id": left_option.id
+                     } for left_option in left_options],
+                "right": [
+                    {"value": right_option.text,
+                     "id": right_option.id
+                     } for right_option in right_options]
             }
 
         elif question.question_type.type == "answer_with_photo":
-            answers = db.query(TestAnswer).filter(TestAnswer.question_id == question.id).all()
+            answers = select_answers_db(db=db, question_id=question.id)
 
             for answer in answers:
-                question_info["questionAnswers"].append(
-                    {
-                        "answerId": answer.id,
-                        "answerText": answer.answer_text,
-                        "imagePath": answer.image_path
-                    }
-                )
+                answer_info = set_test_answer_info(answer)
+                question_info["questionAnswers"].append(answer_info)
 
         else:
             question_info["imagePath"] = question.image_path
-            answers = db.query(TestAnswer).filter(TestAnswer.question_id == question.id).all()
-            for answer in answers:
-                question_info["questionAnswers"].append(
-                    {
-                        "answerId": answer.id,
-                        "answerText": answer.answer_text,
-                    }
-                )
+            answers = select_answers_db(db=db, question_id=question.id)
 
-        test_info["testQuestions"].append(question_info)
-    return test_info
+            for answer in answers:
+                answer_info = set_test_answer_info(answer)
+                question_info["questionAnswers"].append(answer_info)
+
+        result.append(question_info)
+    return result
 
 
 def update_test_db(db: Session, test: TestLesson, test_data: TestConfigUpdate):

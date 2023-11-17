@@ -142,9 +142,9 @@ async def login(
 ):
     user = select_user_by_username_db(db, form_data.username)
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Invalid username or password")
     if not check_password(form_data.password, user.hashed_pass):
-        raise HTTPException(status_code=400, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Invalid username or password")
 
     access_token_expires = timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     access_token, expire_token = create_access_token(

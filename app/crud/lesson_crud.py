@@ -68,24 +68,16 @@ def delete_lesson_db(db: Session, lesson: Lesson):
 def select_three_next_lesson_db(db: Session, subject_id: int):
     today = datetime.today()
 
-    query = db.query(Lesson.lesson_date, Lesson.lesson_type) \
-        .join(Subject, Lesson.subject_id == Subject.id) \
-        .filter(Subject.id == subject_id) \
-        .filter(Lesson.is_published) \
-        .filter(Lesson.lesson_date >= today) \
-        .order_by(Lesson.lesson_date).limit(3)
+    result = db.query(
+        Lesson.lesson_date.label("lesson_date"),
+        Lesson.lesson_type.label("lesson_type")
+    )\
+        .join(Subject, Lesson.subject_id == Subject.id)\
+        .filter(Subject.id == subject_id, Lesson.lesson_date >= today)\
+        .order_by(Lesson.lesson_date).limit(3)\
+        .all()
 
-    lessons = query.all()
-    lessons_list = []
-
-    for lesson in lessons:
-        lesson_dict = {
-            "lesson_date": lesson.lesson_date,
-            "lesson_type": lesson.lesson_type
-        }
-        lessons_list.append(lesson_dict)
-
-    return lessons_list
+    return result
 
 
 def get_lessons_by_subject_id_db(db: Session, subject_id: int):
