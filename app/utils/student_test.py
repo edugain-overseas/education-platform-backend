@@ -3,11 +3,9 @@ from sqlalchemy.orm import Session
 from app.crud.student_test_crud import (create_student_test_answer_db, create_student_test_matching_db,
                                         select_correct_answer_db, select_correct_answers_db,
                                         select_correct_right_option_db, select_count_correct_answers_db)
-from app.crud.subject_crud import (filling_journal, select_journal_row, select_lesson_id_and_subject_id_by_test_id_db,
-                                   update_score_to_journal)
+
 from app.models import TestQuestion
 from app.schemas.student_test_schemas import MatchingField
-from app.session import SessionLocal
 
 
 def check_default_test(
@@ -132,23 +130,23 @@ def check_matching_test(
     return student_score
 
 
-def write_score_to_journal(student_id: int, score: int, test_id: int):
-    db = SessionLocal()
-    data = select_lesson_id_and_subject_id_by_test_id_db(db=db, test_id=test_id)
-    journal_data = select_journal_row(
-        db=db,
-        student_id=student_id,
-        subject_id=data.subject_id,
-        lesson_id=data.lesson_id
-    )
-
-    if journal_data is None:
-        filling_journal(
-            db=db,
-            score=score,
-            subject_id=data.subject_id,
-            lesson_id=data.lesson_id,
-            student_id=student_id
-        )
-    else:
-        update_score_to_journal(db=db, journal_row=journal_data, score=score)
+# def write_score_to_journal(student_id: int, score: int, test_id: int):
+#     db = SessionLocal()
+#     data = select_lesson_id_and_subject_id_by_test_id_db(db=db, test_id=test_id)
+#     journal_data = select_journal_row(
+#         db=db,
+#         student_id=student_id,
+#         subject_id=data.subject_id,
+#         lesson_id=data.lesson_id
+#     )
+#
+#     if journal_data is None:
+#         filling_journal(
+#             db=db,
+#             score=score,
+#             subject_id=data.subject_id,
+#             lesson_id=data.lesson_id,
+#             student_id=student_id
+#         )
+#     else:
+#         update_score_to_journal(db=db, journal_row=journal_data, score=score)
