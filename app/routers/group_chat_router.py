@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi.websockets import WebSocket
+from fastapi.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 from sqlalchemy.orm import Session
 
 from app.crud.group_chat_crud import (get_last_answer_db, get_last_message_db, select_message_by_id_db,
@@ -80,24 +80,24 @@ class ConnectionManager:
         if group_name in self.connections:
             connections = self.connections[group_name]
             for connection in connections:
-                await connection["websocket"].send_json(message)
+                if (connection["websocket"].client_state == WebSocketState.CONNECTED
+                        and connection["websocket"].application_state == WebSocketState.CONNECTED):
+                    await connection["websocket"].send_json(message)
+                else:
+                    continue
 
 
 manager = ConnectionManager()
 
 
 @router.websocket("/ws/{group_name}/{token}")
-async def group_chat_socket(
-        group_name: str,
-        token: str,
-        websocket: WebSocket,
-        db: Session = Depends(get_db)
-):
+async def group_chat_socket(group_name: str, token: str, websocket: WebSocket, db: Session = Depends(get_db)):
     user = get_current_user(db=db, token=token)
-    group_id = select_group_by_name_db(db=db, group_name=group_name)[0]
-    await manager.check_user_connection(group_name=group_name, user_id=user.id)
+    group_id = select_group_by_name_db(db=db, group_name=group_name)
 
     try:
+        await manager.check_user_connection(group_name=group_name, user_id=user.id)
+
         await websocket.accept()
         connection = manager.create_connection(websocket, user)
         await manager.add_connection(group_name, connection)
@@ -113,19 +113,16 @@ async def group_chat_socket(
 
                 if data.get("messageType") == "everyone":
                     await manager.send_message_to_group(group_name=group_name, message=message_to_send)
+
                 elif data.get("messageType") == "several":
-                    await manager.send_message_to_users(
-                        group_name=group_name,
-                        user_ids=data.get("recipient"),
-                        message=message_to_send)
                     await websocket.send_json(message_to_send)
+                    await manager.send_message_to_users(group_name=group_name, user_ids=data.get("recipient"),
+                                                        message=message_to_send)
+
                 else:
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=data.get("recipient"),
-                        message=message_to_send
-                    )
                     await websocket.send_json(message_to_send)
+                    await manager.send_message_to_user(group_name=group_name, user_id=data.get("recipient"),
+                                                       message=message_to_send)
 
             elif data.get("type") == "answer":
                 save_answer_data_to_db(db=db, data=data)
@@ -134,129 +131,88 @@ async def group_chat_socket(
                 message_obj = select_message_by_id_db(db=db, message_id=data.get("messageId"))
 
                 if message_obj.message_type == "alone":
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=message_obj.sender_id,
-                        message=answer_to_send
-                    )
                     await websocket.send_json(answer_to_send)
+                    await manager.send_message_to_user(group_name=group_name, user_id=message_obj.sender_id,
+                                                       message=answer_to_send)
 
                 elif message_obj.message_type == "several":
                     recipients = select_recipient_by_message_id(db=db, message_id=message_obj.id)
                     user_ids = [recipient.recipient_id for recipient in recipients]
-
-                    await manager.send_message_to_users(
-                        group_name=group_name,
-                        user_ids=user_ids,
-                        message=answer_to_send
-                    )
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=message_obj.sender_id,
-                        message=answer_to_send
-                    )
+                    await manager.send_message_to_users(group_name=group_name, user_ids=user_ids,
+                                                        message=answer_to_send)
+                    await manager.send_message_to_user(group_name=group_name, user_id=message_obj.sender_id,
+                                                       message=answer_to_send)
 
                 else:
-                    await manager.send_message_to_group(
-                        group_name=group_name,
-                        message=answer_to_send
-                    )
+                    await manager.send_message_to_group(group_name=group_name, message=answer_to_send)
+
             elif data.get("type") == "deleteMessage":
                 info = delete_message_data(db=db, data=data)
-                message = f"Message with id {data.get('messageId')} have been deleted"
+                message = f'Message with id {data.get("messageId")} have been deleted'
+
                 if info["messageType"] == "everyone":
                     await manager.send_message_to_group(group_name=group_name, message={"message": message})
+
                 else:
                     await websocket.send_json({"message": message})
-                    await manager.send_message_to_users(
-                        group_name=group_name,
-                        user_ids=info['recipient'],
-                        message={"message": message}
-                    )
+                    await manager.send_message_to_users(group_name=group_name, user_ids=info["recipient"],
+                                                        message={"message": message})
 
             elif data.get("type") == "deleteAnswer":
                 info = delete_answer_data(db=db, data=data)
-                message = f"Answer with id {data.get('answerId')} have been deleted"
+                message = f'Answer with id {data.get("answerId")} have been deleted'
+
                 if info["messageType"] == "everyone":
                     await manager.send_message_to_group(group_name=group_name, message={"message": message})
+
                 elif info["messageType"] == "alone":
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=info["messageSenderId"],
-                        message={"message": message}
-                    )
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=data['senderId'],
-                        message={"message": message}
-                    )
+                    await manager.send_message_to_user(group_name=group_name, user_id=info["messageSenderId"],
+                                                       message={"message": message})
+                    await manager.send_message_to_user(group_name=group_name, user_id=data['senderId'],
+                                                       message={"message": message})
+
                 else:
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=info["messageSenderId"],
-                        message={"message": message}
-                    )
-                    await manager.send_message_to_users(
-                        group_name=group_name,
-                        user_ids=info["recipients"],
-                        message={"message": message}
-                    )
+                    await manager.send_message_to_user(group_name=group_name, user_id=info["messageSenderId"],
+                                                       message={"message": message})
+                    await manager.send_message_to_users(group_name=group_name, user_ids=info["recipients"],
+                                                        message={"message": message})
 
             elif data.get("type") == "updateMessage":
-                update_message = update_message_data_to_db(db=db, data=data)
-                if update_message["messageType"] == "everyone":
-                    await manager.send_message_to_group(group_name=group_name, message=update_message)
-                elif update_message["messageType"] == "alone":
-                    await websocket.send_json(update_message)
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=data["recipient"],
-                        message=update_message
-                    )
+                updated_message = update_message_data_to_db(db=db, data=data)
+
+                if updated_message["messageType"] == "everyone":
+                    await manager.send_message_to_group(group_name=group_name, message=updated_message)
+
+                elif updated_message["messageType"] == "alone":
+                    await websocket.send_json(updated_message)
+                    await manager.send_message_to_user(group_name=group_name, user_id=data.get("recipient"),
+                                                       message=updated_message)
                 else:
-                    await websocket.send_json(update_message)
-                    await manager.send_message_to_users(
-                        group_name=group_name,
-                        user_ids=data["recipient"],
-                        message=update_message
-                    )
+                    await websocket.send_json(updated_message)
+                    await manager.send_message_to_users(group_name=group_name, user_ids=data.get("recipient"),
+                                                        message=updated_message)
 
             elif data.get("type") == "updateAnswer":
-                result_after_update = update_answer_data_to_db(db=db, data=data)
-                if result_after_update["messageType"] == "everyone":
-                    await manager.send_message_to_group(
-                        group_name=group_name,
-                        message=result_after_update["answerData"]
-                    )
-                elif result_after_update["messageType"] == "alone":
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=result_after_update["messageSenderId"],
-                        message=result_after_update["answerData"]
-                    )
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=data['senderId'],
-                        message=result_after_update["answerData"]
-                    )
+                updated_answer = update_answer_data_to_db(db=db, data=data)
+                if updated_answer["messageType"] == "everyone":
+                    await manager.send_message_to_group(group_name=group_name, message=updated_answer["answerData"])
+
+                elif updated_answer["messageType"] == "alone":
+                    await manager.send_message_to_user(group_name=group_name, user_id=updated_answer["messageSenderId"],
+                                                       message=updated_answer["answerData"])
+                    await manager.send_message_to_user(group_name=group_name, user_id=data.get("senderId"),
+                                                       message=updated_answer["answerData"])
+
                 else:
-                    await manager.send_message_to_user(
-                        group_name=group_name,
-                        user_id=result_after_update["messageSenderId"],
-                        message=result_after_update["answerData"]
-                    )
-                    await manager.send_message_to_users(
-                        group_name=group_name,
-                        user_ids=result_after_update["messageRecipient"],
-                        message=result_after_update["answerData"]
-                    )
+                    await manager.send_message_to_user(group_name=group_name, user_id=updated_answer["messageSenderId"],
+                                                       message=updated_answer["answerData"])
+                    await manager.send_message_to_users(group_name=group_name,
+                                                        user_ids=updated_answer["messageRecipient"],
+                                                        message=updated_answer["answerData"])
 
-    # except WebSocketDisconnect:
-    #     await manager.remove_connection(group_name=group_name, connection=connection)
-    #     print(manager.connections)
-
-    except Exception:
+    except WebSocketDisconnect:
         manager.connections[group_name].remove(connection)
+    finally:
         await manager.send_total_active_users(group_name=group_name)
 
 
@@ -310,7 +266,7 @@ async def get_chat_messages(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user)
 ):
-    group_id = select_group_by_name_db(db=db, group_name=group_name)[0]
+    group_id = select_group_by_name_db(db=db, group_name=group_name)
 
     messages_obj = select_messages_by_pagination_db(
         db=db,

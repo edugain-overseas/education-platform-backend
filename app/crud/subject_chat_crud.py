@@ -50,7 +50,6 @@ def select_teachers_for_subject_db(db: Session, subject_id: int):
 def create_subject_chat_message(
         db: Session,
         message: str,
-        datetime_message: datetime,
         fixed: bool,
         sender_id: int,
         sender_type: UserTypeOption,
@@ -59,7 +58,7 @@ def create_subject_chat_message(
 ):
     new_message = SubjectChat(
         message=message,
-        datetime_message=datetime_message,
+        datetime_message=datetime.utcnow(),
         fixed=fixed,
         sender_id=sender_id,
         sender_type=sender_type,
@@ -77,14 +76,13 @@ def create_subject_chat_message(
 def create_subject_chat_answer(
         db: Session,
         message: str,
-        datetime_message: datetime,
         subject_chat_id: int,
         sender_id: int,
         sender_type: str,
 ):
     new_answer = SubjectChatAnswer(
         message=message,
-        datetime_message=datetime_message,
+        datetime_message=datetime.utcnow(),
         subject_chat_id=subject_chat_id,
         sender_id=sender_id,
         sender_type=sender_type,
@@ -257,6 +255,10 @@ def select_message_by_id_db(db: Session, message_id: int):
     return db.query(SubjectChat).filter(SubjectChat.id == message_id).first()
 
 
+def select_answer_by_id_db(db: Session, answer_id: int):
+    return db.query(SubjectChatAnswer).filter(SubjectChatAnswer.id == answer_id).first()
+
+
 def select_recipient_by_message_id(db: Session, message_id: int):
     return db.query(SubjectRecipient).filter(SubjectRecipient.subject_chat_id == message_id).all()
 
@@ -350,6 +352,56 @@ def update_read_by_for_answer_db(db: Session, answer_id: int, user_id: int):
         db.refresh(answer)
         return answer
     answer.read_by = str(user_id)
+    db.commit()
+    db.refresh(answer)
+    return answer
+
+
+def delete_attached_file_db(db: Session, file_id: int):
+    attach_file = db.query(SubjectChatAttachFile).filter(SubjectChatAttachFile.id == file_id).first()
+    db.delete(attach_file)
+    db.commit()
+
+
+def update_message_text_and_fixed_db(db: Session, new_text: str, fixed: bool, message: SubjectChat):
+    message.message = new_text
+    message.fixed = fixed
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+def update_message_type_and_recipient_db(db: Session, message_type: MessageTypeOption,
+                                         recipients: List[int], message: SubjectChat):
+    db_recipients = db.query(SubjectRecipient).filter(SubjectRecipient.subject_chat_id == message.id).all()
+    for recipient in db_recipients:
+        db.delete(recipient)
+        db.commit()
+
+    message.message_type = message_type
+    db.commit()
+    db.refresh(message)
+
+    create_subject_recipient_db(db=db, subject_chat_id=message.id, recipient=recipients)
+    return message
+
+
+def update_answer_text_db(db: Session, answer_text: str, answer: SubjectChatAnswer):
+    answer.message = answer_text
+    db.commit()
+    db.refresh(answer)
+    return answer
+
+
+def delete_message_db(db: Session, message: SubjectChat):
+    message.deleted = True
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+def delete_answer_db(db: Session, answer: SubjectChatAnswer):
+    answer.deleted = True
     db.commit()
     db.refresh(answer)
     return answer

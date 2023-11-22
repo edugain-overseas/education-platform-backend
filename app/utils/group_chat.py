@@ -6,7 +6,7 @@ from app.crud.group_chat_crud import (create_attach_file_db, create_group_chat_a
                                       create_recipient_db, delete_answer_db, delete_attached_file_db, delete_message_db,
                                       select_answer_by_id_db, select_last_messages_db, select_message_by_id_db,
                                       update_answer_text_db, update_message_text_and_fixed_db, update_message_type_db)
-from app.models import User
+from app.models import GroupChat, GroupChatAnswer, User
 from app.utils.count_users import select_users_in_group, set_keyword_for_users_data
 from app.utils.save_images import delete_file
 
@@ -31,7 +31,6 @@ def set_last_messages_dict(messages_obj):
         }
 
         for answer in message.group_chat_answer:
-
             answer_data = {
                 "answerId": answer.id,
                 "answer": answer.message,
@@ -52,7 +51,6 @@ def set_last_messages_dict(messages_obj):
                     "fileSize": file.size
                 }
                 answer_data["attachFiles"].append(file_data)
-
             message_data["answers"].append(answer_data)
 
         for file in message.attach_file:
@@ -64,7 +62,6 @@ def set_last_messages_dict(messages_obj):
                 "fileSize": file.size
             }
             message_data["attachFiles"].append(file_data)
-
         messages_data["messages"].append(message_data)
     return messages_data
 
@@ -142,7 +139,7 @@ def set_last_answer_dict(answer_obj):
     return answer
 
 
-def set_updated_message(message_obj):
+def set_updated_message(message_obj: GroupChat):
     attach_file = []
     if message_obj.attach_file:
         for file in message_obj.attach_file:
@@ -200,7 +197,7 @@ def set_updated_message(message_obj):
     return message
 
 
-def set_updated_answer(answer_obj):
+def set_updated_answer(answer_obj: GroupChatAnswer):
     attach_file = []
     if answer_obj.attach_file:
         for file in answer_obj.attach_file:
@@ -229,13 +226,7 @@ def set_updated_answer(answer_obj):
 def create_last_message_data(db: Session, group_id: int, user: User):
     users = select_users_in_group(group_id=group_id, db=db)
     user_info = set_keyword_for_users_data(users)
-
-    messages_obj = select_last_messages_db(
-        db=db,
-        group_id=group_id,
-        recipient_id=user.id
-    )
-
+    messages_obj = select_last_messages_db(db=db, group_id=group_id, recipient_id=user.id)
     last_messages = set_last_messages_dict(messages_obj=messages_obj)
     last_messages['userInfo'] = user_info
     return last_messages
@@ -252,7 +243,7 @@ def save_message_data_to_db(db: Session, group_id: int, data: Dict):
         sender_type=data.get("senderType")
     )
 
-    if data.get("attachFiles"):
+    if data.get("attachFiles") is not None:
         create_attach_file_db(db=db, attach_files=data.get("attachFiles"), chat_message=new_message.id)
 
     if data.get("recipient") is not None:
@@ -269,11 +260,7 @@ def save_answer_data_to_db(db: Session, data: Dict):
     )
 
     if data.get("attachFiles") is not None:
-        create_attach_file_db(
-            db=db,
-            attach_files=data.get("attachFiles"),
-            chat_answer=new_answer.id
-        )
+        create_attach_file_db(db=db, attach_files=data.get("attachFiles"), chat_answer=new_answer.id)
 
 
 def delete_message_data(db: Session, data: Dict):
@@ -293,79 +280,64 @@ def delete_answer_data(db: Session, data: Dict):
     answer = select_answer_by_id_db(db=db, answer_id=data.get("answerId"))
     answer = delete_answer_db(db=db, answer=answer)
     message = answer.group_chat
+
     if message.message_type == "everyone":
         return {"messageType": "everyone"}
+
     elif message.message_type == "alone":
-        return {
-            "messageType": "alone",
-            "messageSenderId": message.sender_id,
-        }
+        return {"messageType": "alone", "messageSenderId": message.sender_id}
+
     else:
-        return {
-            "messageType": "several",
-            "messageSenderId": message.sender_id,
-            "recipients": [recipient.recipient_id for recipient in message.recipient]
-        }
+        return {"messageType": "several", "messageSenderId": message.sender_id,
+                "recipients": [recipient.recipient_id for recipient in message.recipient]}
 
 
 def update_message_data_to_db(db: Session, data: Dict):
-    message = select_message_by_id_db(db=db, message_id=data["messageId"])
+    message = select_message_by_id_db(db=db, message_id=data.get("messageId"))
 
     if len(message.attach_file) >= 1:
         for attach_file in message.attach_file:
             delete_file(file_path=attach_file.file_path)
             delete_attached_file_db(db=db, file_id=attach_file.id)
 
-    if data['attachFiles']:
-        create_attach_file_db(db=db, attach_files=data["attachFiles"], chat_message=data["messageId"])
+    if data.get("attachFiles") is not None:
+        create_attach_file_db(db=db, attach_files=data.get("attachFiles"), chat_message=data.get("messageId"))
 
-    if data["message"] != message.message or data["fixed"] != message.fixed:
-        update_message_text_and_fixed_db(
-            db=db,
-            new_text=data["message"],
-            fixed=data["fixed"],
-            message=message
-        )
+    if data.get("message") != message.message or data.get("fixed") != message.fixed:
+        update_message_text_and_fixed_db(db=db, new_text=data.get("message"), fixed=data.get("fixed"), message=message)
 
-    if message.message_type == data["messageType"]:
+    if message.message_type == data.get("messageType"):
         message_data = set_updated_message(message)
         return message_data
     else:
-        update_message_type_db(
-            db=db,
-            message_type=data["messageType"],
-            recipients=data["recipient"],
-            message=message
-        )
+        update_message_type_db(db=db, message_type=data.get("messageType"),
+                               recipients=data.get("recipient"), message=message)
         message_data = set_updated_message(message)
         return message_data
 
 
 def update_answer_data_to_db(db: Session, data: Dict):
-    answer = select_answer_by_id_db(db=db, answer_id=data["answerId"])
+    answer = select_answer_by_id_db(db=db, answer_id=data.get("answerId"))
 
     if len(answer.attach_file) >= 1:
         for attach_file in answer.attach_file:
             delete_file(file_path=attach_file.file_path)
             delete_attached_file_db(db=db, file_id=attach_file.id)
 
-    if data['attachFiles']:
-        create_attach_file_db(db=db, attach_files=data["attachFiles"], chat_answer=data["answerId"])
+    if data.get("attachFiles") is not None:
+        create_attach_file_db(db=db, attach_files=data.get("attachFiles"), chat_answer=data.get("answerId"))
 
     message = answer.group_chat
     result = {
-        "answerData": None,
         "messageType": message.message_type,
         "messageSenderId": message.sender_id,
         "messageRecipient": [rec.recipient_id for rec in message.recipient] if message.recipient else []
     }
 
-    if answer.message == data["answerText"]:
-        answer_data = set_updated_answer(answer)
-        result["answerData"] = answer_data
+    if answer.message == data.get("answerText"):
+        result["answerData"] = set_updated_answer(answer)
         return result
     else:
-        update_answer_text_db(db=db, answer_text=data["answerText"], answer=answer)
-        answer_data = set_updated_answer(answer)
-        result["answerData"] = answer_data
+        update_answer_text_db(db=db, answer_text=data.get("answerText"), answer=answer)
+        result["answerData"] = set_updated_answer(answer)
         return result

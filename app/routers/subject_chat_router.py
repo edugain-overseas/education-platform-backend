@@ -1,22 +1,19 @@
-from datetime import datetime
-from typing import List
+from typing import Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi.websockets import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 from sqlalchemy.orm import Session
 
-from app.crud.subject_chat_crud import (create_subject_attach_file_db, create_subject_chat_answer,
-                                        create_subject_chat_message, create_subject_recipient_db,
-                                        get_last_messages_for_subject_chat_db,
-                                        get_messages_for_subject_chat_by_pagination_db, select_last_answer_db,
+from app.crud.subject_chat_crud import (get_messages_for_subject_chat_by_pagination_db, select_last_answer_db,
                                         select_last_message_db, select_message_by_id_db, select_recipient_by_message_id,
                                         update_read_by_for_answer_db, update_read_by_for_message_db)
 from app.models import User
 from app.session import get_db
-from app.utils.count_users import select_users_in_subject, set_keyword_for_users_data
 from app.utils.save_images import delete_file, save_subject_chat_file
-from app.utils.subject_chat import (set_subject_chat_last_answer_dict, set_subject_chat_last_message_dict,
-                                    set_subject_chat_last_messages_dict)
+from app.utils.subject_chat import (delete_answer_data_to_db, delete_message_data_to_db, get_data_about_latest_messages,
+                                    save_answer_data_to_db, save_message_data_to_db, set_subject_chat_last_answer_dict,
+                                    set_subject_chat_last_message_dict, set_subject_chat_last_messages_dict,
+                                    update_answer_data_to_db, update_message_data_to_db)
 from app.utils.token import get_current_user
 
 router = APIRouter()
@@ -26,50 +23,60 @@ class ConnectionManager:
     def __init__(self):
         self.connections = {}
 
-    async def add_connection(self, subject_id: int, connection):
+    @staticmethod
+    def create_connection(websocket: WebSocket, user: User):
+        connection = {"websocket": websocket, "user": user.id, "user_type": str(user.user_type.type)}
+        return connection
+
+    async def add_connection(self, subject_id: int, connection: Dict):
         if subject_id not in self.connections:
             self.connections[subject_id] = []
         self.connections[subject_id].append(connection)
         await self.total_active_users(subject_id=subject_id)
 
-    async def remove_connection(self, subject_id: int, connection):
+    async def remove_connection(self, subject_id: int, connection: Dict):
         if subject_id in self.connections:
             self.connections[subject_id].remove(connection)
             await self.total_active_users(subject_id=subject_id)
 
-    async def total_active_users(self, subject_id: int):
-        total_active = len(self.connections[subject_id])
-        connections = self.connections[subject_id]
-        active_users = []
-
-        for connection in connections:
-            active_users.append(connection['user'])
-
-        total_json = {
-            "totalActive": total_active,
-            "idsActiveUsers": active_users
-        }
-        await self.send_message_to_group(subject_id=subject_id, message=total_json)
-
-    async def send_message_to_user(self, subject_id: int, user_id: int, message):
+    async def check_user_connection(self, subject_id: int,  user_id: int):
         if subject_id in self.connections:
-            connections = self.connections[subject_id]
-            for connection in connections:
+            for connection in self.connections[subject_id]:
+                if connection["user"] == user_id:
+                    await connection["websocket"].close()
+
+    async def total_active_users(self, subject_id: int):
+        total_json = {
+            "totalActive": len(self.connections[subject_id]),
+            "idsActiveUsers": [connection["user"] for connection in self.connections[subject_id]]
+        }
+        await self.send_message_to_everyone(subject_id=subject_id, message=total_json)
+
+    @staticmethod
+    async def send_first_message(db: Session, websocket: WebSocket, subject_id: int, user: User):
+        last_messages = get_data_about_latest_messages(db=db, subject_id=subject_id, user=user)
+        await websocket.send_json(last_messages)
+
+    async def send_message_to_user(self, user_id: int, subject_id: int, message: Dict):
+        if subject_id in self.connections:
+            for connection in self.connections[subject_id]:
                 if connection["user"] == user_id:
                     await connection["websocket"].send_json(message)
 
-    async def send_message_to_users(self, subject_id: int, user_ids: List[int], message):
+    async def send_message_to_users(self, user_ids: List[int], subject_id: int, message: Dict):
         if subject_id in self.connections:
-            connections = self.connections[subject_id]
-            for connection in connections:
+            for connection in self.connections[subject_id]:
                 if connection["user"] in user_ids:
                     await connection["websocket"].send_json(message)
 
-    async def send_message_to_group(self, subject_id: int, message):
+    async def send_message_to_everyone(self, subject_id: int, message: Dict):
         if subject_id in self.connections:
-            connections = self.connections[subject_id]
-            for connection in connections:
-                await connection["websocket"].send_json(message)
+            for connection in self.connections[subject_id]:
+                if (connection["websocket"].application_state == WebSocketState.CONNECTED
+                        and connection["websocket"].client_state == WebSocketState.CONNECTED):
+                    await connection["websocket"].send_json(message)
+                else:
+                    continue
 
 
 manager = ConnectionManager()
@@ -85,143 +92,125 @@ async def subject_chat_socket(
     user = get_current_user(db=db, token=token)
 
     try:
+        await manager.check_user_connection(subject_id=subject_id, user_id=user.id)
+
         await websocket.accept()
-    except Exception as e:
-        print(f"{e}")
-
-    connection = {
-        "websocket": websocket,
-        "user": user.id,
-        "user_type": str(user.user_type.type)
-    }
-    await manager.add_connection(subject_id, connection)
-    print(manager.connections)
-
-    users = select_users_in_subject(db=db, subject_id=subject_id)
-    user_info = set_keyword_for_users_data(users=users)
-
-    try:
-        messages_obj = get_last_messages_for_subject_chat_db(db=db, subject_id=subject_id, recipient_id=user.id)
-        last_messages = set_subject_chat_last_messages_dict(messages_obj=messages_obj)
-        last_messages['userInfo'] = user_info
-        await websocket.send_json(last_messages)
+        connection = manager.create_connection(websocket=websocket, user=user)
+        await manager.add_connection(subject_id=subject_id, connection=connection)
+        await manager.send_first_message(db=db, websocket=websocket, subject_id=subject_id, user=user)
 
         while True:
             data = await websocket.receive_json()
-            data_type = data.get("type")
 
-            # Logic to save new message in DataBase
-            if data_type == "answer":
-                new_answer = create_subject_chat_answer(
-                    db=db,
-                    message=data.get("message"),
-                    datetime_message=datetime.utcnow(),
-                    subject_chat_id=data.get("messageId"),
-                    sender_id=data.get("senderId"),
-                    sender_type=data.get("senderType")
-                )
-
-                if data.get("attachFiles") is not None:
-                    create_subject_attach_file_db(
-                        db=db,
-                        attach_files=data.get("attachFiles"),
-                        subject_chat_answer=new_answer.id
-                    )
-
-            elif data_type == "message":
-                new_message = create_subject_chat_message(
-                    db=db,
-                    message=data.get("message"),
-                    datetime_message=datetime.utcnow(),
-                    message_type=data.get("messageType"),
-                    fixed=data.get("fixed"),
-                    subject_id=subject_id,
-                    sender_id=data.get("senderId"),
-                    sender_type=data.get("senderType")
-                )
-
-                if data.get("recipient") is not None:
-                    create_subject_recipient_db(
-                        db=db,
-                        recipient=data.get("recipient"),
-                        subject_chat_id=new_message.id
-                    )
-
-                if data.get("attachFiles") is not None:
-                    create_subject_attach_file_db(
-                        db=db,
-                        attach_files=data.get("attachFiles"),
-                        subject_chat_message=new_message.id
-                    )
-
-            # Logic to send new message in websocket
-            if data.get("messageType") == "alone":
+            if data.get("type") == "message":
+                save_message_data_to_db(db=db, subject_id=subject_id, data=data)
                 message_obj = select_last_message_db(db=db, subject_id=subject_id, sender_id=data.get("senderId"))
                 message_to_send = set_subject_chat_last_message_dict(message_obj)
-                await manager.send_message_to_user(
-                    subject_id=subject_id,
-                    user_id=data.get("recipient"),
-                    message=message_to_send
-                )
-                await websocket.send_json(message_to_send)
 
-            elif data.get("messageType") == "several":
-                message_obj = select_last_message_db(db=db, subject_id=subject_id, sender_id=data.get("senderId"))
-                message_to_send = set_subject_chat_last_message_dict(message_obj)
-                await manager.send_message_to_users(
-                    subject_id=subject_id,
-                    user_ids=data.get("recipient"),
-                    message=message_to_send
-                )
-                await websocket.send_json(message_to_send)
+                if data.get("messageType") == "alone":
+                    await websocket.send_json(message_to_send)
+                    await manager.send_message_to_user(user_id=data.get("recipient"), subject_id=subject_id,
+                                                       message=message_to_send)
 
-            elif data.get("messageType") == "everyone":
-                message_obj = select_last_message_db(db=db, subject_id=subject_id, sender_id=data.get("senderId"))
-                message_to_send = set_subject_chat_last_message_dict(message_obj)
-                await manager.send_message_to_group(
-                    subject_id=subject_id,
-                    message=message_to_send
-                )
+                elif data.get("messageType") == "several":
+                    await websocket.send_json(message_to_send)
+                    await manager.send_message_to_users(user_ids=data.get("recipient"), subject_id=subject_id,
+                                                        message=message_to_send)
 
-            # Logic to send new answer in websocket
-            else:
+                else:
+                    await manager.send_message_to_everyone(subject_id=subject_id, message=message_to_send)
+
+            elif data.get("type") == "answer":
+                save_answer_data_to_db(db=db, data=data)
                 answer_obj = select_last_answer_db(db=db, sender_id=data.get("senderId"))
                 answer_to_send = set_subject_chat_last_answer_dict(answer_obj)
                 message_obj = select_message_by_id_db(db=db, message_id=data.get("messageId"))
 
                 if message_obj.message_type == "alone":
-                    await manager.send_message_to_user(
-                        subject_id=subject_id,
-                        user_id=message_obj.sender_id,
-                        message=answer_to_send
-                    )
                     await websocket.send_json(answer_to_send)
+                    await manager.send_message_to_user(user_id=message_obj.sender_id, subject_id=subject_id,
+                                                       message=answer_to_send)
 
                 elif message_obj.message_type == "several":
                     recipients = select_recipient_by_message_id(db=db, message_id=message_obj.id)
-                    user_ids = []
-                    for recipient in recipients:
-                        user_ids.append(recipient.recipient_id)
+                    user_ids = [recipient.recipient_id for recipient in recipients]
+                    await manager.send_message_to_users(user_ids=user_ids, subject_id=subject_id,
+                                                        message=answer_to_send)
+                    await manager.send_message_to_user(user_id=message_obj.sender_id, subject_id=subject_id,
+                                                       message=answer_to_send)
 
-                    await manager.send_message_to_users(
-                        subject_id=subject_id,
-                        user_ids=user_ids,
-                        message=answer_to_send
-                    )
-                    await manager.send_message_to_user(
-                        subject_id=subject_id,
-                        user_id=message_obj.sender_id,
-                        message=answer_to_send
-                    )
                 else:
-                    await manager.send_message_to_group(
-                        subject_id=subject_id,
-                        message=answer_to_send
-                    )
+                    await manager.send_message_to_everyone(subject_id=subject_id, message=answer_to_send)
+
+            elif data.get("type") == "updateMessage":
+                updated_message = update_message_data_to_db(db=db, data=data)
+
+                if updated_message["messageType"] == "alone":
+                    await websocket.send_json(updated_message)
+                    await manager.send_message_to_user(user_id=data.get("recipient"), subject_id=subject_id,
+                                                       message=updated_message)
+
+                elif updated_message["messageType"] == "several":
+                    await websocket.send_json(updated_message)
+                    await manager.send_message_to_users(user_ids=data.get("recipient"), subject_id=subject_id,
+                                                        message=updated_message)
+
+                else:
+                    await manager.send_message_to_everyone(subject_id=subject_id, message=updated_message)
+
+            elif data.get("type") == "deleteMessage":
+                info = delete_message_data_to_db(db=db, data=data)
+                message_to_send = f'Message with id {data.get("messageId")} have been deleted'
+
+                if info["messageType"] == "everyone":
+                    await manager.send_message_to_everyone(subject_id=subject_id, message={"message": message_to_send})
+
+                else:
+                    await websocket.send_json({"message": message_to_send})
+                    await manager.send_message_to_users(subject_id=subject_id, user_ids=info["recipient"],
+                                                        message={"message": message_to_send})
+
+            elif data.get("type") == "updateAnswer":
+                updated_answer = update_answer_data_to_db(db=db, data=data)
+
+                if updated_answer["messageType"] == "alone":
+                    await manager.send_message_to_user(subject_id=subject_id, user_id=updated_answer["messageSenderId"],
+                                                       message=updated_answer["answerData"])
+                    await manager.send_message_to_user(subject_id=subject_id, user_id=data.get("senderId"),
+                                                       message=updated_answer["answerData"])
+
+                elif updated_answer["messageType"] == "several":
+                    await manager.send_message_to_user(subject_id=subject_id, user_id=updated_answer["messageSenderId"],
+                                                       message=updated_answer["answerData"])
+                    await manager.send_message_to_users(subject_id=subject_id,
+                                                        user_ids=updated_answer["messageRecipient"],
+                                                        message=updated_answer["answerData"])
+                else:
+                    await manager.send_message_to_everyone(subject_id=subject_id, message=updated_answer["answerData"])
+
+            elif data.get("type") == "deleteAnswer":
+                info = delete_answer_data_to_db(db=db, data=data)
+                message_to_send = f'Answer with id {data.get("answerId")} have been deleted'
+
+                if info["messageType"] == "alone":
+                    await manager.send_message_to_user(subject_id=subject_id, user_id=info["messageSenderId"],
+                                                       message={"message": message_to_send})
+                    await manager.send_message_to_user(subject_id=subject_id, user_id=data['senderId'],
+                                                       message={"message": message_to_send})
+
+                elif info["messageType"] == "several":
+                    await manager.send_message_to_user(subject_id=subject_id, user_id=info["messageSenderId"],
+                                                       message={"message": message_to_send})
+                    await manager.send_message_to_users(subject_id=subject_id, user_ids=info["recipients"],
+                                                        message={"message": message_to_send})
+
+                else:
+                    await manager.send_message_to_everyone(subject_id=subject_id, message={"message": message_to_send})
 
     except WebSocketDisconnect:
-        await manager.remove_connection(subject_id=subject_id, connection=connection)
-        print(manager.connections)
+        manager.connections[subject_id].remove(connection)
+    finally:
+        await manager.total_active_users(subject_id=subject_id)
 
 
 @router.post("/subject_chat/attachment-file")

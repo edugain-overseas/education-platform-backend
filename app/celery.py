@@ -1,8 +1,8 @@
 from celery import Celery
 
-from app.crud.subject_crud import (filling_journal, select_lesson_id_and_subject_id_by_lecture_id_db,
-                                   select_journal_row, select_lesson_id_and_subject_id_by_test_id_db,
-                                   update_score_to_journal)
+from app.crud.subject_crud import (filling_journal, select_journal_row,
+                                   select_lesson_id_and_subject_id_by_lecture_id_db,
+                                   select_lesson_id_and_subject_id_by_test_id_db, update_score_to_journal)
 from app.session import SessionLocal
 from app.setting import BROKER_URL
 

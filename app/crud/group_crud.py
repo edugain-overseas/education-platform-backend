@@ -17,7 +17,7 @@ def select_groups_db(db: Session):
 
 
 def select_group_by_name_db(db: Session, group_name: str):
-    return db.query(Group.id).filter(Group.group_name == group_name).first()
+    return db.query(Group.id).filter(Group.group_name == group_name).scalar()
 
 
 def select_group_by_id_db(db: Session, group_id: int):
