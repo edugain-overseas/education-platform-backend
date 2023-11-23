@@ -154,6 +154,14 @@ def select_test_question_db(db: Session, question_id: int):
     return db.query(TestQuestion).filter(TestQuestion.id == question_id).first()
 
 
+def set_test_question_path_db(db: Session, image_path: str):
+    question = db.query(TestQuestion).filter(TestQuestion.image_path == image_path).first()
+    question.image_path = None
+    db.commit()
+    db.refresh(question)
+    return
+
+
 def delete_test_question_db(db: Session, question: TestQuestion):
     db.delete(question)
     db.commit()
@@ -219,6 +227,14 @@ def create_test_answer_with_photo_db(
 
 def select_test_answer_db(db: Session, answer_id: int):
     return db.query(TestAnswer).filter(TestAnswer.id == answer_id).first()
+
+
+def set_test_answer_path_db(db: Session, image_path: str):
+    answer = db.query(TestAnswer).filter(TestAnswer.image_path == image_path).first()
+    answer.image_path = None
+    db.commit()
+    db.refresh(answer)
+    return
 
 
 def update_test_answer_db(

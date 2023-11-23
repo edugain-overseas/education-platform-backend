@@ -10,7 +10,8 @@ from app.crud.test_lesson_crud import (create_test_answer_db, create_test_answer
                                        select_matching_right_db, select_mathing_left_by_right_id_db,
                                        select_question_type_id, select_test_answer_db, select_test_by_lesson_id_db,
                                        select_test_db, select_test_info_db, select_test_question_db,
-                                       set_none_for_left_option_db, update_test_db, update_test_question_db)
+                                       set_none_for_left_option_db, set_test_question_path_db, set_test_answer_path_db,
+                                       update_test_db, update_test_question_db)
 from app.models import User
 from app.schemas.test_lesson_schemas import QuestionBase, TestConfigBase, TestConfigUpdate
 from app.session import get_db
@@ -241,6 +242,20 @@ async def delete_question(
         raise HTTPException(status_code=403, detail="Permission denied")
 
 
+@router.delete("/test/delete-question-image")
+async def delete_question_image(
+        image_path: str,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.moder or user.teacher:
+        set_test_question_path_db(db=db, image_path=image_path)
+        delete_file(image_path)
+        return {"message": "Image have been deleted"}
+    else:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+
 @router.delete("/test/delete-answer")
 async def delete_answer(
         answer_id: int,
@@ -253,6 +268,20 @@ async def delete_answer(
             delete_file(answer.image_path)
         delete_answer_db(db=db, answer=answer)
         return {"message": "Answer have been deleted"}
+    else:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+
+@router.delete("/test/delete-answer-image")
+async def delete_answer_image(
+        image_path: str,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.moder or user.teacher:
+        set_test_answer_path_db(db=db, image_path=image_path)
+        delete_file(image_path)
+        return {"message": "Image have been deleted"}
     else:
         raise HTTPException(status_code=403, detail="Permission denied")
 
