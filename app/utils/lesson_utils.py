@@ -180,6 +180,7 @@ def set_test_question_info(question: TestQuestion) -> Dict:
         "questionText": question.question_text,
         "questionScore": question.question_score,
         "questionNumber": question.question_number,
+        "hided": question.hided,
         "questionAnswers": []
     }
     return question_info
