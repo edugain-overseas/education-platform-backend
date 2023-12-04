@@ -193,6 +193,14 @@ def set_test_answer_info(answer: TestAnswer) -> Dict:
         return {"answerId": answer.id, "answerText": answer.answer_text}
 
 
+def set_test_answer_for_teacher_info(answer: TestAnswer) -> Dict:
+    if answer.image_path:
+        return {"answerId": answer.id, "answerText": answer.answer_text,
+                "isCorrect": answer.is_correct, "imagePath": answer.image_path}
+    else:
+        return {"answerId": answer.id, "answerText": answer.answer_text, "isCorrect": answer.is_correct}
+
+
 def set_three_next_lesson(lessons):
     lessons_list = []
 

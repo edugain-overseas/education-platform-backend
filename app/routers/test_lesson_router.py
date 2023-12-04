@@ -9,9 +9,9 @@ from app.crud.test_lesson_crud import (create_test_answer_db, create_test_answer
                                        delete_matching_right_db, delete_test_question_db, select_matching_left_db,
                                        select_matching_right_db, select_mathing_left_by_right_id_db,
                                        select_question_type_id, select_test_answer_db, select_test_by_lesson_id_db,
-                                       select_test_db, select_test_info_db, select_test_question_db,
-                                       set_none_for_left_option_db, set_test_question_path_db, set_test_answer_path_db,
-                                       update_test_db, update_test_question_db)
+                                       select_test_db, select_test_info_db, select_test_info_for_teacher_db,
+                                       select_test_question_db, set_none_for_left_option_db, set_test_question_path_db,
+                                       set_test_answer_path_db, update_test_db, update_test_question_db)
 from app.models import User
 from app.schemas.test_lesson_schemas import QuestionBase, TestConfigBase, TestConfigUpdate
 from app.session import get_db
@@ -331,6 +331,27 @@ async def get_test_info(
         test_info = set_test_info(lesson_base=lesson_base, test_lesson=test_lesson)
         test_info["testQuestions"] = select_test_info_db(db=db, test_id=test_lesson.id)
         return test_info
+
+
+@router.get("/test-for-teacher/{lesson_id}")
+async def get_test_info_for_teacher(
+        lesson_id: int,
+        db: Session = Depends(get_db),
+        user: User = Depends(get_current_user)
+):
+    if user.teacher or user.moder:
+        lesson_base = get_lesson_base_info(db=db, lesson_id=lesson_id)
+        test_lesson = select_test_by_lesson_id_db(db=db, lesson_id=lesson_id)
+
+        if test_lesson is None:
+            return lesson_base
+        else:
+            test_info = set_test_info(lesson_base=lesson_base, test_lesson=test_lesson)
+            test_info["testQuestions"] = select_test_info_for_teacher_db(db=db, test_id=test_lesson.id)
+            return test_info
+
+    else:
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.post("/test/upload/image")

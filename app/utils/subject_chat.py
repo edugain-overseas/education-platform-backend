@@ -26,6 +26,7 @@ def set_subject_chat_last_messages_dict(messages_obj):
             "subjectId": message.subject_id,
             "senderId": message.sender_id,
             "senderType": message.sender_type.value,
+            "deleted": message.deleted,
             "readBy": message.read_by.split(", ") if message.read_by else [],
             "answers": [],
             "attachFiles": []
@@ -38,6 +39,7 @@ def set_subject_chat_last_messages_dict(messages_obj):
                 "answerDatetime": answer.datetime_message.strftime("%d.%m.%Y %H:%M:%S"),
                 "senderId": answer.sender_id,
                 "senderType": answer.sender_type.value,
+                "deleted": answer.deleted,
                 "readBy": answer.read_by.split(", ") if answer.read_by else [],
                 "attachFiles": []
             }
@@ -51,7 +53,6 @@ def set_subject_chat_last_messages_dict(messages_obj):
                     "fileSize": file.size
                 }
                 answer_data["attachFiles"].append(file_data)
-
             message_data["answers"].append(answer_data)
 
         for file in message.attach_file:
@@ -63,7 +64,6 @@ def set_subject_chat_last_messages_dict(messages_obj):
                 "fileSize": file.size
             }
             message_data["attachFiles"].append(file_data)
-
         messages_data["messages"].append(message_data)
     return messages_data
 
@@ -98,6 +98,7 @@ def set_subject_chat_last_message_dict(message_obj):
         "subjectId": message_obj.subject_id,
         "senderId": message_obj.sender_id,
         "senderType": message_obj.sender_type.value,
+        "deleted": message_obj.deleted,
         "readBy": message_obj.read_by.split(", ") if message_obj.read_by else [],
         "attachFiles": attach_files
     }
@@ -218,6 +219,7 @@ def set_subject_chat_last_answer_dict(answer_obj):
         "messageId": answer_obj[0].subject_chat.id,
         "senderId": answer_obj[0].sender_id,
         "senderType": answer_obj[0].sender_type,
+        "deleted": answer_obj[0].deleted,
         "readBy": answer_obj[0].read_by.split(", ") if answer_obj[0].read_by else [],
         "attachFiles": attach_files
     }

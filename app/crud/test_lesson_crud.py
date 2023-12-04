@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models import QuestionType, TestAnswer, TestLesson, TestMatchingLeft, TestMatchingRight, TestQuestion
 from app.schemas.test_lesson_schemas import TestConfigBase, TestConfigUpdate
-from app.utils.lesson_utils import set_test_answer_info, set_test_question_info
+from app.utils.lesson_utils import set_test_answer_info, set_test_question_info, set_test_answer_for_teacher_info
 
 
 def create_test_db(db: Session, test_data: TestConfigBase):
@@ -77,6 +77,70 @@ def select_test_info_db(db: Session, test_id: int):
 
             for answer in answers:
                 answer_info = set_test_answer_info(answer)
+                question_info["questionAnswers"].append(answer_info)
+
+        else:
+            question_info["imagePath"] = question.image_path
+            answers = select_answers_db(db=db, question_id=question.id)
+
+            for answer in answers:
+                answer_info = set_test_answer_info(answer)
+                question_info["questionAnswers"].append(answer_info)
+
+        result.append(question_info)
+    return result
+
+
+def select_test_info_for_teacher_db(db: Session, test_id: int):
+    test_questions = db.query(TestQuestion).filter(TestQuestion.test_lesson_id == test_id).all()
+    result = []
+
+    if test_questions is None:
+        return result
+
+    for question in test_questions:
+        question_info = set_test_question_info(question=question)
+
+        if question.question_type.type in ["test", "boolean"]:
+            answers = select_answers_db(db=db, question_id=question.id)
+
+            for answer in answers:
+                answer_info = set_test_answer_for_teacher_info(answer)
+                question_info["questionAnswers"].append(answer_info)
+
+        elif question.question_type.type == "multiple_choice":
+            answers = select_answers_db(db=db, question_id=question.id)
+            counter = 0
+
+            for answer in answers:
+                if answer.is_correct:
+                    counter += 1
+                answer_info = set_test_answer_for_teacher_info(answer)
+                question_info["questionAnswers"].append(answer_info)
+            question_info["quantityCorrectAnswers"] = counter
+
+        elif question.question_type.type == "matching":
+            left_options = db.query(TestMatchingLeft).filter(TestMatchingLeft.question_id == question.id).all()
+            right_options = db.query(TestMatchingRight).filter(TestMatchingRight.question_id == question.id).all()
+
+            question_info["questionAnswers"] = {
+                "left": [{
+                    "value": left_option.text,
+                    "id": left_option.id,
+                    "rightId": left_option.right_id
+                } for left_option in left_options],
+
+                "right": [{
+                    "value": right_option.text,
+                    "id": right_option.id
+                } for right_option in right_options]
+            }
+
+        elif question.question_type.type == "answer_with_photo":
+            answers = select_answers_db(db=db, question_id=question.id)
+
+            for answer in answers:
+                answer_info = set_test_answer_for_teacher_info(answer)
                 question_info["questionAnswers"].append(answer_info)
 
         else:
